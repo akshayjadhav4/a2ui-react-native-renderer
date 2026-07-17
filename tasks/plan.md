@@ -152,7 +152,7 @@ Verification:
 - `pnpm build`
 - `pnpm typecheck`
 - `pnpm lint`
-- `pnpm pack --dry-run`
+- `pnpm pack:check`
 
 #### Task 2: Define Public Catalog And Error Contracts
 

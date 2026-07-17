@@ -6,16 +6,19 @@ before the next task begins.
 
 ## Phase 1: Publishable Skeleton
 
-- [ ] **Task 1: Scaffold the JavaScript library**
+- [x] **Task 1: Scaffold the JavaScript library**
   - Acceptance: Strict TypeScript package builds with Bob and exports only a
     placeholder public entry point.
   - Acceptance: Package is still private and `npm pack --dry-run` contains only
     intended skeleton files.
-  - Verify: `pnpm build && pnpm typecheck && pnpm lint && pnpm pack --dry-run`
+  - Verify: `pnpm build && pnpm typecheck && pnpm lint && pnpm pack:check`
   - Likely files: `package.json`, `tsconfig.json`, `bob.config.js`,
     `src/index.ts`, `.gitignore`
   - Dependencies: None
   - Scope: Medium
+  - Evidence: `pnpm release:check` passes. The dry-run package contains nine
+    intended files: license, README, package metadata, ESM output, source maps,
+    and declarations.
 
 - [ ] **Task 2: Define catalog and error contracts**
   - Acceptance: Consumer Zod schemas infer presenter props through
