@@ -51,7 +51,7 @@ export function useStableEngine(input: StableEngineInput): A2UIEngine {
     state.mounted = true;
     return () => {
       state.mounted = false;
-      queueMicrotask(() => {
+      void Promise.resolve().then(() => {
         if (!state.mounted) {
           state.engine.dispose();
         }
