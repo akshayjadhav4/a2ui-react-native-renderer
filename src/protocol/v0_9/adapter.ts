@@ -3,7 +3,9 @@ import {
   Catalog,
   MessageProcessor,
   type A2uiMessage,
+  type A2uiClientAction,
   type ComponentApi,
+  type Subscription,
   type SurfaceModel,
 } from "@a2ui/web_core/v0_9";
 
@@ -68,6 +70,12 @@ export class A2UIV09Adapter {
 
   getSurface(surfaceId: string): SurfaceModel<RuntimeComponentApi> | undefined {
     return this.processor.model.getSurface(surfaceId);
+  }
+
+  subscribeActions(
+    listener: (action: A2uiClientAction) => void | Promise<void>,
+  ): Subscription {
+    return this.processor.model.onAction.subscribe(listener);
   }
 
   dispose(): void {

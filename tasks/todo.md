@@ -72,7 +72,7 @@ before the next task begins.
     reactive surface updates, streaming surfaces awaiting their root, missing
     providers, unknown components, and invalid presenter props.
 
-- [ ] **Task 5: Add the simple `A2UIRenderer`**
+- [x] **Task 5: Add the simple `A2UIRenderer`**
   - Acceptance: One component owns a stable engine and renders active surfaces
     from a message collection.
   - Acceptance: Unchanged messages are not reapplied during React rerenders.
@@ -81,11 +81,15 @@ before the next task begins.
     `src/index.ts`, `test/integration/convenience-renderer.test.tsx`
   - Dependencies: Task 4
   - Scope: Medium
+  - Evidence: Five convenience-renderer tests cover the README API, stable
+    message application, cumulative append updates, and current action/error
+    callbacks without engine replacement. Type fixtures enforce owned versus
+    external engine configuration.
 
 ### Checkpoint 2: First Usable Vertical Slice
 
-- [ ] Simple and advanced README-level examples compile and render.
-- [ ] Build, lint, typecheck, and focused tests pass.
+- [x] Simple and advanced README-level examples compile and render.
+- [x] Build, lint, typecheck, and focused tests pass.
 - [ ] Human verifies the package API remains smaller than the current app
   package.
 

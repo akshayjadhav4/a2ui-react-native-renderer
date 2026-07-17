@@ -3,8 +3,13 @@ export { defineA2UIComponent } from "./catalog/defineComponent.js";
 export { defineA2UIFunction } from "./catalog/defineFunction.js";
 export { createA2UIEngine } from "./engine/engine.js";
 export { A2UIProvider } from "./react/A2UIProvider.js";
+export { A2UIRenderer } from "./react/A2UIRenderer.js";
 export { A2UISurface } from "./react/A2UISurface.js";
-export { useA2UIErrors, useA2UISurface } from "./react/hooks.js";
+export {
+  useA2UIErrors,
+  useA2UISurface,
+  useA2UISurfaceIds,
+} from "./react/hooks.js";
 
 export type {
   A2UIBindingScope,
@@ -33,6 +38,7 @@ export type {
   A2UIEngineSnapshot,
   A2UISurfaceSnapshot,
 } from "./engine/types.js";
-export type { A2UIMessage } from "./types/messages.js";
+export type { A2UIMessage, A2UIUserAction } from "./types/messages.js";
 export type { A2UIProviderProps } from "./react/A2UIProvider.js";
+export type { A2UIRendererProps } from "./react/A2UIRenderer.js";
 export type { A2UISurfaceProps } from "./react/A2UISurface.js";

@@ -114,6 +114,22 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     }
   };
 
+  const actionSubscription = adapter.subscribeActions(async (action) => {
+    try {
+      await options.onAction?.(action);
+    } catch (cause) {
+      appendError({
+        code: "INVALID_MESSAGE",
+        message: "A2UI action callback failed",
+        severity: "error",
+        surfaceId: action.surfaceId,
+        componentId: action.sourceComponentId,
+        cause,
+      });
+      publish(new Set([action.surfaceId]));
+    }
+  });
+
   const engine: A2UIEngineWithInternals = {
     applyMessage(message: unknown): void {
       applyMessages([message]);
@@ -150,6 +166,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       }
 
       disposed = true;
+      actionSubscription.unsubscribe();
       adapter.dispose();
       surfaces.clear();
       surfaceRevisions.clear();
