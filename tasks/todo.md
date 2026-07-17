@@ -1,0 +1,247 @@
+# Tasks: a2ui-react-native-renderer
+
+This checklist is the execution view of `tasks/plan.md`. Tasks are ordered by
+dependency. Each task must be implemented, verified, committed, and checked off
+before the next task begins.
+
+## Phase 1: Publishable Skeleton
+
+- [ ] **Task 1: Scaffold the JavaScript library**
+  - Acceptance: Strict TypeScript package builds with Bob and exports only a
+    placeholder public entry point.
+  - Acceptance: Package is still private and `npm pack --dry-run` contains only
+    intended skeleton files.
+  - Verify: `pnpm build && pnpm typecheck && pnpm lint && pnpm pack --dry-run`
+  - Likely files: `package.json`, `tsconfig.json`, `bob.config.js`,
+    `src/index.ts`, `.gitignore`
+  - Dependencies: None
+  - Scope: Medium
+
+- [ ] **Task 2: Define catalog and error contracts**
+  - Acceptance: Consumer Zod schemas infer presenter props through
+    `defineA2UIComponent` and `defineA2UICatalog`.
+  - Acceptance: Empty/duplicate catalog definitions and invalid type fixtures
+    fail deterministically.
+  - Verify: `pnpm test -- catalog && pnpm typecheck`
+  - Likely files: `src/catalog/types.ts`, `src/catalog/defineCatalog.ts`,
+    `src/errors/types.ts`, `test/unit/catalog.test.ts`, `test/types/catalog.tsx`
+  - Dependencies: Task 1
+  - Scope: Medium
+
+### Checkpoint 1: Contracts
+
+- [ ] Build, typecheck, lint, catalog tests, and package inspection pass.
+- [ ] Generated declarations expose no unintended internal types.
+- [ ] Human approves the initial public catalog contract.
+
+## Phase 2: Smallest End-To-End Renderer
+
+- [ ] **Task 3: Implement the minimal v0.9 engine path**
+  - Acceptance: Official `createSurface` and `updateComponents` messages create
+    one readable surface snapshot.
+  - Acceptance: Invalid messages report structured errors and engine instances
+    remain isolated.
+  - Verify: `pnpm test -- engine-minimal && pnpm typecheck`
+  - Likely files: `src/engine/engine.ts`, `src/engine/types.ts`,
+    `src/protocol/v0_9/adapter.ts`, `src/types/messages.ts`,
+    `test/unit/engine-minimal.test.ts`
+  - Dependencies: Task 2
+  - Scope: Medium
+
+- [ ] **Task 4: Render one consumer component**
+  - Acceptance: A test-only consumer presenter renders resolved props from the
+    Task 3 surface.
+  - Acceptance: Provider, catalog, and component failures remain contained and
+    actionable.
+  - Verify: `pnpm test -- surface-renderer && pnpm typecheck`
+  - Likely files: `src/react/A2UIProvider.tsx`,
+    `src/react/A2UISurface.tsx`, `src/rendering/presenterAdapter.tsx`,
+    `src/react/hooks.ts`, `test/integration/surface-renderer.test.tsx`
+  - Dependencies: Task 3
+  - Scope: Medium
+
+- [ ] **Task 5: Add the simple `A2UIRenderer`**
+  - Acceptance: One component owns a stable engine and renders active surfaces
+    from a message collection.
+  - Acceptance: Unchanged messages are not reapplied during React rerenders.
+  - Verify: `pnpm test -- convenience-renderer && pnpm typecheck`
+  - Likely files: `src/react/A2UIRenderer.tsx`, `src/react/useStableEngine.ts`,
+    `src/index.ts`, `test/integration/convenience-renderer.test.tsx`
+  - Dependencies: Task 4
+  - Scope: Medium
+
+### Checkpoint 2: First Usable Vertical Slice
+
+- [ ] Simple and advanced README-level examples compile and render.
+- [ ] Build, lint, typecheck, and focused tests pass.
+- [ ] Human verifies the package API remains smaller than the current app
+  package.
+
+## Phase 3: Complete Protocol Runtime
+
+- [ ] **Task 6: Complete surface lifecycle**
+  - Acceptance: Multiple surfaces independently create, update, change roots,
+    and delete.
+  - Acceptance: Unrelated surface subscribers are not notified.
+  - Verify: `pnpm test -- surface-lifecycle`
+  - Likely files: `src/engine/engine.ts`, `src/engine/snapshot.ts`,
+    `src/protocol/v0_9/adapter.ts`, `test/unit/surface-lifecycle.test.ts`,
+    `test/integration/surface-subscriptions.test.tsx`
+  - Dependencies: Task 5
+  - Scope: Medium
+
+- [ ] **Task 7: Add data models and bindings**
+  - Acceptance: Literal, absolute, relative, escaped, array, update, and delete
+    binding scenarios resolve correctly.
+  - Acceptance: Template scope preserves both value and JSON pointer context.
+  - Verify: `pnpm test -- bindings`
+  - Likely files: `src/protocol/v0_9/bindings.ts`,
+    `src/rendering/presenterAdapter.tsx`, `src/engine/engine.ts`,
+    `test/unit/bindings.test.ts`, `test/integration/bound-presenter.test.tsx`
+  - Dependencies: Task 6
+  - Scope: Medium
+
+- [ ] **Task 8: Add user action dispatch**
+  - Acceptance: Presenter dispatch produces one official action with context
+    resolved from the current surface model.
+  - Acceptance: Updated callbacks are used without engine recreation and data
+    cannot cross surfaces.
+  - Verify: `pnpm test -- actions`
+  - Likely files: `src/engine/actions.ts`, `src/engine/engine.ts`,
+    `src/rendering/presenterAdapter.tsx`, `test/unit/actions.test.ts`,
+    `test/integration/presenter-action.test.tsx`
+  - Dependencies: Task 7
+  - Scope: Medium
+
+- [ ] **Task 9: Add consumer functions**
+  - Acceptance: Consumer-defined functions evaluate with schema-validated
+    arguments and no built-ins are bundled.
+  - Acceptance: Unknown or failing functions produce contained structured
+    errors.
+  - Verify: `pnpm test -- functions`
+  - Likely files: `src/catalog/defineFunction.ts`,
+    `src/protocol/v0_9/functions.ts`, `src/errors/normalizeError.ts`,
+    `test/unit/functions.test.ts`
+  - Dependencies: Task 7
+  - Scope: Medium
+
+### Checkpoint 3: Protocol Behavior
+
+- [ ] Lifecycle, bindings, actions, and functions pass official fixture tests.
+- [ ] Import boundary checks find no Expo, transport, chat, or app dependency.
+- [ ] Human verifies behavior before hardening changes begin.
+
+## Phase 4: Hardening
+
+- [ ] **Task 10: Add graph and resource validation**
+  - Acceptance: Invalid roots, duplicate IDs, references, cycles, schemas, and
+    configured limits reject the affected update with documented error codes.
+  - Acceptance: Invalid updates preserve the last valid revision.
+  - Verify: `pnpm test -- validation && pnpm test:coverage`
+  - Likely files: `src/validation/validateMessages.ts`,
+    `src/validation/validateGraph.ts`, `src/validation/limits.ts`,
+    `src/engine/engine.ts`, `test/unit/validation.test.ts`
+  - Dependencies: Tasks 8-9
+  - Scope: Medium
+
+- [ ] **Task 11: Add diagnostics and production recovery**
+  - Acceptance: Presenter and surface failures cannot escape React boundaries.
+  - Acceptance: Development diagnostics are safe and production emits errors
+    without showing internal details.
+  - Verify: `pnpm test -- diagnostics`
+  - Likely files: `src/errors/ErrorBoundary.tsx`,
+    `src/errors/DevelopmentFallback.tsx`, `src/react/A2UISurface.tsx`,
+    `src/engine/errors.ts`, `test/integration/diagnostics.test.tsx`
+  - Dependencies: Task 10
+  - Scope: Medium
+
+- [ ] **Task 12: Harden subscriptions and render performance**
+  - Acceptance: Snapshots remain referentially stable and unrelated surfaces do
+    not rerender.
+  - Acceptance: A 500-component fixture completes without stack overflow or
+    crash.
+  - Verify: `pnpm test -- performance && pnpm test:coverage`
+  - Likely files: `src/engine/snapshot.ts`, `src/react/hooks.ts`,
+    `src/rendering/treeRenderer.tsx`, `test/integration/rerenders.test.tsx`,
+    `test/unit/stress.test.ts`
+  - Dependencies: Task 11
+  - Scope: Medium
+
+### Checkpoint 4: Runtime Release Candidate
+
+- [ ] Full tests and coverage gates pass.
+- [ ] Development and production error modes are verified independently.
+- [ ] Human reviews performance evidence and public errors.
+
+## Phase 5: Consumer And Distribution Proof
+
+- [ ] **Task 13: Build the Expo consumer example**
+  - Acceptance: The example owns its complete fixture catalog and demonstrates
+    simple rendering, streaming, actions, deletion, and errors.
+  - Acceptance: iOS and Android exports bundle without workspace aliases.
+  - Verify: `pnpm example:export`
+  - Likely files: `example/expo/package.json`, `example/expo/app/index.tsx`,
+    `example/expo/src/catalog.tsx`, `example/expo/src/fixtures.ts`,
+    root workspace config
+  - Dependencies: Task 12
+  - Scope: Medium
+
+- [ ] **Task 14: Verify the packed package as a consumer**
+  - Acceptance: Expo and bare React Native smoke consumers install the tarball,
+    resolve declarations, and bundle both platforms.
+  - Acceptance: Package inspection finds no local paths or unpublished files.
+  - Verify: `pnpm pack:check && pnpm example:export`
+  - Likely files: `scripts/pack-check.mjs`, `scripts/consumer-smoke.mjs`,
+    `package.json`, `test/fixtures/bare-consumer/package.json`
+  - Dependencies: Task 13
+  - Scope: Medium
+
+- [ ] **Task 15: Complete documentation**
+  - Acceptance: Every public export and limitation is documented with compiling
+    examples.
+  - Acceptance: Concepts, architecture, streaming, catalog, error, migration,
+    contribution, and security docs match implementation.
+  - Verify: `pnpm typecheck && pnpm release:check`
+  - Likely files: `README.md`, `docs/concepts.md`, `docs/architecture.md`,
+    `docs/catalogs.md`, `docs/errors.md`
+  - Dependencies: Task 14
+  - Scope: Medium, split into separate documentation commits if needed
+
+### Checkpoint 5: Package Candidate
+
+- [ ] Fresh consumer instructions work against the tarball.
+- [ ] Documentation and generated declarations agree.
+- [ ] Human reviews package contents and onboarding flow.
+
+## Phase 6: Automation And Publication
+
+- [ ] **Task 16: Add CI quality gates**
+  - Acceptance: Clean-checkout CI runs install, build, typecheck, lint, tests,
+    coverage, pack inspection, and consumer smoke checks.
+  - Acceptance: Pull requests cannot invoke publication.
+  - Verify: Run workflow on a pull request and inspect every required job.
+  - Likely files: `.github/workflows/ci.yml`, `package.json`,
+    `scripts/consumer-smoke.mjs`
+  - Dependencies: Task 15
+  - Scope: Medium
+
+- [ ] **Task 17: Prepare and approve npm publication**
+  - Acceptance: Repository metadata, changelog, release policy, trusted publish
+    workflow, provenance, and package visibility are correct.
+  - Acceptance: Version `0.1.0` publishes only after an explicit human approval.
+  - Verify: `pnpm release:check`, manually inspect tarball, then verify
+    `npm view a2ui-react-native-renderer` after approved publication.
+  - Likely files: `package.json`, `CHANGELOG.md`,
+    `.github/workflows/publish.yml`, `.npmrc`
+  - Dependencies: Task 16 and GitHub owner input
+  - Scope: Medium
+
+### Checkpoint 6: Release
+
+- [ ] All success criteria in `tasks/spec.md` pass.
+- [ ] npm provenance and repository links are visible.
+- [ ] Registry installation works in a clean consumer application.
+
+## Deferred Input
+
+- [ ] Record the GitHub owner and final public repository URL before Task 17.
