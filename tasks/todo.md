@@ -20,21 +20,24 @@ before the next task begins.
     intended files: license, README, package metadata, ESM output, source maps,
     and declarations.
 
-- [ ] **Task 2: Define catalog and error contracts**
+- [x] **Task 2: Define catalog and error contracts**
   - Acceptance: Consumer Zod schemas infer presenter props through
     `defineA2UIComponent` and `defineA2UICatalog`.
   - Acceptance: Empty/duplicate catalog definitions and invalid type fixtures
     fail deterministically.
-  - Verify: `pnpm test -- catalog && pnpm typecheck`
+  - Verify: `pnpm test && pnpm typecheck`
   - Likely files: `src/catalog/types.ts`, `src/catalog/defineCatalog.ts`,
     `src/errors/types.ts`, `test/unit/catalog.test.ts`, `test/types/catalog.tsx`
   - Dependencies: Task 1
   - Scope: Medium
+  - Evidence: Six Node runtime tests pass. Type fixtures verify schema inference
+    for helper-based and inline catalog definitions and reject invalid props and
+    function return values.
 
 ### Checkpoint 1: Contracts
 
-- [ ] Build, typecheck, lint, catalog tests, and package inspection pass.
-- [ ] Generated declarations expose no unintended internal types.
+- [x] Build, typecheck, lint, catalog tests, and package inspection pass.
+- [x] Generated declarations expose no unintended internal types.
 - [ ] Human approves the initial public catalog contract.
 
 ## Phase 2: Smallest End-To-End Renderer

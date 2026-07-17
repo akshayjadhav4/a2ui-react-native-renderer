@@ -36,12 +36,12 @@
   "scripts": {
     "build": "bob build",
     "prepare": "pnpm build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "lint": "eslint src --max-warnings=0",
-    "format": "prettier --write src package.json tsconfig.json eslint.config.mjs README.md",
-    "format:check": "prettier --check src package.json tsconfig.json eslint.config.mjs README.md",
-    "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage",
+    "format": "prettier --write src test package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md",
+    "format:check": "prettier --check src test package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md",
+    "test": "pnpm build && node --test test/unit/*.test.mjs",
+    "test:coverage": "pnpm build && node --test --experimental-test-coverage test/unit/*.test.mjs",
     "pack:check": "npm pack --dry-run --cache .npm-cache",
     "release:check": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm pack:check"
   },
