@@ -79,5 +79,8 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0",
     "zod": "3.25.76"
+  },
+  "dependencies": {
+    "@a2ui/web_core": "0.9.0"
   }
 }

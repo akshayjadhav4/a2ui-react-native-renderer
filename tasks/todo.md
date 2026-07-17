@@ -38,21 +38,24 @@ before the next task begins.
 
 - [x] Build, typecheck, lint, catalog tests, and package inspection pass.
 - [x] Generated declarations expose no unintended internal types.
-- [ ] Human approves the initial public catalog contract.
+- [x] Human approves the initial public catalog contract.
 
 ## Phase 2: Smallest End-To-End Renderer
 
-- [ ] **Task 3: Implement the minimal v0.9 engine path**
+- [x] **Task 3: Implement the minimal v0.9 engine path**
   - Acceptance: Official `createSurface` and `updateComponents` messages create
     one readable surface snapshot.
   - Acceptance: Invalid messages report structured errors and engine instances
     remain isolated.
-  - Verify: `pnpm test -- engine-minimal && pnpm typecheck`
+  - Verify: `pnpm test && pnpm typecheck`
   - Likely files: `src/engine/engine.ts`, `src/engine/types.ts`,
     `src/protocol/v0_9/adapter.ts`, `src/types/messages.ts`,
     `test/unit/engine-minimal.test.ts`
   - Dependencies: Task 2
   - Scope: Medium
+  - Evidence: Seven focused engine tests cover valid surface creation, stable
+    snapshots, batch notifications, malformed input, unsupported versions,
+    unknown and duplicate catalogs, and instance isolation.
 
 - [ ] **Task 4: Render one consumer component**
   - Acceptance: A test-only consumer presenter renders resolved props from the
