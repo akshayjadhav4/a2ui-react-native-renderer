@@ -12,6 +12,10 @@ import type {
   A2UIEngineSnapshot,
   A2UISurfaceSnapshot,
 } from "./types.js";
+import {
+  A2UI_ENGINE_INTERNALS,
+  type A2UIEngineWithInternals,
+} from "./internals.js";
 
 const EMPTY_ERRORS: readonly A2UIRendererError[] = Object.freeze([]);
 
@@ -19,6 +23,9 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
   validateCatalogs(options.catalogs);
 
   const adapter = new A2UIV09Adapter(options.catalogs);
+  const catalogs = new Map(
+    options.catalogs.map((catalog) => [catalog.id, catalog]),
+  );
   const surfaces = new Map<string, A2UISurfaceSnapshot>();
   const surfaceRevisions = new Map<string, number>();
   const listeners = new Set<() => void>();
@@ -41,19 +48,26 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     }
   };
 
-  const reportError = (
+  const appendError = (error: A2UIRendererError): A2UIRendererError => {
+    const frozenError = Object.freeze({ ...error });
+    errors = Object.freeze([...errors, frozenError]);
+
+    try {
+      options.onError?.(frozenError);
+    } catch {
+      // Consumer diagnostics must not break protocol processing.
+    }
+
+    return frozenError;
+  };
+
+  const reportBatchError = (
     error: A2UIRendererError,
     affectedSurfaceIds: Set<string>,
   ): void => {
-    errors = Object.freeze([...errors, Object.freeze(error)]);
-    if (error.surfaceId !== undefined) {
-      affectedSurfaceIds.add(error.surfaceId);
-    }
-
-    try {
-      options.onError?.(error);
-    } catch {
-      // Consumer diagnostics must not break protocol processing.
+    const frozenError = appendError(error);
+    if (frozenError.surfaceId !== undefined) {
+      affectedSurfaceIds.add(frozenError.surfaceId);
     }
   };
 
@@ -68,7 +82,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     for (const input of messages) {
       const parsed = adapter.parseMessage(input);
       if (!parsed.success) {
-        reportError(
+        reportBatchError(
           parseFailureToError(input, parsed.failure),
           affectedSurfaceIds,
         );
@@ -87,7 +101,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
         affectedSurfaceIds.add(parsed.value.surfaceId);
         changed = true;
       } catch (cause) {
-        reportError(
+        reportBatchError(
           processingFailureToError(parsed.value, cause),
           affectedSurfaceIds,
         );
@@ -100,7 +114,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     }
   };
 
-  return Object.freeze({
+  const engine: A2UIEngineWithInternals = {
     applyMessage(message: unknown): void {
       applyMessages([message]);
     },
@@ -142,7 +156,48 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       listeners.clear();
       surfaceListeners.clear();
     },
-  });
+    [A2UI_ENGINE_INTERNALS]: {
+      getCatalog(catalogId: string) {
+        return catalogs.get(catalogId);
+      },
+      reportError(error: A2UIRendererError): void {
+        const frozenError = appendError(error);
+        publish(
+          new Set(
+            frozenError.surfaceId === undefined ? [] : [frozenError.surfaceId],
+          ),
+        );
+      },
+      dispatchAction(surfaceId, componentId, action): void {
+        const surface = adapter.getSurface(surfaceId);
+        if (surface === undefined) {
+          this.reportError({
+            code: "INVALID_MESSAGE",
+            message: `Cannot dispatch an action for missing surface "${surfaceId}"`,
+            severity: "error",
+            surfaceId,
+            componentId,
+          });
+          return;
+        }
+
+        void surface
+          .dispatchAction(action, componentId)
+          .catch((cause: unknown) => {
+            this.reportError({
+              code: "INVALID_MESSAGE",
+              message: "A2UI action dispatch failed",
+              severity: "error",
+              surfaceId,
+              componentId,
+              cause,
+            });
+          });
+      },
+    },
+  };
+
+  return Object.freeze(engine);
 }
 
 function updateSurfaceSnapshot(

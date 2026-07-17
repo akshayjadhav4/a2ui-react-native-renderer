@@ -57,7 +57,7 @@ before the next task begins.
     snapshots, batch notifications, malformed input, unsupported versions,
     unknown and duplicate catalogs, and instance isolation.
 
-- [ ] **Task 4: Render one consumer component**
+- [x] **Task 4: Render one consumer component**
   - Acceptance: A test-only consumer presenter renders resolved props from the
     Task 3 surface.
   - Acceptance: Provider, catalog, and component failures remain contained and
@@ -68,6 +68,9 @@ before the next task begins.
     `src/react/hooks.ts`, `test/integration/surface-renderer.test.tsx`
   - Dependencies: Task 3
   - Scope: Medium
+  - Evidence: Six integration tests cover validated consumer presenters,
+    reactive surface updates, streaming surfaces awaiting their root, missing
+    providers, unknown components, and invalid presenter props.
 
 - [ ] **Task 5: Add the simple `A2UIRenderer`**
   - Acceptance: One component owns a stable engine and renders active surfaces
