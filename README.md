@@ -69,6 +69,21 @@ function Surface({ surfaceId }: { surfaceId: string }) {
 Transport, chat state, persistence, and the component catalog remain owned by
 the consuming application.
 
+## Expo Example
+
+[`example/expo`](./example/expo) is an Expo SDK 57 consumer that imports the
+library through its public package exports. It owns its schemas and native
+presenters and demonstrates simple rendering, incremental streaming, data
+binding, actions, deletion, diagnostics, and recovery.
+
+```sh
+pnpm example:check
+pnpm example:export
+```
+
+The export command builds standalone iOS and Android production bundles. No
+Metro resolver alias points at package source.
+
 ## Actions
 
 Use `A2UIActionSchema` for interactive component properties. A presenter calls

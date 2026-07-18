@@ -230,7 +230,7 @@ before the next task begins.
 
 ## Phase 5: Consumer And Distribution Proof
 
-- [ ] **Task 13: Build the Expo consumer example**
+- [x] **Task 13: Build the Expo consumer example**
   - Acceptance: The example owns its complete fixture catalog and demonstrates
     simple rendering, streaming, actions, deletion, and errors.
   - Acceptance: iOS and Android exports bundle without workspace aliases.
@@ -240,6 +240,12 @@ before the next task begins.
     root workspace config
   - Dependencies: Task 12
   - Scope: Medium
+  - Evidence: An Expo SDK 57 / React Native 0.86 app imports the built package
+    through its public workspace dependency and owns four Zod-backed native
+    presenters. Its fixtures demonstrate simple and staged streaming surfaces,
+    two-way binding, official actions, deletion, contained invalid components,
+    and recovery. TypeScript, Expo lint, all 18 Expo Doctor checks, and explicit
+    iOS and Android production exports pass without Metro source aliases.
 
 - [ ] **Task 14: Verify the packed package as a consumer**
   - Acceptance: Expo and bare React Native smoke consumers install the tarball,

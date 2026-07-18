@@ -30,7 +30,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "export": "expo export --platform all --output-dir dist"
+    "export": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android"
   },
   "private": true
 }
