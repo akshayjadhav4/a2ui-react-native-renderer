@@ -11,6 +11,7 @@ export {
   useA2UISurfaceIds,
 } from "./react/hooks.js";
 export {
+  A2UIActionSchema,
   A2UIChildListSchema,
   A2UIDataBindingSchema,
   A2UIDynamicBooleanSchema,
@@ -38,6 +39,7 @@ export type {
   A2UIResolvedProps,
 } from "./catalog/types.js";
 export type {
+  A2UIAction,
   A2UIChildList,
   A2UIDataBindingValue,
   A2UIDynamicBoolean,

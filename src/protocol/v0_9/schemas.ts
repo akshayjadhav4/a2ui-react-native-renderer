@@ -1,4 +1,5 @@
 export {
+  ActionSchema as A2UIActionSchema,
   ChildListSchema as A2UIChildListSchema,
   DataBindingSchema as A2UIDataBindingSchema,
   DynamicBooleanSchema as A2UIDynamicBooleanSchema,
@@ -9,6 +10,7 @@ export {
 } from "@a2ui/web_core/v0_9";
 
 export type {
+  Action as A2UIAction,
   ChildList as A2UIChildList,
   DataBinding as A2UIDataBindingValue,
   DynamicBoolean as A2UIDynamicBoolean,

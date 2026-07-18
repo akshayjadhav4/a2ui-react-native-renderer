@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { z } from "zod";
 
 import type {
+  A2UIAction,
   A2UIChildList,
   A2UIDataBindingValue,
   A2UIFunctionCallValue,
@@ -40,7 +41,7 @@ export type A2UIChildRenderer = (
   scopePath?: string,
 ) => ReactNode;
 
-export type A2UIComponentAction = Readonly<Record<string, unknown>>;
+export type A2UIComponentAction = A2UIAction;
 
 export interface A2UIPresenterProps<Props extends object> {
   readonly props: Readonly<Props>;
