@@ -168,3 +168,21 @@ raw A2UI messages, data models, exception messages, or causes.
 provide a native, accessible fallback without the renderer package imposing a
 component library or visual design. `onError` still receives the structured
 error for telemetry and recovery decisions.
+
+## Performance And Subscriptions
+
+The engine publishes immutable snapshots. Its top-level `revision` advances
+whenever protocol processing publishes a change, while `surfaceIds` and
+`failedSurfaceIds` retain their array identity until their membership or order
+changes. This keeps `useSyncExternalStore` consumers from rerendering for an
+unchanged collection.
+
+`A2UISurface` subscribes directly to its requested surface. Updating or failing
+one surface does not rerender presenters mounted for another surface. A change
+inside a surface may rerender that surface's tree because dynamic component
+properties can depend on its latest data model.
+
+The default 500-component surface limit is covered by an integration fixture
+that validates and renders the complete tree without a stack overflow or
+crash. This is a correctness boundary, not a frame-time guarantee; applications
+should choose lower limits when their presenters or target devices require it.

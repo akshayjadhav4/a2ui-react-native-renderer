@@ -342,6 +342,35 @@ function SurfaceMessage({ surfaceId }: { surfaceId: string }) {
 }
 ```
 
+### Subscription And Snapshot Behavior
+
+The engine offers two subscription levels:
+
+- `subscribe` publishes engine-wide changes such as active or failed surface
+  membership;
+- `subscribeSurface(surfaceId, listener)` publishes only changes that affect
+  the requested surface.
+
+`A2UISurface` uses the second form. An update or validation failure for one
+surface therefore does not rerender presenters mounted for another surface.
+
+Engine snapshots are immutable. A publication creates a new snapshot and
+increments its `revision`, but the `surfaceIds` and `failedSurfaceIds` arrays
+reuse their previous references while their membership and order are
+unchanged. Hooks selecting those collections remain referentially stable even
+when an existing surface receives a component or data-model update.
+
+Surface snapshots are replaced only when that surface commits a valid change.
+The renderer may rerender the changed surface's component tree because dynamic
+properties can depend on any value in its current data model. This favors
+correct binding behavior while retaining isolation between surfaces.
+
+The package's default resource limit permits 500 components per surface. An
+integration fixture validates and renders a complete 500-component surface to
+prove the boundary does not overflow the renderer stack. It is not a timing
+service-level agreement: consumer presenter cost and device capabilities still
+determine practical limits.
+
 ## `A2UIRenderer`
 
 `A2UIRenderer` is the convenience API for consumers that do not need manual

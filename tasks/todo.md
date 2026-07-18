@@ -203,7 +203,7 @@ before the next task begins.
     The full 82-test suite, 94.42% line coverage, 90.30% branch coverage, and
     npm package dry run pass.
 
-- [ ] **Task 12: Harden subscriptions and render performance**
+- [x] **Task 12: Harden subscriptions and render performance**
   - Acceptance: Snapshots remain referentially stable and unrelated surfaces do
     not rerender.
   - Acceptance: A 500-component fixture completes without stack overflow or
@@ -214,11 +214,18 @@ before the next task begins.
     `test/unit/stress.test.ts`
   - Dependencies: Task 11
   - Scope: Medium
+  - Evidence: Four focused tests verify stable active/failed surface collection
+    identities, identity changes only when membership changes, presenter
+    isolation after an unrelated invalid surface update through both public
+    APIs, and successful validation/rendering of a 500-component surface. The
+    full 86-test suite passes with 94.66% line coverage and 90.62% branch
+    coverage. The complete release check passes and the npm dry-run produces a
+    55.0 kB package containing 117 intended files.
 
 ### Checkpoint 4: Runtime Release Candidate
 
-- [ ] Full tests and coverage gates pass.
-- [ ] Development and production error modes are verified independently.
+- [x] Full tests and coverage gates pass.
+- [x] Development and production error modes are verified independently.
 - [ ] Human reviews performance evidence and public errors.
 
 ## Phase 5: Consumer And Distribution Proof
