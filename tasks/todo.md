@@ -317,19 +317,23 @@ before the next task begins.
     release process; `prepublishOnly` requires an explicit approval variable,
     stable version, public package flag, repository metadata, matching dated
     changelog, clean worktree, and the complete local release gate.
-  - Verification evidence: `pnpm release:check` passes 90 tests, verifies the
+  - Verification evidence: `pnpm release:check` passes 91 tests, verifies the
     128-file tarball, and builds isolated Expo SDK 57 and bare React Native 0.86
     consumers for iOS and Android.
-  - Remaining approval gate: verify npm 2FA, approve version `0.1.0`, set
-    `private` to `false`, and explicitly authorize publication. No package has
-    been published.
+  - Release-candidate evidence: npm is authenticated as `akshayjadhav4`, npm
+    reports publishing 2FA mode `auth-and-writes`, version `0.1.0` is approved,
+    and `private` is set to `false`.
+  - Remaining approval gate: explicitly authorize publication after reviewing
+    the final release checks and tarball. No package has been published.
 
 ### Checkpoint 6: Release
 
 - [ ] All success criteria in `tasks/spec.md` pass.
 - [ ] npm displays the correct public repository metadata.
 - [x] npm provenance is explicitly deferred with hosted release automation.
-- [ ] Manual publication is protected by npm 2FA.
+- [x] Manual publication is protected by npm 2FA.
+  - Evidence: `npm profile get "two-factor auth"` returned `auth-and-writes` on
+    2026-07-18 for npm user `akshayjadhav4`.
 - [ ] Registry installation works in a clean consumer application.
 
 ## Deferred Input

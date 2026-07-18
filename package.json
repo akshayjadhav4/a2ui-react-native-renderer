@@ -1,6 +1,6 @@
 {
   "name": "a2ui-react-native-renderer",
-  "version": "0.0.0-development",
+  "version": "0.1.0",
   "description": "A catalog-agnostic A2UI renderer and protocol runtime for React Native and Expo",
   "keywords": [
     "a2ui",
@@ -12,7 +12,7 @@
     "renderer"
   ],
   "license": "Apache-2.0",
-  "private": true,
+  "private": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/akshayjadhav4/a2ui-react-native-renderer.git"

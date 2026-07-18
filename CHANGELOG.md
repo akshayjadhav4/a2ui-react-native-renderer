@@ -5,6 +5,8 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-18
+
 ### Added
 
 - Catalog-agnostic A2UI v0.9 engine for React Native and Expo.
@@ -18,7 +20,3 @@ project follows [Semantic Versioning](https://semver.org/).
   Native on iOS and Android.
 - Public API, architecture, catalog, streaming, migration, security, and
   contribution documentation.
-
-The first release entry will be cut from this section only after the final
-package version, public repository URL, release date, and npm publication are
-approved.
