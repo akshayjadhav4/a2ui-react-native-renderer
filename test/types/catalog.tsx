@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  A2UIActionSchema,
   A2UIDynamicStringSchema,
   defineA2UICatalog,
   defineA2UIComponent,
@@ -83,6 +84,18 @@ defineA2UIComponent({
 
     // @ts-expect-error Bound string setters only accept strings.
     props.setValue(42);
+
+    return null;
+  },
+});
+
+defineA2UIComponent({
+  schema: z.object({ action: A2UIActionSchema }),
+  presenter: ({ props, dispatch }) => {
+    dispatch(props.action);
+
+    // @ts-expect-error Dispatch accepts only official A2UI actions.
+    dispatch({ event: {} });
 
     return null;
   },

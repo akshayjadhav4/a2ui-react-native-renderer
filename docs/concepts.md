@@ -386,6 +386,14 @@ beside different assistant messages. Use the advanced API for that case.
 A presenter may dispatch an A2UI user action when a native control is used.
 
 ```tsx
+const ButtonComponent = defineA2UIComponent({
+  schema: z.object({
+    label: A2UIDynamicStringSchema,
+    action: A2UIActionSchema,
+  }),
+  presenter: ButtonPresenter,
+});
+
 function ButtonPresenter({ props, dispatch }: A2UIPresenterProps<ButtonProps>) {
   return (
     <Pressable onPress={() => dispatch(props.action)}>
@@ -396,7 +404,9 @@ function ButtonPresenter({ props, dispatch }: A2UIPresenterProps<ButtonProps>) {
 ```
 
 The engine resolves the action context against the current data model and sends
-the resulting official A2UI action to the consumer callback:
+the resulting official A2UI action to the consumer callback. Resolution happens
+when the interaction occurs, so a long-lived native handler cannot send stale
+form or template data:
 
 ```tsx
 const engine = createA2UIEngine({

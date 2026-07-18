@@ -7,6 +7,7 @@ import {
   type ParsedA2UIMessage,
 } from "../protocol/v0_9/adapter.js";
 import { updateDataPointer } from "../protocol/v0_9/bindings.js";
+import type { A2UIUserAction } from "../types/messages.js";
 import type {
   A2UIComponentSnapshot,
   A2UIEngine,
@@ -120,9 +121,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     }
   };
 
-  const deliverAction = async (
-    action: Parameters<NonNullable<A2UIEngineOptions["onAction"]>>[0],
-  ): Promise<void> => {
+  const deliverAction = async (action: A2UIUserAction): Promise<void> => {
     try {
       await options.onAction?.(action);
     } catch (cause) {

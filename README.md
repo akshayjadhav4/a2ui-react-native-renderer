@@ -67,3 +67,11 @@ function Surface({ surfaceId }: { surfaceId: string }) {
 
 Transport, chat state, persistence, and the component catalog remain owned by
 the consuming application.
+
+## Actions
+
+Use `A2UIActionSchema` for interactive component properties. A presenter calls
+`dispatch(props.action)` when its native control is activated. The engine
+resolves action context from that surface's latest data model and sends one
+official `A2UIUserAction` to `onAction`; the application owns transport back to
+the agent.

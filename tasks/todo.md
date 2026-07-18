@@ -126,7 +126,7 @@ before the next task begins.
     escaped, updated, deleted, relative template, scope-value, and two-way
     binding behavior. Public type tests verify generated bound-value setters.
 
-- [ ] **Task 8: Add user action dispatch**
+- [x] **Task 8: Add user action dispatch**
   - Acceptance: Presenter dispatch produces one official action with context
     resolved from the current surface model.
   - Acceptance: Updated callbacks are used without engine recreation and data
@@ -137,6 +137,12 @@ before the next task begins.
     `test/integration/presenter-action.test.tsx`
   - Dependencies: Task 7
   - Scope: Medium
+  - Evidence: Three unit tests verify official action construction, current,
+    relative, absolute, and escaped context resolution, and malformed/local
+    action rejection. Three React integration tests verify dispatch-time model
+    reads, strict surface isolation, and contained presenter errors. Existing
+    convenience-renderer coverage verifies updated callbacks without engine
+    recreation, and public type tests enforce `A2UIActionSchema` dispatch.
 
 - [ ] **Task 9: Add consumer functions**
   - Acceptance: Consumer-defined functions evaluate with schema-validated
