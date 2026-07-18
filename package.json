@@ -30,16 +30,19 @@
   },
   "files": [
     "lib",
+    "docs",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
   ],
   "scripts": {
     "build": "bob build",
     "prepare": "pnpm build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "lint": "eslint src --max-warnings=0",
-    "format": "prettier --write src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md",
-    "format:check": "prettier --check src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md",
+    "format": "prettier --write src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md CONTRIBUTING.md SECURITY.md docs",
+    "format:check": "prettier --check src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md CONTRIBUTING.md SECURITY.md docs",
     "example:typecheck": "pnpm --filter a2ui-renderer-example typecheck",
     "example:check": "pnpm example:typecheck && pnpm --filter a2ui-renderer-example lint",
     "example:export": "pnpm build && pnpm --filter a2ui-renderer-example export",

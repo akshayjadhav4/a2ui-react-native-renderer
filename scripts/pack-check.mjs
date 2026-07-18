@@ -14,8 +14,17 @@ import { fileURLToPath } from "node:url";
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = resolve(dirname(scriptPath), "..");
 const requiredFiles = [
+  "CONTRIBUTING.md",
   "LICENSE",
   "README.md",
+  "SECURITY.md",
+  "docs/api.md",
+  "docs/architecture.md",
+  "docs/catalogs.md",
+  "docs/concepts.md",
+  "docs/errors-and-security.md",
+  "docs/migration.md",
+  "docs/streaming-and-actions.md",
   "package.json",
   "lib/module/index.js",
   "lib/typescript/index.d.ts",
@@ -94,7 +103,10 @@ function isAllowedPackagePath(path) {
   return (
     path === "LICENSE" ||
     path === "README.md" ||
+    path === "CONTRIBUTING.md" ||
+    path === "SECURITY.md" ||
     path === "package.json" ||
+    path.startsWith("docs/") ||
     path.startsWith("lib/")
   );
 }
