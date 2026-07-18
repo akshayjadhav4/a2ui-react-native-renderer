@@ -7,9 +7,7 @@ import {
 } from "./diagnostics.js";
 import type { A2UIRendererError } from "./types.js";
 
-export type A2UIFallbackRenderer = (
-  error: A2UIRendererError,
-) => ReactNode;
+export type A2UIFallbackRenderer = (error: A2UIRendererError) => ReactNode;
 
 export interface A2UIRecoveryConfig {
   readonly diagnostics: A2UIDiagnosticsMode;
@@ -25,7 +23,8 @@ export function A2UIRecoveryFallback({
   diagnostics,
   renderFallback,
 }: A2UIRecoveryFallbackProps): ReactNode {
-  const showDevelopmentDiagnostic = shouldShowDevelopmentDiagnostics(diagnostics);
+  const showDevelopmentDiagnostic =
+    shouldShowDevelopmentDiagnostics(diagnostics);
 
   useEffect(() => {
     if (renderFallback === undefined && showDevelopmentDiagnostic) {

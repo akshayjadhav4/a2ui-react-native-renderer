@@ -26,7 +26,9 @@ export class A2UIErrorBoundary extends Component<
     resetKey: this.props.resetKey,
   };
 
-  static getDerivedStateFromError(cause: Error): Partial<A2UIErrorBoundaryState> {
+  static getDerivedStateFromError(
+    cause: Error,
+  ): Partial<A2UIErrorBoundaryState> {
     return { cause };
   }
 

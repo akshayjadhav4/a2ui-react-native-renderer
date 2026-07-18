@@ -104,8 +104,7 @@ export function A2UIComponentNode({
     A2UIErrorBoundary,
     {
       resetKey: `${String(surface.revision)}:${scopePath}`,
-      createError: (cause) =>
-        createPresenterError(surface, componentId, cause),
+      createError: (cause) => createPresenterError(surface, componentId, cause),
       reportError: (error) => {
         internals.reportError(error);
       },

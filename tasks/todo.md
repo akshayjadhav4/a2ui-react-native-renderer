@@ -187,7 +187,7 @@ before the next task begins.
     pointers, depth, atomic recovery, mixed-surface batches, and invalid
     lifecycle transitions. The full 74-test suite and coverage run pass.
 
-- [ ] **Task 11: Add diagnostics and production recovery**
+- [x] **Task 11: Add diagnostics and production recovery**
   - Acceptance: Presenter and surface failures cannot escape React boundaries.
   - Acceptance: Development diagnostics are safe and production emits errors
     without showing internal details.
@@ -197,6 +197,11 @@ before the next task begins.
     `src/engine/errors.ts`, `test/integration/diagnostics.test.tsx`
   - Dependencies: Task 10
   - Scope: Medium
+  - Evidence: Eight diagnostics tests cover sanitized output, mode selection,
+    reset behavior, invalid initial surfaces, production silence, convenience
+    rendering, component-local containment, and recovery after a valid revision.
+    The full 82-test suite, 94.42% line coverage, 90.30% branch coverage, and
+    npm package dry run pass.
 
 - [ ] **Task 12: Harden subscriptions and render performance**
   - Acceptance: Snapshots remain referentially stable and unrelated surfaces do

@@ -502,17 +502,38 @@ error through `onError` and the engine error API.
 
 ### Development
 
-The package shows an actionable diagnostic fallback containing safe identifiers
-such as surface ID, catalog ID, component ID, and error code.
+With `diagnostics="auto"` under React Native's `__DEV__` global, or with
+`diagnostics="development"`, the package reports an actionable diagnostic
+containing only safe identifiers such as surface ID, catalog ID, component ID,
+JSON path, and error code. It does not include the exception message, cause,
+component properties, data model, or raw A2UI input.
+
+The renderer remains catalog-agnostic, so it does not ship a styled native error
+view. Pass `renderFallback` when an in-surface development diagnostic is useful.
 
 ### Production
 
-The package does not display internal diagnostics. An invalid initial surface
-renders nothing or a consumer-provided fallback. An invalid update preserves
-the last valid surface revision when possible. `onError` still runs.
+With `diagnostics="production"`, the package does not display or log internal
+diagnostics. An invalid initial surface renders nothing or a consumer-provided
+fallback. An invalid update preserves the last valid surface revision when
+possible. `onError` still runs.
 
 Production errors must never be swallowed silently, and raw A2UI JSON must not
 be shown to end users.
+
+```tsx
+<A2UIRenderer
+  catalogs={[catalog]}
+  messages={messages}
+  diagnostics="production"
+  onError={(error) => telemetry.capture(error)}
+  renderFallback={() => <SurfaceUnavailable />}
+/>
+```
+
+Presenter boundaries are reset by the next surface revision. The engine tracks
+current failed surfaces separately from historical errors so recovered or
+deleted surfaces do not reappear as stale fallbacks.
 
 ## Simple Versus Advanced API
 

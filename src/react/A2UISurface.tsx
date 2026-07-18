@@ -54,7 +54,8 @@ export const A2UISurface = memo(function A2UISurface({
     A2UIErrorBoundary,
     {
       resetKey: surface.revision,
-      createError: (cause) => createSurfaceError(surfaceId, surface.catalogId, cause),
+      createError: (cause) =>
+        createSurfaceError(surfaceId, surface.catalogId, cause),
       reportError: (error) => {
         internals.reportError(error);
       },

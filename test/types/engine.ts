@@ -36,6 +36,9 @@ engine.applyMessage(message);
 
 const surface: A2UISurfaceSnapshot | undefined = engine.getSurface("main");
 void surface;
+const failedSurfaceIds: readonly string[] =
+  engine.getSnapshot().failedSurfaceIds;
+void failedSurfaceIds;
 
 // @ts-expect-error Only official v0.9 messages satisfy A2UIMessage.
 const futureMessage: A2UIMessage = { version: "v1.0" };

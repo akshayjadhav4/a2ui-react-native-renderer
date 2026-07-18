@@ -136,3 +136,35 @@ Defaults are exported as `DEFAULT_A2UI_RESOURCE_LIMITS`: 500 components, 64
 levels, 1 MiB of data per surface, and 1,000 messages per batch. Validation is
 transactional per surface, so one invalid surface does not prevent independent
 valid surfaces in the same batch from committing.
+
+## Diagnostics And Recovery
+
+Every validation, binding, function, action, and presenter failure is recorded
+as an `A2UIRendererError`. The engine calls `onError` without allowing a failing
+consumer callback to interrupt protocol processing.
+
+Presenters run inside component-level error boundaries. A broken child can fall
+back without removing healthy siblings, and a later valid surface revision
+resets the boundary. An unexpected renderer failure is also contained at the
+surface boundary.
+
+```tsx
+<A2UISurface
+  surfaceId={surfaceId}
+  diagnostics="production"
+  renderFallback={(error) => (
+    <SurfaceUnavailable accessibilityLabel={`UI error ${error.code}`} />
+  )}
+/>
+```
+
+`diagnostics` accepts `"auto"`, `"development"`, or `"production"` and defaults
+to `"auto"`. Auto mode follows React Native's `__DEV__` global. Without a custom
+fallback, development logs only the error code and sanitized surface, catalog,
+component, and path identifiers; production renders `null`. Neither mode shows
+raw A2UI messages, data models, exception messages, or causes.
+
+`renderFallback` is optional and works in every mode. It lets the application
+provide a native, accessible fallback without the renderer package imposing a
+component library or visual design. `onError` still receives the structured
+error for telemetry and recovery decisions.
