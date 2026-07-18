@@ -13,6 +13,7 @@ React presenters.
 import { Text } from "react-native";
 import { z } from "zod";
 import {
+  A2UIDynamicStringSchema,
   A2UIRenderer,
   defineA2UICatalog,
   type A2UIMessage,
@@ -22,7 +23,7 @@ const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
   components: {
     Text: {
-      schema: z.object({ text: z.string() }),
+      schema: z.object({ text: A2UIDynamicStringSchema }),
       presenter: ({ props }) => <Text>{props.text}</Text>,
     },
   },
@@ -35,6 +36,11 @@ export function AgentUI({ messages }: { messages: A2UIMessage[] }) {
 
 `A2UIRenderer` owns one engine, incrementally applies appended messages, and
 renders every active surface. Catalogs must remain stable while it is mounted.
+
+Use ordinary Zod fields for static properties. Use the exported
+`A2UIDynamic*Schema` primitives for properties that may bind to the A2UI data
+model. Presenters receive resolved values; bound properties also receive typed
+setters such as `setValue` for native input controls.
 
 ## Advanced API
 

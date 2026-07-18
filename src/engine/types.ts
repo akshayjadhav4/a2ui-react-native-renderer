@@ -33,6 +33,7 @@ export interface A2UISurfaceSnapshot {
   readonly catalogId: string;
   readonly rootId: string | null;
   readonly components: Readonly<Record<string, A2UIComponentSnapshot>>;
+  readonly dataModel: unknown;
   readonly revision: number;
 }
 

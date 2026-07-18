@@ -72,6 +72,15 @@ export class A2UIV09Adapter {
     return this.processor.model.getSurface(surfaceId);
   }
 
+  setDataValue(surfaceId: string, path: string, value: unknown): void {
+    const surface = this.getSurface(surfaceId);
+    if (surface === undefined) {
+      throw new TypeError(`A2UI surface "${surfaceId}" does not exist`);
+    }
+
+    surface.dataModel.set(path, value);
+  }
+
   subscribeActions(
     listener: (action: A2uiClientAction) => void | Promise<void>,
   ): Subscription {

@@ -14,6 +14,8 @@ import type {
   A2UISurfaceSnapshot,
 } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
+import { readDataPointer } from "../protocol/v0_9/bindings.js";
+import { resolvePresenterProps } from "../protocol/v0_9/resolveProps.js";
 
 export interface A2UIComponentNodeProps {
   readonly engine: A2UIEngine;
@@ -44,8 +46,12 @@ export function A2UIComponentNode({
         internals.getCatalog(surface.catalogId),
         surface,
         componentId,
+        scopePath,
+        (path, value) => {
+          internals.setDataValue(surface.surfaceId, path, value);
+        },
       ),
-    [componentId, internals, surface],
+    [componentId, internals, scopePath, surface],
   );
 
   useEffect(() => {
@@ -81,7 +87,10 @@ export function A2UIComponentNode({
     props: resolution.value.props,
     surfaceId: surface.surfaceId,
     componentId,
-    scope: { path: scopePath, value: undefined },
+    scope: {
+      path: scopePath,
+      value: readDataPointer(surface.dataModel, scopePath),
+    },
     renderChild,
     dispatch,
   });
@@ -91,6 +100,8 @@ function resolvePresenter(
   catalog: A2UIRegisteredCatalog | undefined,
   surface: A2UISurfaceSnapshot,
   componentId: string,
+  scopePath: string,
+  setData: (path: string, value: unknown) => void,
 ): PresenterResolution {
   if (catalog === undefined) {
     return failure({
@@ -151,13 +162,33 @@ function resolvePresenter(
     });
   }
 
-  return {
-    success: true,
-    value: {
-      presenter: definition.presenter as A2UIPresenter<Record<string, unknown>>,
-      props: parsed.data,
-    },
-  };
+  try {
+    return {
+      success: true,
+      value: {
+        presenter: definition.presenter as A2UIPresenter<
+          Record<string, unknown>
+        >,
+        props: resolvePresenterProps(
+          definition.schema,
+          parsed.data,
+          surface.dataModel,
+          scopePath,
+          setData,
+        ),
+      },
+    };
+  } catch (cause) {
+    return failure({
+      code: "BINDING_ERROR",
+      message: `A2UI component "${componentId}" has an invalid binding`,
+      severity: "error",
+      surfaceId: surface.surfaceId,
+      catalogId: surface.catalogId,
+      componentId,
+      cause,
+    });
+  }
 }
 
 function failure(error: A2UIRendererError): PresenterResolution {

@@ -16,18 +16,18 @@ control.
 
 ## The Short Version
 
-| Term | Meaning | Usually created by |
-| --- | --- | --- |
-| A2UI message | A protocol command that creates or updates UI | Agent/server |
-| Catalog | The components an application permits | Application developer |
-| Schema | The allowed properties for one catalog component | Application developer |
-| Presenter | The React Native component that draws it | Application developer |
-| Surface | One independently updateable A2UI document | Agent/server |
-| Engine | Stateful runtime that processes messages and owns surfaces | Package or advanced consumer |
-| `A2UIRenderer` | Simple all-in-one React component | Application |
-| `A2UIProvider` | Makes an existing engine available to descendants | Advanced application |
-| `A2UISurface` | Renders and subscribes to one surface | Advanced application |
-| User action | Typed event emitted by native UI | Renderer/package |
+| Term           | Meaning                                                    | Usually created by           |
+| -------------- | ---------------------------------------------------------- | ---------------------------- |
+| A2UI message   | A protocol command that creates or updates UI              | Agent/server                 |
+| Catalog        | The components an application permits                      | Application developer        |
+| Schema         | The allowed properties for one catalog component           | Application developer        |
+| Presenter      | The React Native component that draws it                   | Application developer        |
+| Surface        | One independently updateable A2UI document                 | Agent/server                 |
+| Engine         | Stateful runtime that processes messages and owns surfaces | Package or advanced consumer |
+| `A2UIRenderer` | Simple all-in-one React component                          | Application                  |
+| `A2UIProvider` | Makes an existing engine available to descendants          | Advanced application         |
+| `A2UISurface`  | Renders and subscribes to one surface                      | Advanced application         |
+| User action    | Typed event emitted by native UI                           | Renderer/package             |
 
 ## A2UI Message
 
@@ -165,6 +165,32 @@ The renderer resolves A2UI data bindings before invoking a presenter. The
 presenter should receive ordinary resolved values rather than parse JSON
 pointers itself.
 
+Catalog schemas describe the wire contract. Static fields use ordinary Zod
+schemas. Fields that allow A2UI data bindings use the package's protocol
+schemas:
+
+```tsx
+const TextFieldComponent = defineA2UIComponent({
+  schema: z.object({
+    label: A2UIDynamicStringSchema,
+    value: A2UIDynamicStringSchema,
+  }),
+  presenter: ({ props }) => (
+    <TextInput
+      accessibilityLabel={props.label}
+      value={props.value}
+      onChangeText={props.setValue}
+    />
+  ),
+});
+```
+
+An incoming `{ path: "/form/name" }` is validated by the dynamic schema, read
+from that surface's data model, and delivered as a string. The generated
+`setValue` writes through the same binding. Relative paths are resolved against
+the presenter's `scope.path`, which lets one template component render and edit
+each item in a structural list without losing pointer context.
+
 ## `defineA2UIComponent`
 
 `defineA2UIComponent` pairs a schema with its presenter while preserving
@@ -173,7 +199,7 @@ TypeScript inference.
 ```tsx
 const TextComponent = defineA2UIComponent({
   schema: z.object({
-    text: z.string(),
+    text: A2UIDynamicStringSchema,
     variant: z.enum(["body", "heading"]).optional(),
   }),
   presenter: TextPresenter,
@@ -464,7 +490,7 @@ engine.applyMessages(messages);
 
 <A2UIProvider engine={engine}>
   <A2UISurface surfaceId="main" />
-</A2UIProvider>
+</A2UIProvider>;
 ```
 
 Choose this when:

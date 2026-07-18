@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  A2UIDynamicStringSchema,
   defineA2UICatalog,
   defineA2UIComponent,
   defineA2UIFunction,
@@ -73,6 +74,19 @@ const rendererError: A2UIRendererError = {
 };
 
 void rendererError;
+
+defineA2UIComponent({
+  schema: z.object({ value: A2UIDynamicStringSchema }),
+  presenter: ({ props }) => {
+    props.value?.toUpperCase();
+    props.setValue("updated");
+
+    // @ts-expect-error Bound string setters only accept strings.
+    props.setValue(42);
+
+    return null;
+  },
+});
 
 defineA2UIFunction({
   name: "badFormatCount",

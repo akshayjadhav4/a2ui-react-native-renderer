@@ -5,6 +5,7 @@ import {
   A2UIV09Adapter,
   type ParsedA2UIMessage,
 } from "../protocol/v0_9/adapter.js";
+import { updateDataPointer } from "../protocol/v0_9/bindings.js";
 import type {
   A2UIComponentSnapshot,
   A2UIEngine,
@@ -27,6 +28,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     options.catalogs.map((catalog) => [catalog.id, catalog]),
   );
   const surfaces = new Map<string, A2UISurfaceSnapshot>();
+  const dataModels = new Map<string, unknown>();
   const surfaceRevisions = new Map<string, number>();
   const listeners = new Set<() => void>();
   const surfaceListeners = new Map<string, Set<() => void>>();
@@ -91,12 +93,15 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       }
 
       try {
+        const stagedDataModel = stageDataModelUpdate(parsed.value, dataModels);
         adapter.processMessage(parsed.value.message);
+        commitDataModelUpdate(parsed.value, stagedDataModel, dataModels);
         updateSurfaceSnapshot(
           adapter,
           parsed.value,
           surfaces,
           surfaceRevisions,
+          dataModels,
         );
         affectedSurfaceIds.add(parsed.value.surfaceId);
         changed = true;
@@ -169,6 +174,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       actionSubscription.unsubscribe();
       adapter.dispose();
       surfaces.clear();
+      dataModels.clear();
       surfaceRevisions.clear();
       listeners.clear();
       surfaceListeners.clear();
@@ -184,6 +190,51 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
             frozenError.surfaceId === undefined ? [] : [frozenError.surfaceId],
           ),
         );
+      },
+      setDataValue(surfaceId, path, value): void {
+        const surface = surfaces.get(surfaceId);
+        if (surface === undefined) {
+          this.reportError({
+            code: "INVALID_MESSAGE",
+            message: `Cannot update data for missing surface "${surfaceId}"`,
+            severity: "error",
+            surfaceId,
+            path,
+          });
+          return;
+        }
+
+        try {
+          const frozenValue = freezeDataSnapshot(value);
+          const nextDataModel = updateDataPointer(
+            dataModels.get(surfaceId) ?? EMPTY_DATA_MODEL,
+            path,
+            frozenValue,
+          );
+          adapter.setDataValue(surfaceId, path, value);
+          dataModels.set(surfaceId, nextDataModel);
+
+          const revision = (surfaceRevisions.get(surfaceId) ?? 0) + 1;
+          surfaceRevisions.set(surfaceId, revision);
+          surfaces.set(
+            surfaceId,
+            Object.freeze({
+              ...surface,
+              dataModel: nextDataModel,
+              revision,
+            }),
+          );
+          publish(new Set([surfaceId]));
+        } catch (cause) {
+          this.reportError({
+            code: "INVALID_MESSAGE",
+            message: `Failed to update A2UI data path "${path}"`,
+            severity: "error",
+            surfaceId,
+            path,
+            cause,
+          });
+        }
       },
       dispatchAction(surfaceId, componentId, action): void {
         const surface = adapter.getSurface(surfaceId);
@@ -222,6 +273,7 @@ function updateSurfaceSnapshot(
   parsed: ParsedA2UIMessage,
   surfaces: Map<string, A2UISurfaceSnapshot>,
   surfaceRevisions: Map<string, number>,
+  dataModels: ReadonlyMap<string, unknown>,
 ): void {
   if (parsed.operation === "deleteSurface") {
     surfaces.delete(parsed.surfaceId);
@@ -250,9 +302,70 @@ function updateSurfaceSnapshot(
       catalogId: surface.catalog.id,
       rootId: surface.componentsModel.get("root") === undefined ? null : "root",
       components,
+      dataModel: dataModels.get(parsed.surfaceId) ?? EMPTY_DATA_MODEL,
       revision,
     }),
   );
+}
+
+const EMPTY_DATA_MODEL = Object.freeze({});
+
+function stageDataModelUpdate(
+  parsed: ParsedA2UIMessage,
+  dataModels: ReadonlyMap<string, unknown>,
+): unknown {
+  if (parsed.operation !== "updateDataModel") {
+    return undefined;
+  }
+
+  const message = parsed.message;
+  if (!("updateDataModel" in message)) {
+    return undefined;
+  }
+
+  const current = dataModels.get(parsed.surfaceId) ?? EMPTY_DATA_MODEL;
+  const path = message.updateDataModel.path ?? "/";
+  const value = freezeDataSnapshot(message.updateDataModel.value);
+  return updateDataPointer(current, path, value);
+}
+
+function commitDataModelUpdate(
+  parsed: ParsedA2UIMessage,
+  stagedDataModel: unknown,
+  dataModels: Map<string, unknown>,
+): void {
+  if (parsed.operation === "createSurface") {
+    dataModels.set(parsed.surfaceId, EMPTY_DATA_MODEL);
+    return;
+  }
+
+  if (parsed.operation === "updateDataModel") {
+    dataModels.set(parsed.surfaceId, stagedDataModel);
+    return;
+  }
+
+  if (parsed.operation === "deleteSurface") {
+    dataModels.delete(parsed.surfaceId);
+  }
+}
+
+function freezeDataSnapshot(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return Object.freeze(value.map(freezeDataSnapshot));
+  }
+
+  if (isRecord(value)) {
+    return Object.freeze(
+      Object.fromEntries(
+        Object.entries(value).map(([key, nestedValue]) => [
+          key,
+          freezeDataSnapshot(nestedValue),
+        ]),
+      ),
+    );
+  }
+
+  return value;
 }
 
 function createComponentSnapshot(model: ComponentModel): A2UIComponentSnapshot {

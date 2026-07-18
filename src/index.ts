@@ -10,6 +10,15 @@ export {
   useA2UISurface,
   useA2UISurfaceIds,
 } from "./react/hooks.js";
+export {
+  A2UIChildListSchema,
+  A2UIDataBindingSchema,
+  A2UIDynamicBooleanSchema,
+  A2UIDynamicNumberSchema,
+  A2UIDynamicStringListSchema,
+  A2UIDynamicStringSchema,
+  A2UIDynamicValueSchema,
+} from "./protocol/v0_9/schemas.js";
 
 export type {
   A2UIBindingScope,
@@ -25,7 +34,19 @@ export type {
   A2UIFunctionReturnMap,
   A2UIPresenter,
   A2UIPresenterProps,
+  A2UIResolvedChild,
+  A2UIResolvedProps,
 } from "./catalog/types.js";
+export type {
+  A2UIChildList,
+  A2UIDataBindingValue,
+  A2UIDynamicBoolean,
+  A2UIDynamicNumber,
+  A2UIDynamicString,
+  A2UIDynamicStringList,
+  A2UIDynamicValue,
+  A2UIFunctionCallValue,
+} from "./protocol/v0_9/schemas.js";
 export type {
   A2UIRendererError,
   A2UIRendererErrorCode,

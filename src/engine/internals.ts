@@ -7,6 +7,7 @@ export const A2UI_ENGINE_INTERNALS = Symbol("A2UI_ENGINE_INTERNALS");
 export interface A2UIEngineInternals {
   getCatalog(catalogId: string): A2UIRegisteredCatalog | undefined;
   reportError(error: A2UIRendererError): void;
+  setDataValue(surfaceId: string, path: string, value: unknown): void;
   dispatchAction(
     surfaceId: string,
     componentId: string,

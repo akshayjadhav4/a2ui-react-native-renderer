@@ -1,10 +1,39 @@
 import type { ReactNode } from "react";
 import type { z } from "zod";
 
+import type {
+  A2UIChildList,
+  A2UIDataBindingValue,
+  A2UIFunctionCallValue,
+} from "../protocol/v0_9/schemas.js";
+
 export interface A2UIBindingScope {
   readonly path: string;
   readonly value: unknown;
 }
+
+export interface A2UIResolvedChild {
+  readonly id: string;
+  readonly basePath: string;
+}
+
+type A2UIDynamicWireValue = A2UIDataBindingValue | A2UIFunctionCallValue;
+
+type A2UIResolvedProp<Value> = [NonNullable<Value>] extends [A2UIChildList]
+  ? readonly A2UIResolvedChild[] | Extract<Value, undefined>
+  : Exclude<Value, A2UIDynamicWireValue>;
+
+type A2UIBindingSetters<Props extends object> = {
+  readonly [
+    Key in keyof Props as A2UIDataBindingValue extends NonNullable<Props[Key]>
+      ? `set${Capitalize<string & Key>}`
+      : never
+  ]: (value: Exclude<NonNullable<Props[Key]>, A2UIDynamicWireValue>) => void;
+};
+
+export type A2UIResolvedProps<Props extends object> = {
+  readonly [Key in keyof Props]: A2UIResolvedProp<Props[Key]>;
+} & A2UIBindingSetters<Props>;
 
 export type A2UIChildRenderer = (
   componentId: string,
@@ -30,7 +59,7 @@ export interface A2UIComponentDefinition<
   Schema extends z.AnyZodObject = z.AnyZodObject,
 > {
   readonly schema: Schema;
-  readonly presenter: A2UIPresenter<z.output<Schema>>;
+  readonly presenter: A2UIPresenter<A2UIResolvedProps<z.output<Schema>>>;
   readonly description?: string;
 }
 

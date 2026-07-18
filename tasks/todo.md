@@ -91,7 +91,7 @@ before the next task begins.
 - [x] Simple and advanced README-level examples compile and render.
 - [x] Build, lint, typecheck, and focused tests pass.
 - [x] Human verifies the package API remains smaller than the current app
-  package.
+      package.
 
 ## Phase 3: Complete Protocol Runtime
 
@@ -110,7 +110,7 @@ before the next task begins.
     integration tests verify deletion output, presenter switching, and that an
     update does not rerender unrelated surfaces in either public API.
 
-- [ ] **Task 7: Add data models and bindings**
+- [x] **Task 7: Add data models and bindings**
   - Acceptance: Literal, absolute, relative, escaped, array, update, and delete
     binding scenarios resolve correctly.
   - Acceptance: Template scope preserves both value and JSON pointer context.
@@ -120,6 +120,11 @@ before the next task begins.
     `test/unit/bindings.test.ts`, `test/integration/bound-presenter.test.tsx`
   - Dependencies: Task 6
   - Scope: Medium
+  - Evidence: Nine unit tests cover RFC 6901 decoding, immutable object and
+    array updates, deletion, root replacement, structural child paths, and
+    per-surface model lifecycle. Four React integration tests cover absolute,
+    escaped, updated, deleted, relative template, scope-value, and two-way
+    binding behavior. Public type tests verify generated bound-value setters.
 
 - [ ] **Task 8: Add user action dispatch**
   - Acceptance: Presenter dispatch produces one official action with context
