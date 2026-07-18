@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { A2UIFunctionDefinition } from "../catalog/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
 import type { A2UIUserAction } from "../types/messages.js";
+import type { A2UIResourceLimits } from "../validation/limits.js";
 
 export interface A2UIRegisteredComponent {
   readonly schema: z.AnyZodObject;
@@ -20,6 +21,7 @@ export interface A2UIEngineOptions {
   readonly catalogs: readonly A2UIRegisteredCatalog[];
   readonly onAction?: (action: A2UIUserAction) => void | Promise<void>;
   readonly onError?: (error: A2UIRendererError) => void;
+  readonly limits?: Partial<A2UIResourceLimits>;
 }
 
 export interface A2UIComponentSnapshot {

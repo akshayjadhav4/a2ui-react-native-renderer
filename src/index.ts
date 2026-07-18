@@ -62,6 +62,10 @@ export type {
   A2UISurfaceSnapshot,
 } from "./engine/types.js";
 export type { A2UIMessage, A2UIUserAction } from "./types/messages.js";
+export {
+  DEFAULT_A2UI_RESOURCE_LIMITS,
+  type A2UIResourceLimits,
+} from "./validation/limits.js";
 export type { A2UIProviderProps } from "./react/A2UIProvider.js";
 export type { A2UIRendererProps } from "./react/A2UIRenderer.js";
 export type { A2UISurfaceProps } from "./react/A2UISurface.js";

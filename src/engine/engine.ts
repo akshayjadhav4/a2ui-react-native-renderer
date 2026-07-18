@@ -20,11 +20,16 @@ import {
   A2UI_ENGINE_INTERNALS,
   type A2UIEngineWithInternals,
 } from "./internals.js";
+import {
+  measureSerializedBytes,
+  resolveA2UIResourceLimits,
+} from "../validation/limits.js";
 
 const EMPTY_ERRORS: readonly A2UIRendererError[] = Object.freeze([]);
 
 export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
   validateCatalogs(options.catalogs);
+  const limits = resolveA2UIResourceLimits(options.limits);
 
   const adapter = new A2UIV09Adapter(options.catalogs);
   const catalogs = new Map(
@@ -84,6 +89,17 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     const affectedSurfaceIds = new Set<string>();
     let changed = false;
 
+    if (messages.length > limits.maxMessagesPerBatch) {
+      appendError({
+        code: "RESOURCE_LIMIT_EXCEEDED",
+        message: `A2UI message batch exceeds the ${String(limits.maxMessagesPerBatch)} message limit`,
+        severity: "error",
+        path: "/",
+      });
+      publish(affectedSurfaceIds);
+      return;
+    }
+
     for (const input of messages) {
       const parsed = adapter.parseMessage(input);
       if (!parsed.success) {
@@ -97,6 +113,23 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
 
       try {
         const stagedDataModel = stageDataModelUpdate(parsed.value, dataModels);
+        if (
+          parsed.value.operation === "updateDataModel" &&
+          measureSerializedBytes(stagedDataModel) > limits.maxDataModelBytes
+        ) {
+          reportBatchError(
+            {
+              code: "RESOURCE_LIMIT_EXCEEDED",
+              message: `A2UI data model exceeds the ${String(limits.maxDataModelBytes)} byte limit`,
+              severity: "error",
+              surfaceId: parsed.value.surfaceId,
+              path: "/updateDataModel/value",
+            },
+            affectedSurfaceIds,
+          );
+          changed = true;
+          continue;
+        }
         adapter.processMessage(parsed.value.message);
         commitDataModelUpdate(parsed.value, stagedDataModel, dataModels);
         updateSurfaceSnapshot(
@@ -213,6 +246,18 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
             path,
             frozenValue,
           );
+          if (
+            measureSerializedBytes(nextDataModel) > limits.maxDataModelBytes
+          ) {
+            this.reportError({
+              code: "RESOURCE_LIMIT_EXCEEDED",
+              message: `A2UI data model exceeds the ${String(limits.maxDataModelBytes)} byte limit`,
+              severity: "error",
+              surfaceId,
+              path,
+            });
+            return;
+          }
           adapter.setDataValue(surfaceId, path, value);
           dataModels.set(surfaceId, nextDataModel);
 
