@@ -3,10 +3,7 @@ import test from "node:test";
 
 import { z } from "zod";
 
-import {
-  createA2UIEngine,
-  defineA2UICatalog,
-} from "../../lib/module/index.js";
+import { createA2UIEngine, defineA2UICatalog } from "../../lib/module/index.js";
 
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
@@ -59,9 +56,7 @@ test("creates and updates multiple surfaces independently", () => {
     version: "v0.9",
     updateComponents: {
       surfaceId: "first",
-      components: [
-        { id: "root", component: "Text", text: "First updated" },
-      ],
+      components: [{ id: "root", component: "Text", text: "First updated" }],
     },
   });
 

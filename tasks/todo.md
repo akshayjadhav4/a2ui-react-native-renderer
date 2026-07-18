@@ -90,12 +90,12 @@ before the next task begins.
 
 - [x] Simple and advanced README-level examples compile and render.
 - [x] Build, lint, typecheck, and focused tests pass.
-- [ ] Human verifies the package API remains smaller than the current app
+- [x] Human verifies the package API remains smaller than the current app
   package.
 
 ## Phase 3: Complete Protocol Runtime
 
-- [ ] **Task 6: Complete surface lifecycle**
+- [x] **Task 6: Complete surface lifecycle**
   - Acceptance: Multiple surfaces independently create, update, change roots,
     and delete.
   - Acceptance: Unrelated surface subscribers are not notified.
@@ -105,6 +105,10 @@ before the next task begins.
     `test/integration/surface-subscriptions.test.tsx`
   - Dependencies: Task 5
   - Scope: Medium
+  - Evidence: Five unit tests verify independent creation, incremental
+    replacement, root type replacement, deletion, and recreation. Three React
+    integration tests verify deletion output, presenter switching, and that an
+    update does not rerender unrelated surfaces in either public API.
 
 - [ ] **Task 7: Add data models and bindings**
   - Acceptance: Literal, absolute, relative, escaped, array, update, and delete
