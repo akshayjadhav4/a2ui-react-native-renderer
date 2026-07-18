@@ -293,35 +293,39 @@ before the next task begins.
     test requires every root export to appear in `docs/api.md`.
 - [ ] Human reviews package contents and onboarding flow.
 
-## Phase 6: Automation And Publication
+## Phase 6: Release Preparation And Publication
 
-- [ ] **Task 16: Add CI quality gates**
-  - Acceptance: Clean-checkout CI runs install, build, typecheck, lint, tests,
-    coverage, pack inspection, and consumer smoke checks.
-  - Acceptance: Pull requests cannot invoke publication.
-  - Verify: Run workflow on a pull request and inspect every required job.
-  - Likely files: `.github/workflows/ci.yml`, `package.json`,
-    `scripts/consumer-smoke.mjs`
-  - Dependencies: Task 15
-  - Scope: Medium
+- [x] **Task 16: Defer hosted CI and release automation**
+  - Decision: This is currently a single-maintainer reference package. Hosted
+    CI, trusted publishing, and provenance are deferred until repository usage
+    or outside contributions justify them.
+  - Acceptance: No workflow or npm credential is added, and the complete local
+    `release:check` remains the mandatory quality gate.
+  - Evidence: The maintainer explicitly approved deferral on 2026-07-18. The
+    repository contains no publish workflow or long-lived npm token.
 
 - [ ] **Task 17: Prepare and approve npm publication**
-  - Acceptance: Repository metadata, changelog, release policy, trusted publish
-    workflow, provenance, and package visibility are correct.
+  - Acceptance: Repository metadata, changelog, manual release policy, npm 2FA
+    requirements, and package visibility are correct.
   - Acceptance: Version `0.1.0` publishes only after an explicit human approval.
   - Verify: `pnpm release:check`, manually inspect tarball, then verify
     `npm view a2ui-react-native-renderer` after approved publication.
-  - Likely files: `package.json`, `CHANGELOG.md`,
-    `.github/workflows/publish.yml`, `.npmrc`
-  - Dependencies: Task 16 and GitHub owner input
+  - Likely files: `package.json`, `CHANGELOG.md`, `RELEASING.md`
+  - Dependencies: Task 15 and GitHub owner input
   - Scope: Medium
 
 ### Checkpoint 6: Release
 
 - [ ] All success criteria in `tasks/spec.md` pass.
-- [ ] npm provenance and repository links are visible.
+- [ ] npm displays the correct public repository metadata.
+- [x] npm provenance is explicitly deferred with hosted release automation.
+- [ ] Manual publication is protected by npm 2FA.
 - [ ] Registry installation works in a clean consumer application.
 
 ## Deferred Input
 
 - [ ] Record the GitHub owner and final public repository URL before Task 17.
+- [x] Recheck the npm package name immediately before release preparation.
+  - Evidence: `pnpm view a2ui-react-native-renderer version --json` returned
+    registry `E404` on 2026-07-18, so no published package currently uses the
+    name. Availability is not reserved and must be checked again before publish.

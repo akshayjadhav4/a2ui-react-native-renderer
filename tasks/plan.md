@@ -105,7 +105,7 @@ Package scaffold and build outputs
                             -> performance hardening
                                 -> consumer example
                                     -> packed-tarball smoke tests
-                                        -> docs and CI
+                                        -> docs and release gates
                                             -> npm release preparation
 ```
 
@@ -373,25 +373,26 @@ Verification:
 - Packed-tarball consumer checks pass for Expo and bare React Native.
 - Documentation matches actual exports.
 
-### Phase 6: Automation And Publication
+### Phase 6: Release Preparation And Publication
 
-#### Task 16: Add CI Quality Gates
+#### Task 16: Defer Hosted CI And Release Automation
 
-Add GitHub Actions for install, build, typecheck, lint, tests, coverage, package
-inspection, and consumer smoke checks across supported Node versions.
+Keep the existing local release gate as the required quality boundary while the
+package has one maintainer. Do not add a hosted workflow, npm token, trusted
+publisher, or provenance claim until repository usage justifies automation.
 
 Verification:
 
-- CI runs from a clean checkout;
-- dependency cache cannot hide missing package files;
-- pull requests cannot bypass required quality jobs;
-- no publish credentials are used by CI.
+- `pnpm release:check` remains complete and documented;
+- no workflow can publish the package;
+- no npm credential is stored in the repository;
+- deferred trusted publishing and provenance are stated explicitly.
 
-#### Task 17: Prepare Trusted Npm Publishing
+#### Task 17: Prepare Manual Npm Publishing
 
-Add repository metadata, changelog/release policy, protected publish workflow,
-npm provenance configuration, and final package visibility. This task waits for
-the GitHub owner and repository URL.
+Add repository metadata, changelog/release policy, npm 2FA requirements, manual
+inspection steps, and final package visibility. This task waits for the GitHub
+owner, repository URL, npm account readiness, and explicit publish approval.
 
 Verification:
 
@@ -399,15 +400,14 @@ Verification:
   first publish;
 - `pnpm release:check` passes from a clean tree;
 - tarball is manually reviewed;
-- publish workflow uses npm trusted publishing without a long-lived write
-  token;
+- the maintainer publishes interactively with npm 2FA and no repository token;
 - version `0.1.0` is published only after explicit human approval.
 
 ### Checkpoint 6: Release
 
 - All specification success criteria pass.
 - Git tag, changelog, npm version, and GitHub release agree.
-- npm displays provenance and the correct public repository.
+- npm displays the correct public repository; provenance is deferred.
 - Installation instructions work against the registry package.
 
 ## Per-Task Execution Rules
@@ -443,23 +443,23 @@ Must remain sequential:
 - bindings before actions;
 - validation before production fallback behavior;
 - package outputs before tarball consumer tests;
-- repository metadata before trusted publishing.
+- repository metadata before manual publication.
 
 ## Risks And Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| `@a2ui/web_core` contains browser assumptions | High | Prove the smallest RN render path in Tasks 3-4 before broader extraction; wrap it behind a version adapter. |
-| Zod instances differ between package boundaries | High | Use a documented Zod v3 peer range and test installation from a packed tarball. |
-| Public types leak core internals | High | Add declaration/type fixtures at Task 2 and review generated declarations at every checkpoint. |
-| Invalid incremental UI clears valid content | High | Validate and commit per surface transactionally; keep the previous valid revision. |
-| Simple renderer reapplies messages on every render | Medium | Track applied batches and test rerender/application counts. |
-| React 18 and 19 behave differently | Medium | Use `useSyncExternalStore`, avoid deprecated render APIs in public code, and test supported peer configurations. |
-| Metro resolves workspace source but not npm output | High | Make tarball installation the required consumer test, not workspace linking. |
-| No bundled catalog makes demos unclear | Medium | Keep all presenters in the example app and document that ownership prominently. |
-| Development-only behavior leaks into production | Medium | Test both development diagnostics and production fallback paths explicitly. |
-| Package name is claimed before release | Medium | Recheck npm immediately before publication; prepare an approved fallback name only if needed. |
-| Scope grows into an AI/chat SDK | High | Enforce dependency and import boundary checks in CI. |
+| Risk                                               | Impact | Mitigation                                                                                                       |
+| -------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| `@a2ui/web_core` contains browser assumptions      | High   | Prove the smallest RN render path in Tasks 3-4 before broader extraction; wrap it behind a version adapter.      |
+| Zod instances differ between package boundaries    | High   | Use a documented Zod v3 peer range and test installation from a packed tarball.                                  |
+| Public types leak core internals                   | High   | Add declaration/type fixtures at Task 2 and review generated declarations at every checkpoint.                   |
+| Invalid incremental UI clears valid content        | High   | Validate and commit per surface transactionally; keep the previous valid revision.                               |
+| Simple renderer reapplies messages on every render | Medium | Track applied batches and test rerender/application counts.                                                      |
+| React 18 and 19 behave differently                 | Medium | Use `useSyncExternalStore`, avoid deprecated render APIs in public code, and test supported peer configurations. |
+| Metro resolves workspace source but not npm output | High   | Make tarball installation the required consumer test, not workspace linking.                                     |
+| No bundled catalog makes demos unclear             | Medium | Keep all presenters in the example app and document that ownership prominently.                                  |
+| Development-only behavior leaks into production    | Medium | Test both development diagnostics and production fallback paths explicitly.                                      |
+| Package name is claimed before release             | Medium | Recheck npm immediately before publication; prepare an approved fallback name only if needed.                    |
+| Scope grows into an AI/chat SDK                    | High   | Enforce dependency and import boundary checks in the local release gate.                                         |
 
 ## Deferred Input
 

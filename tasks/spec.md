@@ -38,10 +38,7 @@ The package is a renderer and protocol runtime. It is not a chat SDK, agent SDK,
 ```tsx
 import { Text } from "react-native";
 import { z } from "zod";
-import {
-  A2UIRenderer,
-  defineA2UICatalog,
-} from "a2ui-react-native-renderer";
+import { A2UIRenderer, defineA2UICatalog } from "a2ui-react-native-renderer";
 
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
@@ -341,7 +338,8 @@ Future A2UI protocol versions must use an explicit versioned adapter or entry po
 - Node's built-in test runner for pure engine and catalog tests.
 - React Native Testing Library for renderer integration tests where a React Native host is required.
 - pnpm for local development and deterministic lockfiles.
-- GitHub Actions for CI and npm trusted publishing.
+- Local release scripts for build, test, package inspection, and consumer smoke
+  verification.
 
 The package contains no native source, Expo dependency, styling framework, network client, or state-management dependency.
 
@@ -384,7 +382,8 @@ pnpm example:export
 pnpm release:check
 ```
 
-Publishing is performed only by the protected GitHub release workflow using npm trusted publishing. It is not part of a normal local command.
+Publishing is an interactive maintainer operation protected by npm 2FA. It is
+never part of the ordinary build, test, or local development commands.
 
 ## Project Structure
 
@@ -417,14 +416,12 @@ a2ui-react-native-renderer/
     spec.md                  Approved product specification
     plan.md                  Approved implementation plan
     todo.md                  Incremental implementation tasks
-  .github/workflows/
-    ci.yml                   Build, test, lint, package smoke checks
-    publish.yml              Protected npm trusted publication
   package.json
   tsconfig.json
   LICENSE
   README.md
   CHANGELOG.md
+  RELEASING.md
   CONTRIBUTING.md
   SECURITY.md
 ```
@@ -502,7 +499,9 @@ Compile documented examples and verify:
 
 ### Consumer Smoke Tests
 
-CI creates the package tarball and installs it into the Expo example as a consumer would. The example must bundle for iOS and Android without monorepo aliases, source-relative imports, or unpublished files.
+The local release gate creates the package tarball and installs it into the Expo
+example as a consumer would. The example must bundle for iOS and Android without
+monorepo aliases, source-relative imports, or unpublished files.
 
 Before a release candidate, the tarball must also be installed in a clean bare React Native fixture and successfully bundled for both platforms.
 
@@ -510,7 +509,7 @@ Before a release candidate, the tarball must also be installed in a clean bare R
 
 - Minimum 90% statements, lines, and functions for engine, validation, and catalog modules.
 - Minimum 85% branch coverage for those modules.
-- Coverage thresholds may not be lowered to make CI pass without approval.
+- Coverage thresholds may not be lowered to make the release gate pass without approval.
 
 ## Performance Requirements
 
@@ -535,8 +534,9 @@ Performance benchmarks are diagnostic in `0.x`; correctness gates remain mandato
 - Source maps resolve to repository source.
 - README documents installation, simple usage, streaming usage, catalog authoring, actions, errors, and limitations.
 - Every release has release notes and a changelog entry.
-- CI tests the oldest and newest supported Node versions and supported React Native peer ranges where practical.
-- Publishing uses a public GitHub repository, npm trusted publishing, and provenance attestations.
+- The complete local release gate is mandatory before publication; hosted CI is deferred while the package has one maintainer.
+- Publishing uses a public GitHub repository and an interactive npm account protected by 2FA.
+- Trusted publishing and provenance attestations are deferred until hosted release automation is intentionally adopted.
 - The first npm publication is manually approved after inspecting `npm pack --dry-run` output.
 
 The official React Native documentation recommends scaffolding reusable libraries with `create-react-native-library`; the implementation plan may use its JavaScript-library output or reproduce the relevant `react-native-builder-bob` setup without native module boilerplate.
@@ -592,13 +592,13 @@ The initial package is ready for npm `0.1.0` when all of the following are true:
 8. The package has no dependency on Expo, a styling system, chat state, AG-UI, an AI SDK, or network transport.
 9. No global mutable runtime state exists.
 10. Public API examples compile and are exercised by tests.
-11. Unit, integration, type, coverage, and tarball smoke gates pass in CI.
+11. Unit, integration, type, coverage, and tarball smoke gates pass through the documented local release gate.
 12. `npm pack --dry-run` contains only intended publishable files.
 13. README accurately states A2UI version support and does not claim Basic Catalog conformance.
 14. The public GitHub repository includes Apache-2.0 license, contribution, security, and release documentation.
-15. npm publication uses trusted publishing and provenance.
+15. npm publication is manually approved, protected by 2FA, and follows the documented inspected-tarball release procedure.
 
 ## Deferred Release Input
 
-- The GitHub repository owner is required before repository metadata and npm
-  trusted publishing are configured. It does not block package implementation.
+- The GitHub repository owner is required before repository metadata and manual
+  npm publication are finalized. It does not block package implementation.
