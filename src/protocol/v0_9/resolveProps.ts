@@ -1,13 +1,17 @@
 import { scrapeSchemaBehavior, type BehaviorNode } from "@a2ui/web_core/v0_9";
 import type { z } from "zod";
 
-import type { A2UIResolvedChild } from "../../catalog/types.js";
+import type {
+  A2UIFunctionDefinition,
+  A2UIResolvedChild,
+} from "../../catalog/types.js";
 import {
   isDataBinding,
   readDataPointer,
   resolveBindingPath,
   resolveStructuralChildren,
 } from "./bindings.js";
+import { evaluateA2UIFunction } from "./functions.js";
 
 export type A2UIDataSetter = (path: string, value: unknown) => void;
 
@@ -17,6 +21,7 @@ export function resolvePresenterProps(
   dataModel: unknown,
   scopePath: string,
   setData: A2UIDataSetter,
+  functions: readonly A2UIFunctionDefinition[],
 ): Readonly<Record<string, unknown>> {
   const behavior = scrapeSchemaBehavior(schema);
   if (behavior.type !== "OBJECT") {
@@ -24,7 +29,7 @@ export function resolvePresenterProps(
   }
 
   return Object.freeze(
-    resolveObject(rawProps, behavior, dataModel, scopePath, setData),
+    resolveObject(rawProps, behavior, dataModel, scopePath, setData, functions),
   );
 }
 
@@ -34,10 +39,11 @@ function resolveValue(
   dataModel: unknown,
   scopePath: string,
   setData: A2UIDataSetter,
+  functions: readonly A2UIFunctionDefinition[],
 ): unknown {
   switch (behavior.type) {
     case "DYNAMIC":
-      return resolveDynamicValue(value, dataModel, scopePath);
+      return resolveDynamicValue(value, dataModel, scopePath, functions);
     case "STRUCTURAL":
       return resolveChildren(value, dataModel, scopePath);
     case "ARRAY":
@@ -50,6 +56,7 @@ function resolveValue(
                 dataModel,
                 scopePath,
                 setData,
+                functions,
               ),
             ),
           )
@@ -57,7 +64,14 @@ function resolveValue(
     case "OBJECT":
       return isRecord(value)
         ? Object.freeze(
-            resolveObject(value, behavior, dataModel, scopePath, setData),
+            resolveObject(
+              value,
+              behavior,
+              dataModel,
+              scopePath,
+              setData,
+              functions,
+            ),
           )
         : value;
     case "ACTION":
@@ -73,6 +87,7 @@ function resolveObject(
   dataModel: unknown,
   scopePath: string,
   setData: A2UIDataSetter,
+  functions: readonly A2UIFunctionDefinition[],
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -83,6 +98,7 @@ function resolveObject(
       dataModel,
       scopePath,
       setData,
+      functions,
     );
   }
 
@@ -107,6 +123,7 @@ function resolveDynamicValue(
   value: unknown,
   dataModel: unknown,
   scopePath: string,
+  functions: readonly A2UIFunctionDefinition[],
 ): unknown {
   if (isDataBinding(value)) {
     return readDataPointer(
@@ -116,9 +133,12 @@ function resolveDynamicValue(
   }
 
   if (isFunctionCall(value)) {
-    throw new TypeError(
-      `A2UI function "${value.call}" cannot be resolved before it is registered`,
-    );
+    return evaluateA2UIFunction({
+      call: value,
+      functions,
+      dataModel,
+      scopePath,
+    });
   }
 
   return value;

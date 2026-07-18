@@ -1,12 +1,13 @@
 import type { ComponentModel } from "@a2ui/web_core/v0_9";
 
 import type { A2UIRendererError } from "../errors/types.js";
-import { resolveA2UIUserAction } from "./actions.js";
+import { resolveA2UIAction } from "./actions.js";
 import {
   A2UIV09Adapter,
   type ParsedA2UIMessage,
 } from "../protocol/v0_9/adapter.js";
 import { updateDataPointer } from "../protocol/v0_9/bindings.js";
+import { isA2UIFunctionInvocationError } from "../protocol/v0_9/functions.js";
 import type { A2UIUserAction } from "../types/messages.js";
 import type {
   A2UIComponentSnapshot,
@@ -251,18 +252,25 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
         }
 
         try {
-          const userAction = resolveA2UIUserAction({
+          const catalog = catalogs.get(surface.catalogId);
+          const resolvedAction = resolveA2UIAction({
             surfaceId,
             sourceComponentId: componentId,
             scopePath,
             action,
             dataModel: surface.dataModel,
+            functions: catalog?.functions ?? [],
           });
-          void deliverAction(userAction);
+          if (resolvedAction.kind === "event") {
+            void deliverAction(resolvedAction.action);
+          }
         } catch (cause) {
+          const functionError = isA2UIFunctionInvocationError(cause);
           this.reportError({
-            code: "INVALID_MESSAGE",
-            message: "A2UI action dispatch failed",
+            code: functionError ? "FUNCTION_ERROR" : "INVALID_MESSAGE",
+            message: functionError
+              ? "A2UI action function evaluation failed"
+              : "A2UI action dispatch failed",
             severity: "error",
             surfaceId,
             componentId,

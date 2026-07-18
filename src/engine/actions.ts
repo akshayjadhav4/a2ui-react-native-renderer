@@ -1,11 +1,13 @@
 import { A2uiClientActionSchema, ActionSchema } from "@a2ui/web_core/v0_9";
 
+import type { A2UIFunctionDefinition } from "../catalog/types.js";
 import {
   isDataBinding,
   readDataPointer,
   resolveBindingPath,
 } from "../protocol/v0_9/bindings.js";
 import type { A2UIAction } from "../protocol/v0_9/schemas.js";
+import { evaluateA2UIFunction } from "../protocol/v0_9/functions.js";
 import type { A2UIUserAction } from "../types/messages.js";
 
 export interface ResolveA2UIUserActionInput {
@@ -14,41 +16,86 @@ export interface ResolveA2UIUserActionInput {
   readonly scopePath: string;
   readonly action: unknown;
   readonly dataModel: unknown;
+  readonly functions?: readonly A2UIFunctionDefinition[];
   readonly timestamp?: string;
 }
 
-export function resolveA2UIUserAction({
-  surfaceId,
-  sourceComponentId,
-  scopePath,
-  action,
-  dataModel,
-  timestamp = new Date().toISOString(),
-}: ResolveA2UIUserActionInput): A2UIUserAction {
-  const parsedAction = ActionSchema.safeParse(action);
+export type A2UIResolvedAction =
+  | { readonly kind: "event"; readonly action: A2UIUserAction }
+  | {
+      readonly kind: "function";
+      readonly functionName: string;
+      readonly result: unknown;
+    };
+
+export function resolveA2UIAction(
+  input: ResolveA2UIUserActionInput,
+): A2UIResolvedAction {
+  const parsedAction = ActionSchema.safeParse(input.action);
   if (!parsedAction.success) {
     throw new TypeError("Presenter dispatched an invalid A2UI action", {
       cause: parsedAction.error,
     });
   }
 
-  if (!("event" in parsedAction.data)) {
+  if ("functionCall" in parsedAction.data) {
+    return Object.freeze({
+      kind: "function",
+      functionName: parsedAction.data.functionCall.call,
+      result: evaluateA2UIFunction({
+        call: parsedAction.data.functionCall,
+        functions: input.functions ?? [],
+        dataModel: input.dataModel,
+        scopePath: input.scopePath,
+      }),
+    });
+  }
+
+  return Object.freeze({
+    kind: "event",
+    action: resolveParsedEventAction(input, parsedAction.data),
+  });
+}
+
+export function resolveA2UIUserAction(
+  input: ResolveA2UIUserActionInput,
+): A2UIUserAction {
+  const parsedAction = ActionSchema.safeParse(input.action);
+  if (!parsedAction.success) {
+    throw new TypeError("Presenter dispatched an invalid A2UI action", {
+      cause: parsedAction.error,
+    });
+  }
+
+  if ("functionCall" in parsedAction.data) {
     throw new TypeError(
       "Local A2UI function actions require a registered client function",
     );
   }
 
+  return resolveParsedEventAction(input, parsedAction.data);
+}
+
+function resolveParsedEventAction(
+  {
+    surfaceId,
+    sourceComponentId,
+    scopePath,
+    dataModel,
+    functions = [],
+    timestamp = new Date().toISOString(),
+  }: ResolveA2UIUserActionInput,
+  eventAction: A2UIEventAction,
+): A2UIUserAction {
   const context: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(
-    parsedAction.data.event.context ?? {},
-  )) {
+  for (const [key, value] of Object.entries(eventAction.event.context ?? {})) {
     context[key] = freezeActionValue(
-      resolveContextValue(value, dataModel, scopePath),
+      resolveContextValue(value, dataModel, scopePath, functions),
     );
   }
 
   const userAction: A2UIUserAction = {
-    name: parsedAction.data.event.name,
+    name: eventAction.event.name,
     surfaceId,
     sourceComponentId,
     timestamp,
@@ -68,6 +115,7 @@ function resolveContextValue(
   value: A2UIActionContextValue,
   dataModel: unknown,
   scopePath: string,
+  functions: readonly A2UIFunctionDefinition[],
 ): unknown {
   if (isDataBinding(value)) {
     return readDataPointer(
@@ -77,9 +125,12 @@ function resolveContextValue(
   }
 
   if (isFunctionCall(value)) {
-    throw new TypeError(
-      `A2UI function "${value.call}" cannot be resolved before it is registered`,
-    );
+    return evaluateA2UIFunction({
+      call: value,
+      functions,
+      dataModel,
+      scopePath,
+    });
   }
 
   return value;

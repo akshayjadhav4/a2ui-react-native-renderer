@@ -15,6 +15,7 @@ import type {
 } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
 import { readDataPointer } from "../protocol/v0_9/bindings.js";
+import { isA2UIFunctionInvocationError } from "../protocol/v0_9/functions.js";
 import { resolvePresenterProps } from "../protocol/v0_9/resolveProps.js";
 
 export interface A2UIComponentNodeProps {
@@ -180,13 +181,17 @@ function resolvePresenter(
           surface.dataModel,
           scopePath,
           setData,
+          catalog.functions,
         ),
       },
     };
   } catch (cause) {
+    const functionError = isA2UIFunctionInvocationError(cause);
     return failure({
-      code: "BINDING_ERROR",
-      message: `A2UI component "${componentId}" has an invalid binding`,
+      code: functionError ? "FUNCTION_ERROR" : "BINDING_ERROR",
+      message: functionError
+        ? `A2UI component "${componentId}" function evaluation failed`
+        : `A2UI component "${componentId}" has an invalid binding`,
       severity: "error",
       surfaceId: surface.surfaceId,
       catalogId: surface.catalogId,
