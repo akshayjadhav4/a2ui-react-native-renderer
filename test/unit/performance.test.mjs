@@ -3,10 +3,7 @@ import test from "node:test";
 
 import { z } from "zod";
 
-import {
-  createA2UIEngine,
-  defineA2UICatalog,
-} from "../../lib/module/index.js";
+import { createA2UIEngine, defineA2UICatalog } from "../../lib/module/index.js";
 
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:performance:v1",
@@ -58,13 +55,19 @@ test("changes failed-surface identity only when failure membership changes", () 
   engine.applyMessages(createSurfaceMessages("main", "Initial"));
   const healthy = engine.getSnapshot();
 
-  engine.applyMessage({ version: "v1.0", updateComponents: { surfaceId: "main" } });
+  engine.applyMessage({
+    version: "v1.0",
+    updateComponents: { surfaceId: "main" },
+  });
   const failed = engine.getSnapshot();
   assert.equal(failed.surfaceIds, healthy.surfaceIds);
   assert.notEqual(failed.failedSurfaceIds, healthy.failedSurfaceIds);
   assert.deepEqual(failed.failedSurfaceIds, ["main"]);
 
-  engine.applyMessage({ version: "v1.0", updateComponents: { surfaceId: "main" } });
+  engine.applyMessage({
+    version: "v1.0",
+    updateComponents: { surfaceId: "main" },
+  });
   const failedAgain = engine.getSnapshot();
   assert.equal(failedAgain.failedSurfaceIds, failed.failedSurfaceIds);
 

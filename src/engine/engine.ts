@@ -463,10 +463,7 @@ function createEngineSnapshot(
   return Object.freeze({
     revision,
     surfaceIds: stableMapKeys(surfaces, previous?.surfaceIds),
-    failedSurfaceIds: stableMapKeys(
-      surfaceErrors,
-      previous?.failedSurfaceIds,
-    ),
+    failedSurfaceIds: stableMapKeys(surfaceErrors, previous?.failedSurfaceIds),
     errorCount: errors.length,
   });
 }
