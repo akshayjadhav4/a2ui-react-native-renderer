@@ -44,3 +44,17 @@ export function useA2UISurfaceIds(): readonly string[] {
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
+
+export function useA2UIFailedSurfaceIds(): readonly string[] {
+  const engine = useA2UIEngine();
+  const subscribe = useCallback(
+    (listener: () => void) => engine.subscribe(listener),
+    [engine],
+  );
+  const getSnapshot = useCallback(
+    () => engine.getSnapshot().failedSurfaceIds,
+    [engine],
+  );
+
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}

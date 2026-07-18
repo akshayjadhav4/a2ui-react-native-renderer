@@ -7,6 +7,7 @@ export { A2UIRenderer } from "./react/A2UIRenderer.js";
 export { A2UISurface } from "./react/A2UISurface.js";
 export {
   useA2UIErrors,
+  useA2UIFailedSurfaceIds,
   useA2UISurface,
   useA2UISurfaceIds,
 } from "./react/hooks.js";
@@ -54,6 +55,11 @@ export type {
   A2UIRendererErrorCode,
   A2UIRendererErrorSeverity,
 } from "./errors/types.js";
+export type {
+  A2UIFallbackRenderer,
+  A2UIRecoveryConfig,
+} from "./errors/DevelopmentFallback.js";
+export type { A2UIDiagnosticsMode } from "./errors/diagnostics.js";
 export type {
   A2UIComponentSnapshot,
   A2UIEngine,

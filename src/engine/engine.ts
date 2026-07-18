@@ -39,14 +39,20 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
   const surfaces = new Map<string, A2UISurfaceSnapshot>();
   const dataModels = new Map<string, unknown>();
   const surfaceRevisions = new Map<string, number>();
+  const surfaceErrors = new Map<string, A2UIRendererError>();
   const listeners = new Set<() => void>();
   const surfaceListeners = new Map<string, Set<() => void>>();
   let errors = EMPTY_ERRORS;
-  let snapshot = createEngineSnapshot(0, surfaces, errors);
+  let snapshot = createEngineSnapshot(0, surfaces, surfaceErrors, errors);
   let disposed = false;
 
   const publish = (affectedSurfaceIds: ReadonlySet<string>): void => {
-    snapshot = createEngineSnapshot(snapshot.revision + 1, surfaces, errors);
+    snapshot = createEngineSnapshot(
+      snapshot.revision + 1,
+      surfaces,
+      surfaceErrors,
+      errors,
+    );
 
     for (const listener of listeners) {
       listener();
@@ -78,6 +84,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
   ): void => {
     const frozenError = appendError(error);
     if (frozenError.surfaceId !== undefined) {
+      surfaceErrors.set(frozenError.surfaceId, frozenError);
       affectedSurfaceIds.add(frozenError.surfaceId);
     }
   };
@@ -139,6 +146,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
           surfaceRevisions,
           dataModels,
         );
+        surfaceErrors.delete(parsed.surfaceId);
         affectedSurfaceIds.add(parsed.surfaceId);
         changed = true;
       } catch (cause) {
@@ -211,6 +219,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       surfaces.clear();
       dataModels.clear();
       surfaceRevisions.clear();
+      surfaceErrors.clear();
       listeners.clear();
       surfaceListeners.clear();
     },
@@ -218,8 +227,14 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       getCatalog(catalogId: string) {
         return catalogs.get(catalogId);
       },
+      getSurfaceError(surfaceId: string) {
+        return surfaceErrors.get(surfaceId);
+      },
       reportError(error: A2UIRendererError): void {
         const frozenError = appendError(error);
+        if (frozenError.surfaceId !== undefined) {
+          surfaceErrors.set(frozenError.surfaceId, frozenError);
+        }
         publish(
           new Set(
             frozenError.surfaceId === undefined ? [] : [frozenError.surfaceId],
@@ -440,11 +455,13 @@ function createComponentSnapshot(model: ComponentModel): A2UIComponentSnapshot {
 function createEngineSnapshot(
   revision: number,
   surfaces: ReadonlyMap<string, A2UISurfaceSnapshot>,
+  surfaceErrors: ReadonlyMap<string, A2UIRendererError>,
   errors: readonly A2UIRendererError[],
 ): A2UIEngineSnapshot {
   return Object.freeze({
     revision,
     surfaceIds: Object.freeze(Array.from(surfaces.keys())),
+    failedSurfaceIds: Object.freeze(Array.from(surfaceErrors.keys())),
     errorCount: errors.length,
   });
 }

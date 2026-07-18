@@ -14,6 +14,11 @@ import type {
   A2UISurfaceSnapshot,
 } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
+import { A2UIErrorBoundary } from "../errors/ErrorBoundary.js";
+import {
+  A2UIRecoveryFallback,
+  type A2UIRecoveryConfig,
+} from "../errors/DevelopmentFallback.js";
 import { readDataPointer } from "../protocol/v0_9/bindings.js";
 import { isA2UIFunctionInvocationError } from "../protocol/v0_9/functions.js";
 import { resolvePresenterProps } from "../protocol/v0_9/resolveProps.js";
@@ -23,6 +28,7 @@ export interface A2UIComponentNodeProps {
   readonly surface: A2UISurfaceSnapshot;
   readonly componentId: string;
   readonly scopePath: string;
+  readonly recovery: A2UIRecoveryConfig;
 }
 
 interface ResolvedPresenter {
@@ -39,6 +45,7 @@ export function A2UIComponentNode({
   surface,
   componentId,
   scopePath,
+  recovery,
 }: A2UIComponentNodeProps): ReactNode {
   const internals = getA2UIEngineInternals(engine);
   const resolution = useMemo(
@@ -69,8 +76,9 @@ export function A2UIComponentNode({
         surface,
         componentId: childId,
         scopePath: childScopePath,
+        recovery,
       }),
-    [engine, scopePath, surface],
+    [engine, recovery, scopePath, surface],
   );
 
   const dispatch = useCallback(
@@ -86,20 +94,52 @@ export function A2UIComponentNode({
   );
 
   if (!resolution.success) {
-    return null;
+    return createElement(A2UIRecoveryFallback, {
+      ...recovery,
+      error: resolution.error,
+    });
   }
 
-  return createElement(resolution.value.presenter, {
-    props: resolution.value.props,
-    surfaceId: surface.surfaceId,
-    componentId,
-    scope: {
-      path: scopePath,
-      value: readDataPointer(surface.dataModel, scopePath),
+  return createElement(
+    A2UIErrorBoundary,
+    {
+      resetKey: `${String(surface.revision)}:${scopePath}`,
+      createError: (cause) =>
+        createPresenterError(surface, componentId, cause),
+      reportError: (error) => {
+        internals.reportError(error);
+      },
+      renderFallback: (error) =>
+        createElement(A2UIRecoveryFallback, { ...recovery, error }),
     },
-    renderChild,
-    dispatch,
-  });
+    createElement(resolution.value.presenter, {
+      props: resolution.value.props,
+      surfaceId: surface.surfaceId,
+      componentId,
+      scope: {
+        path: scopePath,
+        value: readDataPointer(surface.dataModel, scopePath),
+      },
+      renderChild,
+      dispatch,
+    }),
+  );
+}
+
+function createPresenterError(
+  surface: A2UISurfaceSnapshot,
+  componentId: string,
+  cause: unknown,
+): A2UIRendererError {
+  return {
+    code: "PRESENTER_ERROR",
+    message: `A2UI component "${componentId}" presenter failed to render`,
+    severity: "error",
+    surfaceId: surface.surfaceId,
+    catalogId: surface.catalogId,
+    componentId,
+    cause,
+  };
 }
 
 function resolvePresenter(

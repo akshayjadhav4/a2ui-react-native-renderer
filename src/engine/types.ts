@@ -42,6 +42,7 @@ export interface A2UISurfaceSnapshot {
 export interface A2UIEngineSnapshot {
   readonly revision: number;
   readonly surfaceIds: readonly string[];
+  readonly failedSurfaceIds: readonly string[];
   readonly errorCount: number;
 }
 
