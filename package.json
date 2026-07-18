@@ -1,6 +1,6 @@
 {
   "name": "a2ui-react-native-renderer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A catalog-agnostic A2UI renderer and protocol runtime for React Native and Expo",
   "keywords": [
     "a2ui",

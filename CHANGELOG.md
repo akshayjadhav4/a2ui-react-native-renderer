@@ -5,6 +5,13 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-18
+
+### Fixed
+
+- Removed outdated pre-release wording from the README and documented the
+  supported `0.1.x` release line.
+
 ## [0.1.0] - 2026-07-18
 
 ### Added
