@@ -264,7 +264,7 @@ before the next task begins.
     installed package cannot resolve to workspace source, typechecks both, and
     produces iOS and Android bundles through Expo and bare Metro.
 
-- [ ] **Task 15: Complete documentation**
+- [x] **Task 15: Complete documentation**
   - Acceptance: Every public export and limitation is documented with compiling
     examples.
   - Acceptance: Concepts, architecture, streaming, catalog, error, migration,
@@ -274,11 +274,23 @@ before the next task begins.
     `docs/catalogs.md`, `docs/errors.md`
   - Dependencies: Task 14
   - Scope: Medium, split into separate documentation commits if needed
+  - Evidence: README onboarding and advanced-placement examples compile as
+    strict consumer type fixtures. Focused API, architecture, catalog,
+    streaming/action, diagnostics/security, migration, and contribution guides
+    document every package-root export and the v0.9/no-bundled-catalog boundary.
+    Documentation contract tests pass, the packed artifact includes all linked
+    guides, and the complete release check passes with 88 tests plus isolated
+    Expo and bare React Native iOS/Android bundles.
 
 ### Checkpoint 5: Package Candidate
 
-- [ ] Fresh consumer instructions work against the tarball.
-- [ ] Documentation and generated declarations agree.
+- [x] Fresh consumer instructions work against the tarball.
+  - Evidence: The inspected 126-file tarball installs into isolated Expo SDK 57
+    and bare React Native 0.86 consumers; strict typechecks and both platform
+    bundles pass.
+- [x] Documentation and generated declarations agree.
+  - Evidence: Type fixtures compile README and guide examples, and a contract
+    test requires every root export to appear in `docs/api.md`.
 - [ ] Human reviews package contents and onboarding flow.
 
 ## Phase 6: Automation And Publication

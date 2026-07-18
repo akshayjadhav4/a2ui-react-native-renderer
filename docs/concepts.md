@@ -1,8 +1,8 @@
 # Core Concepts
 
-This document explains the public concepts proposed for
+This document explains the implemented public concepts in
 `a2ui-react-native-renderer`, what each one owns, and when an application needs
-it.
+it. For exact signatures, see the [Public API](./api.md).
 
 The package has two levels of API:
 
@@ -638,3 +638,10 @@ Action = native interaction returned to the consumer
 
 The separation exists to keep the package simple for static rendering while
 remaining correct for incremental, long-lived A2UI applications.
+
+## Related Guides
+
+- [Architecture](./architecture.md)
+- [Catalogs](./catalogs.md)
+- [Streaming And Actions](./streaming-and-actions.md)
+- [Errors And Security](./errors-and-security.md)
