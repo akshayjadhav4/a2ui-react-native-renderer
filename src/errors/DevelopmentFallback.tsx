@@ -28,7 +28,7 @@ export function A2UIRecoveryFallback({
 
   useEffect(() => {
     if (renderFallback === undefined && showDevelopmentDiagnostic) {
-      globalThis.console.error(formatA2UIDiagnostic(error));
+      reportDevelopmentDiagnostic(formatA2UIDiagnostic(error));
     }
   }, [error, renderFallback, showDevelopmentDiagnostic]);
 
@@ -41,4 +41,11 @@ export function A2UIRecoveryFallback({
   } catch {
     return null;
   }
+}
+
+function reportDevelopmentDiagnostic(message: string): void {
+  const runtime = globalThis as {
+    readonly console?: { error(value: string): void };
+  };
+  runtime.console?.error(message);
 }
