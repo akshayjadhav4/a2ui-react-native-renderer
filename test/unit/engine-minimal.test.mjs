@@ -104,7 +104,8 @@ test("reports malformed messages without throwing or replacing valid state", () 
   });
 
   assert.equal(errors.length, 1);
-  assert.equal(errors[0].code, "INVALID_MESSAGE");
+  assert.equal(errors[0].code, "INVALID_REFERENCE");
+  assert.equal(errors[0].path, "/updateComponents/components/0");
   assert.equal(errors[0].surfaceId, "welcome");
   assert.equal(engine.getErrors()[0], errors[0]);
   assert.equal(engine.getSurface("welcome"), validSurface);

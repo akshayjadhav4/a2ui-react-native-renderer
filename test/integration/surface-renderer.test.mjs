@@ -245,5 +245,5 @@ test("rejects invalid presenter props before invoking the presenter", async () =
   assert.equal(presenterCalls, 0);
   assert.equal(errors.length, 1);
   assert.equal(errors[0].code, "INVALID_COMPONENT_PROPS");
-  assert.equal(errors[0].path, "/text");
+  assert.equal(errors[0].path, "/updateComponents/components/0/text");
 });

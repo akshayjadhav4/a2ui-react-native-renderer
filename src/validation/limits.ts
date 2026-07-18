@@ -34,7 +34,7 @@ export function resolveA2UIResourceLimits(
 export function measureSerializedBytes(value: unknown): number {
   const serialized = JSON.stringify(value) as string | undefined;
   if (serialized === undefined) {
-    throw new TypeError("A2UI data model must be JSON serializable");
+    return 0;
   }
 
   let bytes = 0;

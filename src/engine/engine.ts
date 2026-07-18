@@ -24,6 +24,7 @@ import {
   measureSerializedBytes,
   resolveA2UIResourceLimits,
 } from "../validation/limits.js";
+import { validateMessageBatch } from "../validation/validateMessages.js";
 
 const EMPTY_ERRORS: readonly A2UIRendererError[] = Object.freeze([]);
 
@@ -100,6 +101,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       return;
     }
 
+    const parsedMessages: ParsedA2UIMessage[] = [];
     for (const input of messages) {
       const parsed = adapter.parseMessage(input);
       if (!parsed.success) {
@@ -111,39 +113,37 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
         continue;
       }
 
+      parsedMessages.push(parsed.value);
+    }
+
+    const validated = validateMessageBatch({
+      messages: parsedMessages,
+      surfaces,
+      catalogs,
+      limits,
+    });
+    for (const error of validated.errors) {
+      reportBatchError(error, affectedSurfaceIds);
+      changed = true;
+    }
+
+    for (const parsed of validated.accepted) {
       try {
-        const stagedDataModel = stageDataModelUpdate(parsed.value, dataModels);
-        if (
-          parsed.value.operation === "updateDataModel" &&
-          measureSerializedBytes(stagedDataModel) > limits.maxDataModelBytes
-        ) {
-          reportBatchError(
-            {
-              code: "RESOURCE_LIMIT_EXCEEDED",
-              message: `A2UI data model exceeds the ${String(limits.maxDataModelBytes)} byte limit`,
-              severity: "error",
-              surfaceId: parsed.value.surfaceId,
-              path: "/updateDataModel/value",
-            },
-            affectedSurfaceIds,
-          );
-          changed = true;
-          continue;
-        }
-        adapter.processMessage(parsed.value.message);
-        commitDataModelUpdate(parsed.value, stagedDataModel, dataModels);
+        const stagedDataModel = stageDataModelUpdate(parsed, dataModels);
+        adapter.processMessage(parsed.message);
+        commitDataModelUpdate(parsed, stagedDataModel, dataModels);
         updateSurfaceSnapshot(
           adapter,
-          parsed.value,
+          parsed,
           surfaces,
           surfaceRevisions,
           dataModels,
         );
-        affectedSurfaceIds.add(parsed.value.surfaceId);
+        affectedSurfaceIds.add(parsed.surfaceId);
         changed = true;
       } catch (cause) {
         reportBatchError(
-          processingFailureToError(parsed.value, cause),
+          processingFailureToError(parsed, cause),
           affectedSurfaceIds,
         );
         changed = true;

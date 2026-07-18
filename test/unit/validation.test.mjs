@@ -190,3 +190,126 @@ test("enforces component count and graph depth limits", () => {
   assert.equal(depth.success, false);
   assert.equal(depth.error.code, "RESOURCE_LIMIT_EXCEEDED");
 });
+
+test("engine rejects invalid graph updates before mutating the last valid surface", () => {
+  const errors = [];
+  const engine = createA2UIEngine({
+    catalogs: [graphCatalog],
+    onError: (error) => errors.push(error),
+  });
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "main", catalogId: graphCatalog.id },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "main",
+        components: [
+          { id: "root", component: "Row", children: ["label"] },
+          { id: "label", component: "Text", text: "Before" },
+        ],
+      },
+    },
+  ]);
+  const before = engine.getSurface("main");
+
+  engine.applyMessage({
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "main",
+      components: [{ id: "root", component: "Row", children: ["missing"] }],
+    },
+  });
+
+  assert.equal(engine.getSurface("main"), before);
+  assert.equal(errors.at(-1).code, "INVALID_REFERENCE");
+
+  engine.applyMessage({
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "main",
+      components: [{ id: "label", component: "Text", text: "After" }],
+    },
+  });
+  assert.equal(engine.getSurface("main")?.components.label.props.text, "After");
+});
+
+test("applies message batches transactionally per surface", () => {
+  const errors = [];
+  const engine = createA2UIEngine({
+    catalogs: [graphCatalog],
+    onError: (error) => errors.push(error),
+  });
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "one", catalogId: graphCatalog.id },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "one",
+        components: [{ id: "root", component: "Text", text: "Stable" }],
+      },
+    },
+  ]);
+  const before = engine.getSurface("one");
+
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "one",
+        components: [{ id: "root", component: "Text", text: "Uncommitted" }],
+      },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "one",
+        components: [{ id: "root", component: "Text" }],
+      },
+    },
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "two", catalogId: graphCatalog.id },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "two",
+        components: [{ id: "root", component: "Text", text: "Committed" }],
+      },
+    },
+  ]);
+
+  assert.equal(engine.getSurface("one"), before);
+  assert.equal(engine.getSurface("one")?.components.root.props.text, "Stable");
+  assert.equal(
+    engine.getSurface("two")?.components.root.props.text,
+    "Committed",
+  );
+  assert.equal(errors.at(-1).surfaceId, "one");
+});
+
+test("does not create a surface when its initial graph is invalid", () => {
+  const engine = createA2UIEngine({ catalogs: [graphCatalog] });
+
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "main", catalogId: graphCatalog.id },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "main",
+        components: [{ id: "root", component: "Row", children: ["missing"] }],
+      },
+    },
+  ]);
+
+  assert.equal(engine.getSurface("main"), undefined);
+});
