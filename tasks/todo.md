@@ -285,7 +285,7 @@ before the next task begins.
 ### Checkpoint 5: Package Candidate
 
 - [x] Fresh consumer instructions work against the tarball.
-  - Evidence: The inspected 126-file tarball installs into isolated Expo SDK 57
+  - Evidence: The inspected 128-file tarball installs into isolated Expo SDK 57
     and bare React Native 0.86 consumers; strict typechecks and both platform
     bundles pass.
 - [x] Documentation and generated declarations agree.
@@ -313,6 +313,16 @@ before the next task begins.
   - Likely files: `package.json`, `CHANGELOG.md`, `RELEASING.md`
   - Dependencies: Task 15 and GitHub owner input
   - Scope: Medium
+  - Preparation evidence: `CHANGELOG.md` and `RELEASING.md` document the manual
+    release process; `prepublishOnly` requires an explicit approval variable,
+    stable version, public package flag, repository metadata, matching dated
+    changelog, clean worktree, and the complete local release gate.
+  - Verification evidence: `pnpm release:check` passes 90 tests, verifies the
+    128-file tarball, and builds isolated Expo SDK 57 and bare React Native 0.86
+    consumers for iOS and Android.
+  - Remaining approval gate: provide the final public GitHub URL, verify npm 2FA,
+    approve version `0.1.0`, set `private` to `false`, and explicitly authorize
+    publication. No package has been published.
 
 ### Checkpoint 6: Release
 
