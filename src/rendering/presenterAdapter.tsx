@@ -74,9 +74,14 @@ export function A2UIComponentNode({
 
   const dispatch = useCallback(
     (action: A2UIComponentAction): void => {
-      internals.dispatchAction(surface.surfaceId, componentId, action);
+      internals.dispatchAction(
+        surface.surfaceId,
+        componentId,
+        scopePath,
+        action,
+      );
     },
-    [componentId, internals, surface.surfaceId],
+    [componentId, internals, scopePath, surface.surfaceId],
   );
 
   if (!resolution.success) {

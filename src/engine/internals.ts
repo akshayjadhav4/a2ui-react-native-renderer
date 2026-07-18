@@ -11,6 +11,7 @@ export interface A2UIEngineInternals {
   dispatchAction(
     surfaceId: string,
     componentId: string,
+    scopePath: string,
     action: A2UIComponentAction,
   ): void;
 }

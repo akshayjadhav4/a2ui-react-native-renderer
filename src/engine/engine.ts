@@ -1,6 +1,7 @@
 import type { ComponentModel } from "@a2ui/web_core/v0_9";
 
 import type { A2UIRendererError } from "../errors/types.js";
+import { resolveA2UIUserAction } from "./actions.js";
 import {
   A2UIV09Adapter,
   type ParsedA2UIMessage,
@@ -119,7 +120,9 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     }
   };
 
-  const actionSubscription = adapter.subscribeActions(async (action) => {
+  const deliverAction = async (
+    action: Parameters<NonNullable<A2UIEngineOptions["onAction"]>>[0],
+  ): Promise<void> => {
     try {
       await options.onAction?.(action);
     } catch (cause) {
@@ -133,7 +136,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       });
       publish(new Set([action.surfaceId]));
     }
-  });
+  };
 
   const engine: A2UIEngineWithInternals = {
     applyMessage(message: unknown): void {
@@ -171,7 +174,6 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       }
 
       disposed = true;
-      actionSubscription.unsubscribe();
       adapter.dispose();
       surfaces.clear();
       dataModels.clear();
@@ -236,8 +238,8 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
           });
         }
       },
-      dispatchAction(surfaceId, componentId, action): void {
-        const surface = adapter.getSurface(surfaceId);
+      dispatchAction(surfaceId, componentId, scopePath, action): void {
+        const surface = surfaces.get(surfaceId);
         if (surface === undefined) {
           this.reportError({
             code: "INVALID_MESSAGE",
@@ -249,18 +251,25 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
           return;
         }
 
-        void surface
-          .dispatchAction(action, componentId)
-          .catch((cause: unknown) => {
-            this.reportError({
-              code: "INVALID_MESSAGE",
-              message: "A2UI action dispatch failed",
-              severity: "error",
-              surfaceId,
-              componentId,
-              cause,
-            });
+        try {
+          const userAction = resolveA2UIUserAction({
+            surfaceId,
+            sourceComponentId: componentId,
+            scopePath,
+            action,
+            dataModel: surface.dataModel,
           });
+          void deliverAction(userAction);
+        } catch (cause) {
+          this.reportError({
+            code: "INVALID_MESSAGE",
+            message: "A2UI action dispatch failed",
+            severity: "error",
+            surfaceId,
+            componentId,
+            cause,
+          });
+        }
       },
     },
   };
