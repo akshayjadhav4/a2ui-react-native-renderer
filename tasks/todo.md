@@ -247,7 +247,7 @@ before the next task begins.
     and recovery. TypeScript, Expo lint, all 18 Expo Doctor checks, and explicit
     iOS and Android production exports pass without Metro source aliases.
 
-- [ ] **Task 14: Verify the packed package as a consumer**
+- [x] **Task 14: Verify the packed package as a consumer**
   - Acceptance: Expo and bare React Native smoke consumers install the tarball,
     resolve declarations, and bundle both platforms.
   - Acceptance: Package inspection finds no local paths or unpublished files.
@@ -256,6 +256,13 @@ before the next task begins.
     `package.json`, `test/fixtures/bare-consumer/package.json`
   - Dependencies: Task 13
   - Scope: Medium
+  - Evidence: `pack:check` creates and extracts the real npm tarball, permits
+    only `lib`, license, README, and package metadata, verifies every public
+    entrypoint, and rejects local dependency specifiers, symlinks, and absolute
+    repository paths. `consumer:smoke` installs that tarball into isolated
+    temporary Expo SDK 57 and bare React Native 0.86 consumers, confirms the
+    installed package cannot resolve to workspace source, typechecks both, and
+    produces iOS and Android bundles through Expo and bare Metro.
 
 - [ ] **Task 15: Complete documentation**
   - Acceptance: Every public export and limitation is documented with compiling
