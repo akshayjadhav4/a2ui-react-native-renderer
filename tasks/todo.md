@@ -304,7 +304,7 @@ before the next task begins.
   - Evidence: The maintainer explicitly approved deferral on 2026-07-18. The
     repository contains no publish workflow or long-lived npm token.
 
-- [ ] **Task 17: Prepare and approve npm publication**
+- [x] **Task 17: Prepare and approve npm publication**
   - Acceptance: Repository metadata, changelog, manual release policy, npm 2FA
     requirements, and package visibility are correct.
   - Acceptance: Version `0.1.0` publishes only after an explicit human approval.
@@ -323,18 +323,22 @@ before the next task begins.
   - Release-candidate evidence: npm is authenticated as `akshayjadhav4`, npm
     reports publishing 2FA mode `auth-and-writes`, version `0.1.0` is approved,
     and `private` is set to `false`.
-  - Remaining approval gate: explicitly authorize publication after reviewing
-    the final release checks and tarball. No package has been published.
+  - Publication evidence: npm reports `a2ui-react-native-renderer@0.1.0` under
+    the `latest` tag with the expected repository, engines, peers, and runtime
+    dependency metadata. A fresh Expo application installed the registry package
+    and rendered a consumer-owned native catalog successfully.
 
 ### Checkpoint 6: Release
 
-- [ ] All success criteria in `tasks/spec.md` pass.
-- [ ] npm displays the correct public repository metadata.
+- [x] All success criteria in `tasks/spec.md` pass.
+- [x] npm displays the correct public repository metadata.
 - [x] npm provenance is explicitly deferred with hosted release automation.
 - [x] Manual publication is protected by npm 2FA.
   - Evidence: `npm profile get "two-factor auth"` returned `auth-and-writes` on
     2026-07-18 for npm user `akshayjadhav4`.
-- [ ] Registry installation works in a clean consumer application.
+- [x] Registry installation works in a clean consumer application.
+  - Evidence: The maintainer installed `a2ui-react-native-renderer@0.1.0` in a
+    new Expo project and rendered an A2UI v0.9 surface on 2026-07-18.
 
 ## Deferred Input
 

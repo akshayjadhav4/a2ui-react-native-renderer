@@ -7,9 +7,6 @@ The package turns official A2UI messages into consumer-owned native React
 presenters. It does not bundle a component catalog, visual design system, chat
 UI, model SDK, or transport.
 
-> **Status:** The package is under active development and is not published to
-> npm yet. The public API is being prepared for the first `0.1.0` release.
-
 ## Requirements
 
 - React 18.2 or newer
@@ -19,8 +16,6 @@ UI, model SDK, or transport.
 - A2UI messages using protocol version `v0.9`
 
 ## Installation
-
-After the first npm release:
 
 ```sh
 pnpm add a2ui-react-native-renderer zod

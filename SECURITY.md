@@ -2,9 +2,9 @@
 
 ## Supported Versions
 
-The package has not reached its first public release. Security fixes currently
-target the latest commit on the default branch. A supported-version table will
-be added with `0.1.0`.
+| Version | Supported |
+| ------- | --------- |
+| 0.1.x   | Yes       |
 
 ## Reporting A Vulnerability
 
