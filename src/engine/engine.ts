@@ -52,6 +52,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       surfaces,
       surfaceErrors,
       errors,
+      snapshot,
     );
 
     for (const listener of listeners) {
@@ -457,13 +458,40 @@ function createEngineSnapshot(
   surfaces: ReadonlyMap<string, A2UISurfaceSnapshot>,
   surfaceErrors: ReadonlyMap<string, A2UIRendererError>,
   errors: readonly A2UIRendererError[],
+  previous?: A2UIEngineSnapshot,
 ): A2UIEngineSnapshot {
   return Object.freeze({
     revision,
-    surfaceIds: Object.freeze(Array.from(surfaces.keys())),
-    failedSurfaceIds: Object.freeze(Array.from(surfaceErrors.keys())),
+    surfaceIds: stableMapKeys(surfaces, previous?.surfaceIds),
+    failedSurfaceIds: stableMapKeys(
+      surfaceErrors,
+      previous?.failedSurfaceIds,
+    ),
     errorCount: errors.length,
   });
+}
+
+function stableMapKeys(
+  map: ReadonlyMap<string, unknown>,
+  previous: readonly string[] | undefined,
+): readonly string[] {
+  if (previous?.length === map.size) {
+    let index = 0;
+    let unchanged = true;
+    for (const key of map.keys()) {
+      if (previous[index] !== key) {
+        unchanged = false;
+        break;
+      }
+      index += 1;
+    }
+
+    if (unchanged) {
+      return previous;
+    }
+  }
+
+  return Object.freeze(Array.from(map.keys()));
 }
 
 function parseFailureToError(
