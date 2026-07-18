@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { findReleaseReadinessErrors } from "../../scripts/assert-release-ready.mjs";
@@ -9,12 +10,33 @@ const readyPackage = {
   private: false,
   repository: {
     type: "git",
-    url: "git+https://github.com/example/a2ui-react-native-renderer.git",
+    url: "git+https://github.com/akshayjadhav4/a2ui-react-native-renderer.git",
   },
-  homepage: "https://github.com/example/a2ui-react-native-renderer#readme",
-  bugs: { url: "https://github.com/example/a2ui-react-native-renderer/issues" },
+  homepage:
+    "https://github.com/akshayjadhav4/a2ui-react-native-renderer#readme",
+  bugs: {
+    url: "https://github.com/akshayjadhav4/a2ui-react-native-renderer/issues",
+  },
 };
 const readyChangelog = "## [0.1.0] - 2026-07-18\n";
+
+test("keeps canonical public repository metadata", () => {
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+  );
+  const securityPolicy = readFileSync(
+    new URL("../../SECURITY.md", import.meta.url),
+    "utf8",
+  );
+
+  assert.deepEqual(packageJson.repository, readyPackage.repository);
+  assert.equal(packageJson.homepage, readyPackage.homepage);
+  assert.deepEqual(packageJson.bugs, readyPackage.bugs);
+  assert.match(
+    securityPolicy,
+    /github\.com\/akshayjadhav4\/a2ui-react-native-renderer\/security\/advisories\/new/,
+  );
+});
 
 test("accepts an explicitly approved release from a clean worktree", () => {
   assert.deepEqual(

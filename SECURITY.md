@@ -8,13 +8,11 @@ be added with `0.1.0`.
 
 ## Reporting A Vulnerability
 
-Please report vulnerabilities privately to the repository owner. The final
-private reporting address or GitHub security-advisory URL will be added with
-the public repository metadata before publication.
-
-Until that channel is recorded, do not publish exploit details or sensitive
-payloads in a public issue. Include the affected version or commit, impact,
-reproduction steps, and a minimal sanitized A2UI payload when possible.
+Please report vulnerabilities privately through a
+[GitHub security advisory](https://github.com/akshayjadhav4/a2ui-react-native-renderer/security/advisories/new).
+Do not publish exploit details or sensitive payloads in a public issue. Include
+the affected version or commit, impact, reproduction steps, and a minimal
+sanitized A2UI payload when possible.
 
 ## Security Boundary
 

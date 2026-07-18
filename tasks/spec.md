@@ -598,7 +598,9 @@ The initial package is ready for npm `0.1.0` when all of the following are true:
 14. The public GitHub repository includes Apache-2.0 license, contribution, security, and release documentation.
 15. npm publication is manually approved, protected by 2FA, and follows the documented inspected-tarball release procedure.
 
-## Deferred Release Input
+## Release Repository
 
-- The GitHub repository owner is required before repository metadata and manual
-  npm publication are finalized. It does not block package implementation.
+- Public repository:
+  `https://github.com/akshayjadhav4/a2ui-react-native-renderer`.
+- npm publication remains separately gated by version approval, npm 2FA, and an
+  explicit publish authorization.

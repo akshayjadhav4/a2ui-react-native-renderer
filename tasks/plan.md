@@ -461,9 +461,11 @@ Must remain sequential:
 | Package name is claimed before release             | Medium | Recheck npm immediately before publication; prepare an approved fallback name only if needed.                    |
 | Scope grows into an AI/chat SDK                    | High   | Enforce dependency and import boundary checks in the local release gate.                                         |
 
-## Deferred Input
+## Release Input
 
-- GitHub owner and final public repository URL are required before Task 17.
+- GitHub owner and final public repository URL were provided on 2026-07-18:
+  `https://github.com/akshayjadhav4/a2ui-react-native-renderer`.
+- npm account readiness and explicit publication approval remain pending.
 
 ## Plan Approval Gate
 

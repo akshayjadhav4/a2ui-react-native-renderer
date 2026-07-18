@@ -311,7 +311,7 @@ before the next task begins.
   - Verify: `pnpm release:check`, manually inspect tarball, then verify
     `npm view a2ui-react-native-renderer` after approved publication.
   - Likely files: `package.json`, `CHANGELOG.md`, `RELEASING.md`
-  - Dependencies: Task 15 and GitHub owner input
+  - Dependencies: Task 15 and npm publication approval
   - Scope: Medium
   - Preparation evidence: `CHANGELOG.md` and `RELEASING.md` document the manual
     release process; `prepublishOnly` requires an explicit approval variable,
@@ -320,9 +320,9 @@ before the next task begins.
   - Verification evidence: `pnpm release:check` passes 90 tests, verifies the
     128-file tarball, and builds isolated Expo SDK 57 and bare React Native 0.86
     consumers for iOS and Android.
-  - Remaining approval gate: provide the final public GitHub URL, verify npm 2FA,
-    approve version `0.1.0`, set `private` to `false`, and explicitly authorize
-    publication. No package has been published.
+  - Remaining approval gate: verify npm 2FA, approve version `0.1.0`, set
+    `private` to `false`, and explicitly authorize publication. No package has
+    been published.
 
 ### Checkpoint 6: Release
 
@@ -334,7 +334,10 @@ before the next task begins.
 
 ## Deferred Input
 
-- [ ] Record the GitHub owner and final public repository URL before Task 17.
+- [x] Record the GitHub owner and final public repository URL before Task 17.
+  - Evidence: The repository URL supplied on 2026-07-18 resolves publicly at
+    `https://github.com/akshayjadhav4/a2ui-react-native-renderer` and is recorded
+    in `package.json`.
 - [x] Recheck the npm package name immediately before release preparation.
   - Evidence: `pnpm view a2ui-react-native-renderer version --json` returned
     registry `E404` on 2026-07-18, so no published package currently uses the

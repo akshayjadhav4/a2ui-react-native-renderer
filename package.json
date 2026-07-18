@@ -13,6 +13,14 @@
   ],
   "license": "Apache-2.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshayjadhav4/a2ui-react-native-renderer.git"
+  },
+  "homepage": "https://github.com/akshayjadhav4/a2ui-react-native-renderer#readme",
+  "bugs": {
+    "url": "https://github.com/akshayjadhav4/a2ui-react-native-renderer/issues"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
