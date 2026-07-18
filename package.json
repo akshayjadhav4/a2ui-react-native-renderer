@@ -13,6 +13,10 @@
   ],
   "license": "Apache-2.0",
   "private": true,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./lib/module/index.js",
@@ -33,16 +37,19 @@
     "docs",
     "LICENSE",
     "README.md",
+    "CHANGELOG.md",
     "CONTRIBUTING.md",
-    "SECURITY.md"
+    "SECURITY.md",
+    "RELEASING.md"
   ],
   "scripts": {
     "build": "bob build",
     "prepare": "pnpm build",
+    "prepublishOnly": "node scripts/assert-release-ready.mjs && pnpm release:check",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "lint": "eslint src --max-warnings=0",
-    "format": "prettier --write src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md CONTRIBUTING.md SECURITY.md docs",
-    "format:check": "prettier --check src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md CONTRIBUTING.md SECURITY.md docs",
+    "format": "prettier --write src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md RELEASING.md docs",
+    "format:check": "prettier --check src test scripts package.json tsconfig.json tsconfig.type-tests.json eslint.config.mjs README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md RELEASING.md docs",
     "example:typecheck": "pnpm --filter a2ui-renderer-example typecheck",
     "example:check": "pnpm example:typecheck && pnpm --filter a2ui-renderer-example lint",
     "example:export": "pnpm build && pnpm --filter a2ui-renderer-example export",

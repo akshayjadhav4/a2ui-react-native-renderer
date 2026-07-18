@@ -190,6 +190,8 @@ The complete value and type reference is in [Public API](./docs/api.md).
 - [Errors And Security](./docs/errors-and-security.md)
 - [Migration Guide](./docs/migration.md)
 - [Contributing](./CONTRIBUTING.md)
+- [Changelog](./CHANGELOG.md)
+- [Release Process](./RELEASING.md)
 
 ## Expo Example
 

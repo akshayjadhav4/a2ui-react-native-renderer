@@ -36,7 +36,9 @@ test("documents every package-root export", () => {
 test("keeps README documentation links and limitations valid", () => {
   const readme = readFileSync(path.join(repositoryRoot, "README.md"), "utf8");
   const links = Array.from(
-    readme.matchAll(/\]\((\.\/(?:docs\/[^)]+\.md|CONTRIBUTING\.md))\)/g),
+    readme.matchAll(
+      /\]\((\.\/(?:docs\/[^)]+\.md|(?:CHANGELOG|CONTRIBUTING|RELEASING)\.md))\)/g,
+    ),
     (match) => match[1],
   );
 

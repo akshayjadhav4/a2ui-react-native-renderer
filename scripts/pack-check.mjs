@@ -14,9 +14,11 @@ import { fileURLToPath } from "node:url";
 const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = resolve(dirname(scriptPath), "..");
 const requiredFiles = [
+  "CHANGELOG.md",
   "CONTRIBUTING.md",
   "LICENSE",
   "README.md",
+  "RELEASING.md",
   "SECURITY.md",
   "docs/api.md",
   "docs/architecture.md",
@@ -103,7 +105,9 @@ function isAllowedPackagePath(path) {
   return (
     path === "LICENSE" ||
     path === "README.md" ||
+    path === "CHANGELOG.md" ||
     path === "CONTRIBUTING.md" ||
+    path === "RELEASING.md" ||
     path === "SECURITY.md" ||
     path === "package.json" ||
     path.startsWith("docs/") ||
