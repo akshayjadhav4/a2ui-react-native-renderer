@@ -46,6 +46,7 @@
     "test": "pnpm build && node --test test/unit/*.test.mjs test/integration/*.test.mjs",
     "test:coverage": "pnpm build && node --test --experimental-test-coverage test/unit/*.test.mjs test/integration/*.test.mjs",
     "pack:check": "pnpm build && node scripts/pack-check.mjs",
+    "consumer:smoke": "pnpm build && node scripts/consumer-smoke.mjs",
     "release:check": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm pack:check"
   },
   "peerDependencies": {
