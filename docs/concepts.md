@@ -459,6 +459,32 @@ A local function action is different: it runs once after presenter dispatch and
 may perform an intentional client-side effect. Local function actions are not
 forwarded to the engine's `onAction` callback.
 
+## Validation And Resource Limits
+
+The engine validates every candidate surface graph before forwarding messages
+to the protocol core. Validation covers component IDs and schemas, the reserved
+`root`, structural references, JSON pointer syntax, cycles, and resource
+limits. Messages for each surface form a transaction: if one fails, none of
+that surface's messages in the batch commit. Other valid surfaces remain
+independent.
+
+```tsx
+const engine = createA2UIEngine({
+  catalogs: [catalog],
+  limits: {
+    maxComponentsPerSurface: 250,
+    maxComponentDepth: 48,
+    maxDataModelBytes: 512 * 1024,
+    maxMessagesPerBatch: 500,
+  },
+});
+```
+
+Unspecified limits use `DEFAULT_A2UI_RESOURCE_LIMITS`. Invalid limit values are
+rejected when the engine is created. At runtime, limit failures use
+`RESOURCE_LIMIT_EXCEEDED`; graph, schema, and binding failures use their
+specific structured error codes and preserve the last valid revision.
+
 ## Errors And Fallbacks
 
 A2UI input is generated remotely and must be considered untrusted.

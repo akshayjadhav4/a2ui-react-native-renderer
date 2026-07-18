@@ -111,3 +111,28 @@ The package bundles no built-ins. Functions used while rendering should be
 deterministic and side-effect free. A local function action may perform an
 explicit client-side effect because it runs only after presenter dispatch; it
 is not forwarded through `onAction`.
+
+## Validation And Limits
+
+Messages are treated as untrusted input. Before updating visible state, the
+engine validates component IDs, the reserved `root`, catalog schemas,
+structural references, binding paths, graph cycles, and configured resource
+limits. A failed update reports a structured error and preserves the last valid
+surface revision.
+
+```tsx
+const engine = createA2UIEngine({
+  catalogs: [catalog],
+  limits: {
+    maxComponentsPerSurface: 250,
+    maxComponentDepth: 48,
+    maxDataModelBytes: 512 * 1024,
+    maxMessagesPerBatch: 500,
+  },
+});
+```
+
+Defaults are exported as `DEFAULT_A2UI_RESOURCE_LIMITS`: 500 components, 64
+levels, 1 MiB of data per surface, and 1,000 messages per batch. Validation is
+transactional per surface, so one invalid surface does not prevent independent
+valid surfaces in the same batch from committing.

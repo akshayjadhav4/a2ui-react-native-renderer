@@ -171,7 +171,7 @@ before the next task begins.
 
 ## Phase 4: Hardening
 
-- [ ] **Task 10: Add graph and resource validation**
+- [x] **Task 10: Add graph and resource validation**
   - Acceptance: Invalid roots, duplicate IDs, references, cycles, schemas, and
     configured limits reject the affected update with documented error codes.
   - Acceptance: Invalid updates preserve the last valid revision.
@@ -181,6 +181,11 @@ before the next task begins.
     `src/engine/engine.ts`, `test/unit/validation.test.ts`
   - Dependencies: Tasks 8-9
   - Scope: Medium
+  - Evidence: Thirteen validation tests cover configuration, UTF-8 sizing,
+    batch and data limits, valid graphs, duplicate and missing IDs, roots,
+    schemas, unknown components, references, cycles, dynamic and structural
+    pointers, depth, atomic recovery, mixed-surface batches, and invalid
+    lifecycle transitions. The full 74-test suite and coverage run pass.
 
 - [ ] **Task 11: Add diagnostics and production recovery**
   - Acceptance: Presenter and surface failures cannot escape React boundaries.

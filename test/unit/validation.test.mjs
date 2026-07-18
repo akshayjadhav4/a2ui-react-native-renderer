@@ -11,6 +11,7 @@ import {
   defineA2UICatalog,
 } from "../../lib/module/index.js";
 import { validateComponentUpdate } from "../../lib/module/validation/validateGraph.js";
+import { measureSerializedBytes } from "../../lib/module/validation/limits.js";
 
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:validation:v1",
@@ -55,6 +56,14 @@ test("rejects invalid resource limit configuration", () => {
       }),
     /positive integer/,
   );
+});
+
+test("measures serialized UTF-8 data without platform APIs", () => {
+  assert.equal(measureSerializedBytes(undefined), 0);
+  assert.equal(measureSerializedBytes("a"), 3);
+  assert.equal(measureSerializedBytes("é"), 4);
+  assert.equal(measureSerializedBytes("€"), 5);
+  assert.equal(measureSerializedBytes("😀"), 6);
 });
 
 test("rejects oversized message batches without applying a partial batch", () => {
@@ -143,6 +152,14 @@ test("rejects duplicate ids, missing roots, and invalid properties", () => {
       updates: [{ id: "root", component: "Text" }],
       code: "INVALID_COMPONENT_PROPS",
     },
+    {
+      updates: [{ id: "root", text: "Missing type" }],
+      code: "INVALID_REFERENCE",
+    },
+    {
+      updates: [{ id: "root", component: "Unknown" }],
+      code: "UNKNOWN_COMPONENT",
+    },
   ];
 
   for (const fixture of fixtures) {
@@ -169,12 +186,22 @@ test("rejects missing references and component cycles", () => {
 });
 
 test("rejects invalid binding pointers", () => {
-  const result = validateGraph([
+  const dynamic = validateGraph([
     { id: "root", component: "Text", text: { path: "/invalid~2path" } },
   ]);
+  const structural = validateGraph([
+    {
+      id: "root",
+      component: "Row",
+      children: { componentId: "label", path: "/invalid~2path" },
+    },
+    { id: "label", component: "Text", text: "Label" },
+  ]);
 
-  assert.equal(result.success, false);
-  assert.equal(result.error.code, "BINDING_ERROR");
+  assert.equal(dynamic.success, false);
+  assert.equal(dynamic.error.code, "BINDING_ERROR");
+  assert.equal(structural.success, false);
+  assert.equal(structural.error.code, "BINDING_ERROR");
 });
 
 test("enforces component count and graph depth limits", () => {
@@ -312,4 +339,58 @@ test("does not create a surface when its initial graph is invalid", () => {
   ]);
 
   assert.equal(engine.getSurface("main"), undefined);
+});
+
+test("contains invalid surface lifecycle and data paths before core processing", () => {
+  const errors = [];
+  const engine = createA2UIEngine({
+    catalogs: [graphCatalog],
+    onError: (error) => errors.push(error),
+  });
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "main", catalogId: graphCatalog.id },
+    },
+    {
+      version: "v0.9",
+      updateDataModel: { surfaceId: "main", value: { title: "text" } },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "main",
+        components: [{ id: "root", component: "Text", text: "Stable" }],
+      },
+    },
+  ]);
+  const before = engine.getSurface("main");
+
+  engine.applyMessage({
+    version: "v0.9",
+    createSurface: { surfaceId: "main", catalogId: graphCatalog.id },
+  });
+  assert.equal(errors.at(-1).code, "INVALID_MESSAGE");
+  assert.equal(engine.getSurface("main"), before);
+
+  engine.applyMessage({
+    version: "v0.9",
+    updateDataModel: {
+      surfaceId: "main",
+      path: "/title/nested",
+      value: "invalid",
+    },
+  });
+  assert.equal(errors.at(-1).code, "BINDING_ERROR");
+  assert.equal(engine.getSurface("main"), before);
+
+  engine.applyMessage({
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "missing",
+      components: [{ id: "root", component: "Text", text: "Missing" }],
+    },
+  });
+  assert.equal(errors.at(-1).code, "INVALID_MESSAGE");
+  assert.equal(engine.getSurface("missing"), undefined);
 });

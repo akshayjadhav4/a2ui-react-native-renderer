@@ -2,8 +2,10 @@ import { z } from "zod";
 
 import {
   createA2UIEngine,
+  DEFAULT_A2UI_RESOURCE_LIMITS,
   defineA2UICatalog,
   type A2UIMessage,
+  type A2UIResourceLimits,
   type A2UISurfaceSnapshot,
 } from "../../src/index.js";
 
@@ -25,7 +27,11 @@ const message: A2UIMessage = {
   },
 };
 
-const engine = createA2UIEngine({ catalogs: [catalog] });
+const limits: A2UIResourceLimits = {
+  ...DEFAULT_A2UI_RESOURCE_LIMITS,
+  maxComponentsPerSurface: 100,
+};
+const engine = createA2UIEngine({ catalogs: [catalog], limits });
 engine.applyMessage(message);
 
 const surface: A2UISurfaceSnapshot | undefined = engine.getSurface("main");
