@@ -144,7 +144,7 @@ before the next task begins.
     convenience-renderer coverage verifies updated callbacks without engine
     recreation, and public type tests enforce `A2UIActionSchema` dispatch.
 
-- [ ] **Task 9: Add consumer functions**
+- [x] **Task 9: Add consumer functions**
   - Acceptance: Consumer-defined functions evaluate with schema-validated
     arguments and no built-ins are bundled.
   - Acceptance: Unknown or failing functions produce contained structured
@@ -155,11 +155,18 @@ before the next task begins.
     `test/unit/functions.test.ts`
   - Dependencies: Task 7
   - Scope: Medium
+  - Evidence: Five focused unit tests cover schema-validated arguments, data
+    bindings, nested calls, absent built-ins, thrown implementations, return
+    validation, and frozen structured results. Five React integration tests
+    cover reactive presenter values, function-derived event context, local
+    action isolation, and structured presenter/action failures.
 
 ### Checkpoint 3: Protocol Behavior
 
 - [ ] Lifecycle, bindings, actions, and functions pass official fixture tests.
-- [ ] Import boundary checks find no Expo, transport, chat, or app dependency.
+- [x] Import boundary checks find no Expo, transport, chat, or app dependency.
+  - Evidence: Source scan finds no TanStack, Hono, AG-UI, Expo Router,
+    application runtime, or SSE imports.
 - [ ] Human verifies behavior before hardening changes begin.
 
 ## Phase 4: Hardening

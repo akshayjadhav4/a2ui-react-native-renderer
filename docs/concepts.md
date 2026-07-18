@@ -437,13 +437,27 @@ const formatPrice = defineA2UIFunction({
     }).format(amount);
   },
 });
+
+const catalogWithFunctions = defineA2UICatalog({
+  id: "urn:example:a2ui:catalog:with-functions:v1",
+  components: catalog.components,
+  functions: [formatPrice],
+});
 ```
 
 The package ships no application functions. Consumers register only the
 functions their catalog supports.
 
-Functions should be deterministic and side-effect free. Native side effects
-belong in action handlers, not binding evaluation.
+The engine validates each call, resolves data bindings and nested function
+arguments, validates the consumer function's arguments, and validates its
+declared return kind. Unknown, invalid, or thrown functions become contained
+`FUNCTION_ERROR` diagnostics.
+
+Functions used by presenter properties or event context should be deterministic
+and side-effect free because they may be reevaluated when surface data changes.
+A local function action is different: it runs once after presenter dispatch and
+may perform an intentional client-side effect. Local function actions are not
+forwarded to the engine's `onAction` callback.
 
 ## Errors And Fallbacks
 

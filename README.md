@@ -16,6 +16,7 @@ import {
   A2UIDynamicStringSchema,
   A2UIRenderer,
   defineA2UICatalog,
+  defineA2UIFunction,
   type A2UIMessage,
 } from "a2ui-react-native-renderer";
 
@@ -75,3 +76,38 @@ Use `A2UIActionSchema` for interactive component properties. A presenter calls
 resolves action context from that surface's latest data model and sends one
 official `A2UIUserAction` to `onAction`; the application owns transport back to
 the agent.
+
+## Functions
+
+Functions are consumer-owned catalog capabilities. Define each function with a
+Zod argument schema and declared return kind, then register it in the catalog.
+
+```tsx
+const formatPrice = defineA2UIFunction({
+  name: "formatPrice",
+  args: z.object({ amount: z.number(), currency: z.string() }),
+  returns: "string",
+  execute: ({ amount, currency }) =>
+    new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+    }).format(amount),
+});
+
+const catalogWithFunctions = defineA2UICatalog({
+  id: "urn:example:a2ui:catalog:with-functions:v1",
+  components: catalog.components,
+  functions: [formatPrice],
+});
+```
+
+The engine evaluates function calls in dynamic presenter properties, action
+context, and local function actions. Arguments may contain data bindings or
+nested function calls. Unknown functions, invalid arguments, thrown
+implementations, and invalid return values are contained as `FUNCTION_ERROR`
+diagnostics.
+
+The package bundles no built-ins. Functions used while rendering should be
+deterministic and side-effect free. A local function action may perform an
+explicit client-side effect because it runs only after presenter dispatch; it
+is not forwarded through `onAction`.

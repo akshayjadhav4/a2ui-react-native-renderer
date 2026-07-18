@@ -49,6 +49,14 @@ function createFunctionCatalog(onLocalFunction = () => undefined) {
         returns: "unknown",
         execute: ({ value }) => onLocalFunction(value),
       }),
+      defineA2UIFunction({
+        name: "fail",
+        args: z.object({}),
+        returns: "unknown",
+        execute: () => {
+          throw new Error("consumer failure");
+        },
+      }),
     ],
   });
 }
@@ -218,6 +226,39 @@ test("contains unknown presenter functions as structured renderer errors", async
   const renderer = await renderSurface(engine);
 
   assert.equal(renderer.toJSON(), null);
+  assert.equal(errors.at(-1).code, "FUNCTION_ERROR");
+  assert.equal(errors.at(-1).surfaceId, "main");
+  assert.equal(errors.at(-1).componentId, "root");
+});
+
+test("contains failing local function actions as structured renderer errors", async () => {
+  const errors = [];
+  const catalog = createFunctionCatalog();
+  const engine = createA2UIEngine({
+    catalogs: [catalog],
+    onError: (error) => errors.push(error),
+  });
+  applySurface(
+    engine,
+    catalog,
+    [
+      {
+        id: "root",
+        component: "Button",
+        label: "Fail",
+        action: {
+          functionCall: { call: "fail", args: {}, returnType: "any" },
+        },
+      },
+    ],
+    {},
+  );
+  const renderer = await renderSurface(engine);
+
+  await act(() => {
+    renderer.root.findByType("NativeButton").props.onPress();
+  });
+
   assert.equal(errors.at(-1).code, "FUNCTION_ERROR");
   assert.equal(errors.at(-1).surfaceId, "main");
   assert.equal(errors.at(-1).componentId, "root");
