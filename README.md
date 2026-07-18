@@ -1,22 +1,45 @@
 # a2ui-react-native-renderer
 
-A catalog-agnostic A2UI renderer and protocol runtime for React Native and
+A catalog-agnostic A2UI v0.9 renderer and protocol runtime for React Native and
 Expo.
 
-The package is under active development and is not published yet. It includes
-no UI component catalog: applications define their own Zod schemas and native
-React presenters.
+The package turns official A2UI messages into consumer-owned native React
+presenters. It does not bundle a component catalog, visual design system, chat
+UI, model SDK, or transport.
 
-## Simple API
+> **Status:** The package is under active development and is not published to
+> npm yet. The public API is being prepared for the first `0.1.0` release.
+
+## Requirements
+
+- React 18.2 or newer
+- React Native 0.76 or newer, including Expo projects
+- Zod 3.25
+- Node.js 20 or newer for development and package tooling
+- A2UI messages using protocol version `v0.9`
+
+## Installation
+
+After the first npm release:
+
+```sh
+pnpm add a2ui-react-native-renderer zod
+```
+
+React and React Native are peer dependencies and should already be installed by
+the host application.
+
+## Quick Start
+
+Define the components your application permits, pair each Zod schema with a
+native presenter, and render official A2UI messages.
 
 ```tsx
 import { Text } from "react-native";
 import { z } from "zod";
 import {
-  A2UIDynamicStringSchema,
   A2UIRenderer,
   defineA2UICatalog,
-  defineA2UIFunction,
   type A2UIMessage,
 } from "a2ui-react-native-renderer";
 
@@ -24,40 +47,70 @@ const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
   components: {
     Text: {
-      schema: z.object({ text: A2UIDynamicStringSchema }),
+      schema: z.object({ text: z.string() }),
       presenter: ({ props }) => <Text>{props.text}</Text>,
     },
   },
 });
 
-export function AgentUI({ messages }: { messages: A2UIMessage[] }) {
+const messages: A2UIMessage[] = [
+  {
+    version: "v0.9",
+    createSurface: {
+      surfaceId: "welcome",
+      catalogId: catalog.id,
+    },
+  },
+  {
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "welcome",
+      components: [
+        {
+          id: "root",
+          component: "Text",
+          text: "Hello from A2UI",
+        },
+      ],
+    },
+  },
+];
+
+export function AgentUI() {
   return <A2UIRenderer catalogs={[catalog]} messages={messages} />;
 }
 ```
 
-`A2UIRenderer` owns one engine, incrementally applies appended messages, and
-renders every active surface. Catalogs must remain stable while it is mounted.
+`A2UIRenderer` creates one stable engine, applies appended messages, and renders
+all active surfaces at its location. Keep `catalogs` stable while the renderer
+is mounted.
 
-Use ordinary Zod fields for static properties. Use the exported
-`A2UIDynamic*Schema` primitives for properties that may bind to the A2UI data
-model. Presenters receive resolved values; bound properties also receive typed
-setters such as `setValue` for native input controls.
+## Streaming And Custom Placement
 
-## Advanced API
-
-Use an application-owned engine when surfaces need custom placement, such as
-inside individual chat turns.
+Chat applications often need each A2UI surface to remain beside the assistant
+turn that created it. In that case, let the application own the engine and
+render individual surfaces where they belong.
 
 ```tsx
+import {
+  A2UIProvider,
+  A2UISurface,
+  createA2UIEngine,
+  type A2UIMessage,
+  type A2UIUserAction,
+} from "a2ui-react-native-renderer";
+
 const engine = createA2UIEngine({
   catalogs: [catalog],
-  onAction: sendActionToAgent,
-  onError: reportRendererError,
+  onAction: (action: A2UIUserAction) => sendActionToAgent(action),
+  onError: (error) => reportRendererError(error),
 });
 
-agentStream.onMessage((message) => engine.applyMessage(message));
+export function acceptA2UIMessage(message: A2UIMessage) {
+  engine.applyMessage(message);
+}
 
-function Surface({ surfaceId }: { surfaceId: string }) {
+export function ChatSurface({ surfaceId }: { surfaceId: string }) {
   return (
     <A2UIProvider engine={engine}>
       <A2UISurface surfaceId={surfaceId} />
@@ -66,138 +119,121 @@ function Surface({ surfaceId }: { surfaceId: string }) {
 }
 ```
 
-Transport, chat state, persistence, and the component catalog remain owned by
-the consuming application.
+The host application decides how messages arrive, where surfaces appear, how
+long they remain, and how `A2UIUserAction` values return to the agent. The
+renderer imports no AG-UI, TanStack AI, HTTP, WebSocket, Expo Router, or chat
+runtime code.
 
-## Expo Example
+## Catalog Ownership
 
-[`example/expo`](./example/expo) is an Expo SDK 57 consumer that imports the
-library through its public package exports. It owns its schemas and native
-presenters and demonstrates simple rendering, incremental streaming, data
-binding, actions, deletion, diagnostics, and recovery.
+The renderer deliberately ships no built-in components. A catalog is an
+application-owned allowlist:
 
-```sh
-pnpm example:check
-pnpm example:export
-```
+- **Schema:** validates the A2UI properties accepted by a component.
+- **Presenter:** renders those validated properties with React Native, Expo UI,
+  or another native component library.
+- **Function:** optionally evaluates a catalog-defined computation.
 
-The export command builds standalone iOS and Android production bundles. No
-Metro resolver alias points at package source.
+Use ordinary Zod fields for static values. Use the exported
+`A2UIDynamic*Schema` helpers for values that may be literals, data bindings, or
+function calls. Bound presenter properties receive typed setters such as
+`setValue`, allowing native controls to update the surface data model.
 
-## Actions
+See [Catalogs](./docs/catalogs.md) for components, children, bindings, actions,
+and functions.
 
-Use `A2UIActionSchema` for interactive component properties. A presenter calls
-`dispatch(props.action)` when its native control is activated. The engine
-resolves action context from that surface's latest data model and sends one
-official `A2UIUserAction` to `onAction`; the application owns transport back to
-the agent.
+## Errors And Untrusted Input
 
-## Functions
-
-Functions are consumer-owned catalog capabilities. Define each function with a
-Zod argument schema and declared return kind, then register it in the catalog.
-
-```tsx
-const formatPrice = defineA2UIFunction({
-  name: "formatPrice",
-  args: z.object({ amount: z.number(), currency: z.string() }),
-  returns: "string",
-  execute: ({ amount, currency }) =>
-    new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-    }).format(amount),
-});
-
-const catalogWithFunctions = defineA2UICatalog({
-  id: "urn:example:a2ui:catalog:with-functions:v1",
-  components: catalog.components,
-  functions: [formatPrice],
-});
-```
-
-The engine evaluates function calls in dynamic presenter properties, action
-context, and local function actions. Arguments may contain data bindings or
-nested function calls. Unknown functions, invalid arguments, thrown
-implementations, and invalid return values are contained as `FUNCTION_ERROR`
-diagnostics.
-
-The package bundles no built-ins. Functions used while rendering should be
-deterministic and side-effect free. A local function action may perform an
-explicit client-side effect because it runs only after presenter dispatch; it
-is not forwarded through `onAction`.
-
-## Validation And Limits
-
-Messages are treated as untrusted input. Before updating visible state, the
-engine validates component IDs, the reserved `root`, catalog schemas,
-structural references, binding paths, graph cycles, and configured resource
-limits. A failed update reports a structured error and preserves the last valid
-surface revision.
+A2UI messages must be treated as untrusted input. Before a surface revision is
+published, the engine validates message shape, catalog IDs, component schemas,
+the reserved `root`, references, cycles, JSON pointers, and configured resource
+limits. An invalid update reports a structured `A2UIRendererError` and keeps the
+last valid surface revision when possible.
 
 ```tsx
-const engine = createA2UIEngine({
-  catalogs: [catalog],
-  limits: {
-    maxComponentsPerSurface: 250,
-    maxComponentDepth: 48,
-    maxDataModelBytes: 512 * 1024,
-    maxMessagesPerBatch: 500,
-  },
-});
-```
-
-Defaults are exported as `DEFAULT_A2UI_RESOURCE_LIMITS`: 500 components, 64
-levels, 1 MiB of data per surface, and 1,000 messages per batch. Validation is
-transactional per surface, so one invalid surface does not prevent independent
-valid surfaces in the same batch from committing.
-
-## Diagnostics And Recovery
-
-Every validation, binding, function, action, and presenter failure is recorded
-as an `A2UIRendererError`. The engine calls `onError` without allowing a failing
-consumer callback to interrupt protocol processing.
-
-Presenters run inside component-level error boundaries. A broken child can fall
-back without removing healthy siblings, and a later valid surface revision
-resets the boundary. An unexpected renderer failure is also contained at the
-surface boundary.
-
-```tsx
-<A2UISurface
-  surfaceId={surfaceId}
+<A2UIRenderer
+  catalogs={[catalog]}
+  messages={messages}
   diagnostics="production"
-  renderFallback={(error) => (
-    <SurfaceUnavailable accessibilityLabel={`UI error ${error.code}`} />
-  )}
+  onError={(error) => telemetry.capture(error)}
+  renderFallback={() => <Text>Interface unavailable</Text>}
 />
 ```
 
-`diagnostics` accepts `"auto"`, `"development"`, or `"production"` and defaults
-to `"auto"`. Auto mode follows React Native's `__DEV__` global. Without a custom
-fallback, development logs only the error code and sanitized surface, catalog,
-component, and path identifiers; production renders `null`. Neither mode shows
-raw A2UI messages, data models, exception messages, or causes.
+Development diagnostics expose sanitized identifiers only. Production renders
+nothing unless the consumer provides `renderFallback`; `onError` still runs in
+both modes. Raw messages, data models, causes, and component properties are not
+rendered by the default fallback.
 
-`renderFallback` is optional and works in every mode. It lets the application
-provide a native, accessible fallback without the renderer package imposing a
-component library or visual design. `onError` still receives the structured
-error for telemetry and recovery decisions.
+See [Errors And Security](./docs/errors-and-security.md) for recovery behavior,
+error codes, limits, and trust boundaries.
 
-## Performance And Subscriptions
+## Public API
 
-The engine publishes immutable snapshots. Its top-level `revision` advances
-whenever protocol processing publishes a change, while `surfaceIds` and
-`failedSurfaceIds` retain their array identity until their membership or order
-changes. This keeps `useSyncExternalStore` consumers from rerendering for an
-unchanged collection.
+| Area               | Main exports                                                     |
+| ------------------ | ---------------------------------------------------------------- |
+| Catalogs           | `defineA2UICatalog`, `defineA2UIComponent`, `defineA2UIFunction` |
+| Simple rendering   | `A2UIRenderer`                                                   |
+| Advanced rendering | `createA2UIEngine`, `A2UIProvider`, `A2UISurface`                |
+| React state        | `useA2UISurface`, `useA2UISurfaceIds`, `useA2UIErrors`           |
+| Protocol schemas   | `A2UIActionSchema`, `A2UIChildListSchema`, `A2UIDynamic*Schema`  |
+| Validation         | `DEFAULT_A2UI_RESOURCE_LIMITS`                                   |
 
-`A2UISurface` subscribes directly to its requested surface. Updating or failing
-one surface does not rerender presenters mounted for another surface. A change
-inside a surface may rerender that surface's tree because dynamic component
-properties can depend on its latest data model.
+The complete value and type reference is in [Public API](./docs/api.md).
 
-The default 500-component surface limit is covered by an integration fixture
-that validates and renders the complete tree without a stack overflow or
-crash. This is a correctness boundary, not a frame-time guarantee; applications
-should choose lower limits when their presenters or target devices require it.
+## Documentation
+
+- [Core Concepts](./docs/concepts.md)
+- [Architecture](./docs/architecture.md)
+- [Catalogs](./docs/catalogs.md)
+- [Streaming And Actions](./docs/streaming-and-actions.md)
+- [Errors And Security](./docs/errors-and-security.md)
+- [Migration Guide](./docs/migration.md)
+- [Contributing](./CONTRIBUTING.md)
+
+## Expo Example
+
+[`example/expo`](./example/expo) is an Expo SDK 57 consumer that owns its entire
+catalog. It demonstrates simple rendering, staged streaming, two-way binding,
+actions, surface deletion, development diagnostics, and recovery.
+
+```sh
+pnpm install
+pnpm --dir example/expo start
+```
+
+Press `i` for iOS or `a` for Android. Production bundle verification is also
+available:
+
+```sh
+pnpm example:export
+```
+
+## Limitations
+
+- Only A2UI `v0.9` messages are accepted.
+- No Basic Catalog or other visual catalog is bundled.
+- No transport, agent, model, chat UI, persistence, or server integration is
+  included.
+- Catalogs cannot be changed on an internally owned engine after
+  `A2UIRenderer` mounts; recreate the renderer to replace them.
+- Resource limits protect correctness and memory boundaries, but the package
+  does not promise a frame-time SLA for consumer presenters.
+- The package currently provides ESM and TypeScript declaration output.
+
+## Development
+
+```sh
+pnpm build
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm release:check
+```
+
+`release:check` also packs the real npm tarball and installs it into isolated
+Expo and bare React Native consumers before bundling iOS and Android.
+
+## License
+
+Apache-2.0
