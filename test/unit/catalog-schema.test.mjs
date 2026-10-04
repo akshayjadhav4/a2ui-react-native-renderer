@@ -19,7 +19,12 @@ import {
   A2UIDynamicValueSchema,
   defineA2UICatalog,
   defineA2UIComponent,
+  defineA2UIFunction,
 } from "../../lib/module/index.js";
+import {
+  A2UIFunctionInvocationError,
+  evaluateA2UIFunction,
+} from "../../lib/module/protocol/v0_9/functions.js";
 
 const catalog = defineA2UICatalog({
   id: "https://example.com/a2ui/catalog/v1",
@@ -436,4 +441,136 @@ test("rejects a modified marker when its reference would lose a constraint", () 
       error instanceof TypeError &&
       error.message.includes("components.Panel.child"),
   );
+});
+
+test("exports function wire arguments and preserves runtime returnType behavior", () => {
+  let executions = 0;
+  const formatCount = defineA2UIFunction({
+    name: "formatCount",
+    args: z.object({ count: z.number().int(), suffix: z.string().optional() }),
+    returns: "string",
+    description: "Formats a count",
+    execute: ({ count, suffix }) => {
+      executions += 1;
+      return `${count}${suffix ?? ""}`;
+    },
+  });
+  const double = defineA2UIFunction({
+    name: "double",
+    args: z.object({ value: z.number() }),
+    returns: "number",
+    execute: ({ value }) => value * 2,
+  });
+  const functionCatalog = defineA2UICatalog({
+    id: "https://example.com/a2ui/functions/v1",
+    components: catalog.components,
+    functions: [formatCount, double],
+  });
+  const document = exportA2UICatalogSchema(functionCatalog);
+  assert.equal(executions, 0);
+  assert.deepEqual(Object.keys(document.functions), ["formatCount", "double"]);
+  assert.equal(document.functions.formatCount.description, "Formats a count");
+  assert.deepEqual(document.$defs.anyFunction.oneOf, [
+    { $ref: "#/functions/formatCount" },
+    { $ref: "#/functions/double" },
+  ]);
+  const count = document.functions.formatCount.properties.args.properties.count;
+  assert.deepEqual(count.anyOf, [
+    { type: "integer" },
+    {
+      $ref: "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding",
+    },
+    {
+      $ref: "https://a2ui.org/specification/v0_9/common_types.json#/$defs/FunctionCall",
+    },
+  ]);
+  assert.deepEqual(document.functions.formatCount.properties.args.required, [
+    "count",
+  ]);
+  assert.equal(
+    document.functions.formatCount.properties.returnType.default,
+    "string",
+  );
+  assert.equal(JSON.stringify(document).includes("execute"), false);
+
+  for (const version of ["v0_9", "v0_9_1"]) {
+    const ajv = new Ajv2020({ strict: false, validateFormats: false });
+    ajv.addSchema(officialSchema(version, "common_types.json"));
+    ajv.addSchema(document, "https://a2ui.org/specification/v0_9/catalog.json");
+    const validate = ajv.compile({
+      $ref: "https://a2ui.org/specification/v0_9/common_types.json#/$defs/FunctionCall",
+    });
+    for (const [call, dataModel] of [
+      [{ call: "formatCount", args: { count: 3, suffix: " items" } }, {}],
+      [
+        { call: "formatCount", args: { count: { path: "/count" } } },
+        { count: 3 },
+      ],
+      [
+        {
+          call: "formatCount",
+          args: { count: { call: "double", args: { value: 2 } } },
+        },
+        {},
+      ],
+      [{ call: "formatCount", args: { count: 3 }, returnType: "boolean" }, {}],
+    ]) {
+      assert.equal(validate(call), true, JSON.stringify(validate.errors));
+      assert.equal(
+        typeof evaluateA2UIFunction({
+          call,
+          functions: functionCatalog.functions,
+          dataModel,
+          scopePath: "/",
+        }),
+        "string",
+      );
+    }
+    for (const badCall of [
+      { call: "formatCount", args: { count: "three" } },
+      { call: "other", args: { count: 3 } },
+    ]) {
+      assert.equal(validate(badCall), false);
+      assert.throws(
+        () =>
+          evaluateA2UIFunction({
+            call: badCall,
+            functions: functionCatalog.functions,
+            dataModel: {},
+            scopePath: "/",
+          }),
+        A2UIFunctionInvocationError,
+      );
+    }
+  }
+});
+
+test("rejects function argument shapes the official wire envelope cannot represent", () => {
+  for (const [name, schema] of [
+    ["nullable", z.string().nullable()],
+    ["literalNull", z.literal(null)],
+    ["bindingShape", z.object({ path: z.string() })],
+    ["callShape", z.object({ call: z.string() })],
+    ["transform", z.string().transform((value) => value.toUpperCase())],
+  ]) {
+    const functionCatalog = defineA2UICatalog({
+      id: "https://example.com/a2ui/bad-function/v1",
+      components: catalog.components,
+      functions: [
+        defineA2UIFunction({
+          name: "process",
+          args: z.object({ [name]: schema }),
+          returns: "string",
+          execute: () => "ok",
+        }),
+      ],
+    });
+    assert.throws(
+      () => exportA2UICatalogSchema(functionCatalog),
+      (error) =>
+        error instanceof TypeError &&
+        error.message.includes(`functions.process.args.${name}`),
+      name,
+    );
+  }
 });

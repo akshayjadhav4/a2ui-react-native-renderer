@@ -61,11 +61,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
 
 ## Phase C: Functions and validation parity
 
-- [ ] **Task 6: Export representable function call schemas**
+- [x] **Task 6: Export representable function call schemas**
   - Acceptance: Functions export their names, descriptions, direct wire-argument alternatives, and return-kind rules without `execute`. Literal, bound, nested-call, optional, invalid, and mismatched-returnType cases are compared with the runtime evaluator. Any function contract that cannot be represented faithfully fails with its function/argument path; a required runtime semantic change triggers spec review before coding it.
   - Verify: `pnpm build && node --test test/unit/catalog-schema.test.mjs test/unit/functions.test.mjs test/integration/consumer-functions.test.mjs && pnpm typecheck`.
   - Likely files: `src/catalog/convertFunctionSchema.ts`, `src/catalog/exportCatalogSchema.ts`, `test/unit/catalog-schema.test.mjs`, `test/integration/consumer-functions.test.mjs`.
   - Dependencies: Checkpoint B. Scope: Medium.
+  - Evidence: Function entries export names, descriptions, direct literal/binding/nested-call alternatives, and a documented declared return-kind default without serializing `execute`. The returnType field remains advisory because the current evaluator accepts mismatched wire values; focused tests prove that parity across both official versions. Required and optional arguments, invalid literals, unknown calls, and nested calls are checked. Null direct literals and object shapes that the resolver would reinterpret fail with function/argument paths. Build, focused function suites, typecheck, lint, format, and `git diff --check` pass; no runtime semantic change was made.
 
 - [ ] **Task 7: Prove generated-schema and renderer agreement**
   - Acceptance: A small app-owned catalog shared by exporter and renderer validates representative v0.9/v0.9.1 messages through Ajv with official common types and through the renderer. It covers nested properties, children, bindings, actions, functions, rejected values, stable JSON serialization, and detached output. No presenter or callback value appears in exported JSON.

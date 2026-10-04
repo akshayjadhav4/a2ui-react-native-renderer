@@ -4,6 +4,7 @@ import {
   convertCatalogSchema,
   isRequiredCatalogProperty,
 } from "./convertCatalogSchema.js";
+import { convertFunctionSchema } from "./convertFunctionSchema.js";
 import type {
   A2UICatalog,
   A2UIComponentDefinition,
@@ -28,10 +29,6 @@ export function exportA2UICatalogSchema<
   Schemas extends A2UIComponentSchemas,
   Functions extends readonly A2UIFunctionDefinition[],
 >(catalog: A2UICatalog<Schemas, Functions>): A2UICatalogSchemaDocument {
-  if (catalog.functions.length > 0) {
-    throw new TypeError("A2UI function schema export is not yet supported");
-  }
-
   const definitions = catalog.components as Readonly<
     Record<string, Pick<A2UIComponentDefinition, "schema" | "description">>
   >;
@@ -89,13 +86,19 @@ export function exportA2UICatalogSchema<
       ];
     }),
   );
+  const functions = Object.fromEntries(
+    catalog.functions.map((definition) => [
+      definition.name,
+      convertFunctionSchema(definition),
+    ]),
+  );
 
   return {
     $schema: JSON_SCHEMA_URI,
     $id: catalog.id,
     catalogId: catalog.id,
     components,
-    functions: {},
+    functions,
     $defs: {
       CatalogComponentCommon: {
         type: "object",
@@ -108,7 +111,14 @@ export function exportA2UICatalogSchema<
         })),
         discriminator: { propertyName: "component" },
       },
-      anyFunction: false,
+      anyFunction:
+        catalog.functions.length === 0
+          ? false
+          : {
+              oneOf: catalog.functions.map((definition) => ({
+                $ref: `#/functions/${escapePointerToken(definition.name)}`,
+              })),
+            },
     },
   };
 }
