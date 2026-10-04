@@ -1,6 +1,6 @@
 # Capability Map: Headless A2UI Renderer Improvements
 
-**Status:** Reviewed on 2026-10-04. `wire-compatibility` and `binding-semantics` are implemented; later modules remain planned.
+**Status:** Reviewed on 2026-10-04. `wire-compatibility`, `binding-semantics`, and `progressive-surfaces` are implemented; later modules remain planned.
 
 ## Assumptions
 

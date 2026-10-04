@@ -2,7 +2,7 @@
 
 **Module id:** `progressive-surfaces` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Approved for planning on 2026-10-04 when the user said “start work.” No implementation has started.
+**Status:** Approved and implemented on 2026-10-04 on `codex/native-core`. Verification is recorded in [progressive-surfaces-todo.md](tasks/progressive-surfaces-todo.md).
 
 ## Assumptions
 
@@ -19,7 +19,7 @@ Let a React Native app display an A2UI surface while component definitions and d
 
 The [A2UI v0.9.1 protocol](https://github.com/a2ui-project/a2ui/blob/main/specification/v0_9_1/docs/a2ui_protocol.md#component-definition-update) permits components to reference children or data that have not arrived. Its [renderer guide](https://github.com/a2ui-project/a2ui/blob/main/docs/public/guides/renderer-development.md) calls for buffering component definitions and rendering once `root` arrives. The protocol permits a placeholder or skipped missing child; this package proposes an app callback with a `null` default.
 
-## Current gap
+## Original gap
 
 - `updateComponents` fails with `INVALID_ROOT` until a `root` definition exists, so children sent first cannot be buffered.
 - Validation fails with `INVALID_REFERENCE` for an absent child, so a root sent before its children cannot render progressively.

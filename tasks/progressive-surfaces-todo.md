@@ -6,7 +6,7 @@
 
 **Plan:** [progressive-surfaces-plan.md](progressive-surfaces-plan.md)
 
-**Status:** Approved for implementation on 2026-10-04. In progress on `codex/native-core`.
+**Status:** Implemented on 2026-10-04 on `codex/native-core`.
 
 Tasks follow dependency order. Add a focused failing test or type fixture before each behavior change, then make it pass and record verification. Keep each implementation slice on `codex/native-core` and commit it separately. The old `tasks/todo.md` is a historical initial-release record and is not the active checklist.
 
@@ -82,17 +82,18 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Checkpoint C. Scope: Medium.
   - Evidence: README and API/catalog/streaming/migration guides explain the new callback, snapshot state, single-child marker, and app-owned data/loading choices. Documentation assertions and all 135 tests pass.
 
-- [ ] **Task 8: Finish error guidance and native consumer proof**
+- [x] **Task 8: Finish error guidance and native consumer proof**
   - Acceptance: Error docs and changelog distinguish pending refs from validation failures, document app-owned optional agent feedback, and update documentation assertions. Package version, license, runtime dependencies, and Basic Catalog ownership remain unchanged.
   - Verify: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm pack:check && pnpm consumer:smoke`; `pnpm exec prettier --check SPEC-progressive-surfaces.md tasks/progressive-surfaces-plan.md tasks/progressive-surfaces-todo.md`; `git diff --check`.
   - Likely files: `docs/errors-and-security.md`, `docs/concepts.md`, `CHANGELOG.md`, `test/unit/documentation.test.mjs`.
   - Dependencies: Task 7. Scope: Medium.
+  - Evidence: Error guidance and changelog distinguish pending references from actual validation failures and describe optional app-owned feedback. `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` (135 passing), and `pnpm pack:check` pass. `pnpm consumer:smoke` passes with the packed package in Expo and bare React Native iOS/Android bundles. Documentation assertions pass in the full suite. `package.json` remains at `0.1.1` with Apache-2.0 and no runtime dependency or Basic Catalog.
 
 ### Checkpoint D: Module complete
 
-- [ ] All approved spec success criteria pass for v0.9 and v0.9.1, including child-first/root-first streams, late error recovery, missing data, and app-owned loading UI.
-- [ ] Generated declarations expose only the three planned API additions, and packed Expo/bare React Native iOS/Android consumer checks pass.
-- [ ] No Basic Catalog, transport client, new dependency, license change, or package publication is included.
+- [x] All approved spec success criteria pass for v0.9 and v0.9.1, including child-first/root-first streams, late error recovery, missing data, and app-owned loading UI.
+- [x] Generated declarations expose the three planned API additions: `A2UIComponentIdSchema`, snapshot `pendingComponentIds`, and `renderPending` on both React entry points. Packed Expo/bare React Native iOS/Android consumer checks pass.
+- [x] No Basic Catalog, transport client, new dependency, license change, or package publication is included.
 
 ## Review decisions
 

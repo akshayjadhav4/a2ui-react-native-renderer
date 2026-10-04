@@ -325,6 +325,8 @@ It:
 - subscribes only to the requested surface;
 - finds the surface's catalog;
 - resolves the root component;
+- optionally calls app-owned `renderPending` for a created surface without
+  `root` or for a missing structural child;
 - renders the component tree through registered presenters;
 - contains presenter failures through an error boundary.
 
@@ -362,6 +364,9 @@ unchanged. Hooks selecting those collections remain referentially stable even
 when an existing surface receives a component or data-model update.
 
 Surface snapshots are replaced only when that surface commits a valid change.
+They expose immutable `pendingComponentIds`: `["root"]` before root arrives,
+then distinct missing structural IDs reachable from root. Missing bound data
+stays `undefined` in presenter props instead of appearing in this list.
 The renderer may rerender the changed surface's component tree because dynamic
 properties can depend on any value in its current data model. This favors
 correct binding behavior while retaining isolation between surfaces.
@@ -492,11 +497,12 @@ forwarded to the engine's `onAction` callback.
 ## Validation And Resource Limits
 
 The protocol core validates each candidate message before committing it.
-Validation covers component IDs and schemas, the reserved `root`, structural
-references, JSON pointer syntax, cycles, and resource limits. If one message
-fails, the last valid revision remains; later valid messages in the batch still
-apply, including messages for the same surface. Component references must
-resolve within the current complete graph.
+Validation covers component IDs and schemas, structural markers, JSON pointer
+syntax, known cycles, and resource limits. Definitions may arrive before the
+reserved `root`, and a nonempty structural reference may point to a definition
+that has not arrived yet. The engine buffers these valid intermediate states.
+If one message fails, the last valid revision remains; later valid messages in
+the batch still apply, including messages for the same surface.
 
 ```tsx
 const engine = createA2UIEngine({

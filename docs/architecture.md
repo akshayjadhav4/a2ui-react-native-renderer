@@ -46,6 +46,8 @@ Candidate updates are validated before becoming visible. Message shape,
 catalog, component graph, Zod properties, pointers, cycles, and limits are
 checked for each message. A failed message retains the last valid revision;
 later valid messages in the same batch may still commit, even on that surface.
+Definitions may be buffered before `root`; nonempty unresolved structural
+references are recorded as pending while known cycles and limits still fail.
 
 ### Render Resolver
 
@@ -58,7 +60,8 @@ failures from escaping into the host application.
 
 - Engine state is instance-scoped.
 - Catalog IDs are unique within an engine and match `createSurface.catalogId`.
-- `root` is the reserved entry component for a renderable graph.
+- `root` is the reserved entry component for a renderable graph; its absence is
+  a pending state.
 - Surface snapshots are immutable and revisioned.
 - An invalid update does not erase a previous valid revision.
 - A surface update does not notify unrelated surface subscribers.

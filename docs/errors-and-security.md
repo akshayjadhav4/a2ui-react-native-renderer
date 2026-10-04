@@ -10,8 +10,8 @@ Before publishing a surface update, the engine checks:
 - A2UI v0.9 or v0.9.1 message shape and operation;
 - registered and unique catalog IDs;
 - component names and Zod property schemas;
-- duplicate IDs and the reserved `root`;
-- child references, graph cycles, and depth;
+- duplicate or empty IDs and structural child markers;
+- known graph cycles and depth, including definitions buffered before `root`;
 - binding and structural JSON pointers;
 - configured message, graph, and data-model limits.
 
@@ -28,8 +28,8 @@ restrict native capabilities exposed by their own components and functions.
 | `DUPLICATE_CATALOG`       | Engine configuration repeats a catalog ID                     |
 | `UNKNOWN_COMPONENT`       | Graph requests a component absent from the surface catalog    |
 | `INVALID_COMPONENT_PROPS` | Component properties fail the consumer Zod schema             |
-| `INVALID_ROOT`            | Surface has no valid reserved root                            |
-| `INVALID_REFERENCE`       | Component ID, child link, or graph relation is invalid        |
+| `INVALID_ROOT`            | Retained for compatibility; an absent root is now pending     |
+| `INVALID_REFERENCE`       | Empty ID, duplicate ID, known cycle, or arbitrary child call  |
 | `BINDING_ERROR`           | Data pointer, typed bound value, or local setter is invalid   |
 | `FUNCTION_ERROR`          | Function lookup, arguments, execution, or return value failed |
 | `PRESENTER_ERROR`         | Consumer presenter or fallback failed during React rendering  |
@@ -37,6 +37,17 @@ restrict native capabilities exposed by their own components and functions.
 
 Errors include safe routing identifiers where available. `cause` may contain
 sensitive runtime detail and should be restricted to trusted telemetry.
+
+A missing `root` or valid structural child definition is pending, so it does
+not call `onError` or produce `INVALID_REFERENCE`. An absent data path reaches
+the presenter as `undefined`. The protocol has no general completion signal;
+the app decides whether to show loading UI or apply a transport timeout.
+
+If the app's agent transport supports validation feedback, it can translate a
+structured renderer error into its own `VALIDATION_FAILED` feedback envelope
+using `surfaceId`, `path`, and `message`. Do this in the app's `onError` handler;
+the renderer never sends network feedback. Do not forward the raw `cause`,
+message payload, or data model without an explicit privacy decision.
 
 ## Diagnostics Modes
 
@@ -52,7 +63,8 @@ authoritative channel for telemetry and recovery.
 ## Resource Limits
 
 Defaults are conservative correctness boundaries, not universal performance
-targets:
+targets. `maxComponentsPerSurface` also caps the number of distinct unresolved
+child IDs in a candidate graph:
 
 ```tsx
 const engine = createA2UIEngine({

@@ -4,7 +4,7 @@
 
 **Specification:** [SPEC-progressive-surfaces.md](../SPEC-progressive-surfaces.md)
 
-**Status:** Approved for task breakdown on 2026-10-04 when the user said “start next.” No implementation has started.
+**Status:** Approved and implemented on 2026-10-04 on `codex/native-core`. Verification is recorded in [progressive-surfaces-todo.md](progressive-surfaces-todo.md).
 
 The initial-release [plan.md](plan.md) and [todo.md](todo.md) contain historical unchecked checkpoints, so this module uses its own plan and [progressive-surfaces-todo.md](progressive-surfaces-todo.md). The completed wire-compatibility and binding-semantics records remain intact.
 

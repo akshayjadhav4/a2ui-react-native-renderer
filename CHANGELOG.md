@@ -18,11 +18,17 @@ project follows [Semantic Versioning](https://semver.org/).
   optional in `A2UIResolvedProps`. Missing bound values remain `undefined`;
   nested resolved props are inferred recursively. Wrong-type reads and writes
   report structured errors, and stale setters cannot update old bindings.
+- Component definitions now stream in either order: pre-root updates are
+  buffered, and unresolved structural children stay pending while available
+  siblings render. Snapshots expose `pendingComponentIds`, both React entry
+  points accept app-owned `renderPending`, and `A2UIComponentIdSchema` marks a
+  single child without changing presenter props into a list. Missing references
+  no longer raise an error; malformed IDs, known cycles, and limits still do.
 
 ### Known limitation
 
-- Component references to children delivered in later messages still require
-  progressive-reference support and are rejected for now.
+- The protocol has no general completion signal for a child definition that
+  never arrives. The application owns any timeout or retry policy.
 
 ## [0.1.1] - 2026-07-18
 
