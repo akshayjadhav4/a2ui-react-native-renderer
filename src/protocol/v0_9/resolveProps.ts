@@ -10,9 +10,13 @@ import {
   resolveBindingPath,
   resolveStructuralChildren,
 } from "./bindings.js";
-import { evaluateA2UIFunction } from "./functions.js";
+import {
+  A2UIFunctionInvocationError,
+  evaluateA2UIFunction,
+} from "./functions.js";
 import {
   inspectA2UISchemaBehavior,
+  matchesA2UIDynamicKind,
   type A2UISchemaBehavior,
 } from "./behavior.js";
 
@@ -46,7 +50,13 @@ function resolveValue(
 ): unknown {
   switch (behavior.type) {
     case "DYNAMIC":
-      return resolveDynamicValue(value, dataModel, scopePath, functions);
+      return resolveDynamicValue(
+        value,
+        behavior,
+        dataModel,
+        scopePath,
+        functions,
+      );
     case "STRUCTURAL":
       return resolveChildren(value, dataModel, scopePath);
     case "ARRAY":
@@ -124,24 +134,36 @@ function resolveObject(
 
 function resolveDynamicValue(
   value: unknown,
+  behavior: Extract<A2UISchemaBehavior, { type: "DYNAMIC" }>,
   dataModel: unknown,
   scopePath: string,
   functions: readonly A2UIFunctionDefinition[],
 ): unknown {
   if (isDataBinding(value)) {
-    return readDataPointer(
+    const resolved = readDataPointer(
       dataModel,
       resolveBindingPath(scopePath, value.path),
     );
+    if (resolved !== undefined && !matchesA2UIDynamicKind(resolved, behavior)) {
+      throw new TypeError(`A2UI bound value has invalid ${behavior.kind} type`);
+    }
+    return resolved;
   }
 
   if (isFunctionCall(value)) {
-    return evaluateA2UIFunction({
+    const resolved = evaluateA2UIFunction({
       call: value,
       functions,
       dataModel,
       scopePath,
     });
+    if (!matchesA2UIDynamicKind(resolved, behavior)) {
+      throw new A2UIFunctionInvocationError(
+        value.call,
+        `A2UI function "${value.call}" produced an invalid ${behavior.kind} value`,
+      );
+    }
+    return resolved;
   }
 
   return value;

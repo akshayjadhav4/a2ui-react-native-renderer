@@ -18,6 +18,27 @@ export type A2UISchemaBehavior =
 export type A2UIDynamicKind =
   "string" | "number" | "boolean" | "string-list" | "unknown";
 
+export function matchesA2UIDynamicKind(
+  value: unknown,
+  behavior: Extract<A2UISchemaBehavior, { type: "DYNAMIC" }>,
+): boolean {
+  if (value === null) return behavior.allowsNull;
+  switch (behavior.kind) {
+    case "string":
+      return typeof value === "string";
+    case "number":
+      return typeof value === "number" && Number.isFinite(value);
+    case "boolean":
+      return typeof value === "boolean";
+    case "string-list":
+      return (
+        Array.isArray(value) && value.every((item) => typeof item === "string")
+      );
+    case "unknown":
+      return true;
+  }
+}
+
 export function inspectA2UISchemaBehavior(
   schema: z.ZodTypeAny,
 ): A2UISchemaBehavior {

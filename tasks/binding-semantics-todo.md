@@ -46,7 +46,7 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
   - Likely files: `src/protocol/v0_9/resolveProps.ts`, `test/integration/bound-presenter.test.mjs`.
   - Dependencies: Task 3. Scope: Small.
 
-- [ ] **Task 5: Check resolved dynamic values before presentation**
+- [x] **Task 5: Check resolved dynamic values before presentation**
   - Acceptance: Wrong-type bound values and function results produce `BINDING_ERROR` or `FUNCTION_ERROR`; missing paths remain `undefined`; a later correcting data update recovers the presenter.
   - Verify: `pnpm build && node --test test/integration/bound-presenter.test.mjs test/integration/consumer-functions.test.mjs test/integration/diagnostics.test.mjs`; `pnpm typecheck`.
   - Likely files: `src/protocol/v0_9/resolveProps.ts`, `src/rendering/presenterAdapter.tsx`, `test/integration/bound-presenter.test.mjs`, `test/integration/consumer-functions.test.mjs`.
@@ -54,7 +54,7 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 ### Checkpoint C
 
-- [ ] Invalid typed values cannot reach a presenter; action context and subscription tests pass.
+- [x] Invalid typed values cannot reach a presenter; action context and subscription tests pass.
 
 - [ ] **Task 6: Validate current-state local writes**
   - Acceptance: Setters reject wrong types and stale component bindings with a structured error and no model mutation. Valid rapid successive writes, template-scoped writes, and surface-isolated notifications continue to work.

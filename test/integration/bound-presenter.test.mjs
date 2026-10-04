@@ -51,11 +51,17 @@ const catalog = defineA2UICatalog({
       returns: "string",
       execute: () => "From function",
     }),
+    defineA2UIFunction({
+      name: "numericLabel",
+      args: z.object({}),
+      returns: "number",
+      execute: () => 42,
+    }),
   ],
 });
 
-function createEngineWithSurface(components, dataModel) {
-  const engine = createA2UIEngine({ catalogs: [catalog] });
+function createEngineWithSurface(components, dataModel, onError) {
+  const engine = createA2UIEngine({ catalogs: [catalog], onError });
   engine.applyMessages([
     {
       version: "v0.9",
@@ -217,4 +223,47 @@ test("only direct bindings expose an input setter", async () => {
   assert.deepEqual(boundEngine.getSurface("main").dataModel, {
     name: "Created",
   });
+});
+
+test("contains wrong-type bound reads and recovers after corrected data", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: 42 },
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+
+  assert.equal(renderer.toJSON(), null);
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+  assert.equal(errors.at(-1)?.componentId, "root");
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9",
+      updateDataModel: { surfaceId: "main", path: "/name", value: "Ready" },
+    });
+  });
+
+  assert.equal(renderer.root.findByType("NativeInput").props.value, "Ready");
+});
+
+test("contains a function result with the wrong dynamic field type", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [
+      {
+        id: "root",
+        component: "Input",
+        value: { call: "numericLabel", returnType: "string" },
+      },
+    ],
+    {},
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+
+  assert.equal(renderer.toJSON(), null);
+  assert.equal(errors.at(-1)?.code, "FUNCTION_ERROR");
+  assert.equal(errors.at(-1)?.componentId, "root");
 });
