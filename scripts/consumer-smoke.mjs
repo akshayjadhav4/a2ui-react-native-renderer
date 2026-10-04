@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   realpathSync,
   rmSync,
   writeFileSync,
@@ -20,6 +21,7 @@ const scriptPath = fileURLToPath(import.meta.url);
 const repositoryRoot = resolve(dirname(scriptPath), "..");
 const keepTemporaryFiles = process.env.A2UI_KEEP_SMOKE_TEMP === "1";
 const smokeRoot = mkdtempSync(join(tmpdir(), "a2ui-consumer-smoke-"));
+const exporterSentinel = "Unsupported catalog schema at";
 
 try {
   console.log(`Consumer smoke workspace: ${smokeRoot}`);
@@ -61,6 +63,7 @@ function verifyExpoConsumer(tarballPath) {
     ],
     consumerRoot,
   );
+  assertBundleIsolation(consumerRoot, ["dist/ios", "dist/android"]);
 }
 
 function verifyBareConsumer(tarballPath) {
@@ -77,6 +80,7 @@ function verifyBareConsumer(tarballPath) {
   run("pnpm", ["run", "typecheck"], consumerRoot);
   run("pnpm", ["run", "bundle:ios"], consumerRoot);
   run("pnpm", ["run", "bundle:android"], consumerRoot);
+  assertBundleIsolation(consumerRoot, ["dist/ios", "dist/android"]);
 }
 
 function copyConsumer(sourceRoot, destinationRoot) {
@@ -120,17 +124,70 @@ function assertIsolatedPackage(consumerRoot) {
     "package.json",
     "lib/module/index.js",
     "lib/typescript/index.d.ts",
+    "lib/module/catalog-schema.js",
+    "lib/typescript/catalog-schema.d.ts",
   ]) {
     if (!existsSync(join(installedRoot, path))) {
       throw new Error(`Installed package is missing ${path}`);
     }
   }
 
+  const exporterSource = readFileSync(
+    join(installedRoot, "lib/module/catalog/convertCatalogSchema.js"),
+    "utf8",
+  );
+  if (!exporterSource.includes(exporterSentinel)) {
+    throw new Error("Packed exporter sentinel is missing");
+  }
+  run(
+    "node",
+    [
+      "--input-type=module",
+      "-e",
+      'import { exportA2UICatalogSchema } from "a2ui-react-native-renderer/catalog-schema"; if (typeof exportA2UICatalogSchema !== "function") process.exit(1);',
+    ],
+    consumerRoot,
+  );
+
   for (const unpublishedPath of ["src", "test", "example", "scripts"]) {
     if (existsSync(join(installedRoot, unpublishedPath))) {
       throw new Error(`Installed package leaked ${unpublishedPath}/`);
     }
   }
+}
+
+function assertBundleIsolation(consumerRoot, outputDirectories) {
+  const forbidden = [
+    exporterSentinel,
+    "@a2ui/web_core",
+    "basic_catalog",
+    "lit-html",
+    "lit-element",
+  ];
+  for (const directory of outputDirectories) {
+    const outputRoot = join(consumerRoot, directory);
+    const bundles = walkFiles(outputRoot).filter((file) =>
+      /\.(?:js|bundle|hbc|map)$/.test(file),
+    );
+    if (bundles.length === 0) {
+      throw new Error(`No native bundle artifact found in ${directory}`);
+    }
+    for (const file of bundles) {
+      const contents = readFileSync(file);
+      for (const marker of forbidden) {
+        if (contents.includes(marker)) {
+          throw new Error(`Native bundle ${file} contains ${marker}`);
+        }
+      }
+    }
+  }
+}
+
+function walkFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const file = join(directory, entry.name);
+    return entry.isDirectory() ? walkFiles(file) : [file];
+  });
 }
 
 function isInside(parent, child) {

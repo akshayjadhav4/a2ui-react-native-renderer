@@ -121,6 +121,20 @@ function assertPackageMetadata(packageJson, packageRoot) {
   if (packageJson.name !== "a2ui-react-native-renderer") {
     throw new Error("Packed package has an unexpected name");
   }
+  if (packageJson.version !== "0.1.1" || packageJson.license !== "Apache-2.0") {
+    throw new Error(
+      "Packed package version or license changed during this module",
+    );
+  }
+  if (
+    Object.keys(packageJson.dependencies ?? {}).length > 0 ||
+    Object.keys(packageJson.optionalDependencies ?? {}).length > 0 ||
+    packageJson.peerDependencies?.ajv !== undefined
+  ) {
+    throw new Error(
+      "Packed renderer gained a runtime schema-export dependency",
+    );
+  }
 
   const forbiddenDependencies = [
     "@a2ui/web_core",

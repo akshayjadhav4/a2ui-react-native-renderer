@@ -2,7 +2,7 @@
 
 **Module id:** `catalog-contract` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Approved for planning on 2026-10-04 when the user said “next.” No implementation has started.
+**Status:** Implemented on `codex/native-core` on 2026-10-04. The user approved planning and task breakdown before implementation.
 
 ## Assumptions
 

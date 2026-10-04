@@ -6,7 +6,7 @@
 
 **Plan:** [catalog-contract-plan.md](catalog-contract-plan.md)
 
-**Status:** Approved for implementation on 2026-10-04. In progress.
+**Status:** Complete on `codex/native-core` on 2026-10-04.
 
 Tasks follow dependency order. Add a focused failing test or type fixture before each behavior change, then make it pass and record verification. Keep implementation on `codex/native-core`, commit each slice separately, and preserve the historical initial-release `tasks/plan.md` and `tasks/todo.md`.
 
@@ -89,17 +89,18 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Checkpoint C. Scope: Medium.
   - Evidence: README, API and catalog guides, and changelog document the separate export import, one app-owned catalog, build/server JSON delivery, supported Zod subset, path-specific failures, advisory wire returnType, and catalog ID versioning. The API documentation identifies the one public subpath. Documentation assertions, all 149 tests, targeted Prettier check, and `git diff --check` pass.
 
-- [ ] **Task 9: Verify packed native isolation and complete the module**
+- [x] **Task 9: Verify packed native isolation and complete the module**
   - Acceptance: The packed `catalog-schema` subpath resolves and the root import's Expo/bare React Native iOS/Android bundles contain no exporter-only sentinel or new runtime package. Generated declarations and package contents match the documented API. Version `0.1.1`, Apache-2.0, app-owned components, and unpublished status remain unchanged.
   - Verify: `pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm pack:check && pnpm consumer:smoke`; `pnpm exec prettier --check SPEC-catalog-contract.md tasks/catalog-contract-plan.md tasks/catalog-contract-todo.md`; `git diff --check`.
   - Likely files: `scripts/pack-check.mjs`, `scripts/consumer-smoke.mjs`, `test/unit/catalog-schema.test.mjs`, `tasks/catalog-contract-todo.md`.
   - Dependencies: Task 8. Scope: Medium.
+  - Evidence: Packed Expo and bare consumers import the schema subpath by package specifier, typecheck, and bundle for iOS and Android. Each bundle is scanned for an exporter-only error sentinel and web renderer strings; all are absent. The packed module contains the positive-control sentinel. The package remains at 0.1.1, Apache-2.0, with no new runtime dependency. Build, typecheck, lint, format, all 149 tests, pack check, consumer smoke, module-document formatting, and `git diff --check` pass.
 
 ### Checkpoint D: Module complete
 
-- [ ] All approved spec success criteria pass for a single app-owned catalog shared by agent schema and renderer, including fail-closed unsupported cases.
-- [ ] The packed schema subpath works; native root bundles exclude conversion code, Basic Catalog, transport, model SDK, and new runtime dependencies.
-- [ ] Final package gates pass; docs and declarations match; no package release or license change is included.
+- [x] All approved spec success criteria pass for a single app-owned catalog shared by agent schema and renderer, including fail-closed unsupported cases.
+- [x] The packed schema subpath works; native root bundles exclude conversion code, Basic Catalog, transport, model SDK, and new runtime dependencies.
+- [x] Final package gates pass; docs and declarations match; no package release or license change is included.
 
 ## Review decisions
 

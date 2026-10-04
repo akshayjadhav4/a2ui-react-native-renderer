@@ -4,7 +4,7 @@
 
 **Specification:** [SPEC-catalog-contract.md](../SPEC-catalog-contract.md)
 
-**Status:** Approved for task breakdown on 2026-10-04 when the user said “approved next.” No implementation has started.
+**Status:** Implemented on `codex/native-core` on 2026-10-04 after plan and task-list approval.
 
 The initial-release [plan.md](plan.md) and [todo.md](todo.md) still contain historical unchecked items. This module follows the approved per-module convention and uses this plan and [catalog-contract-todo.md](catalog-contract-todo.md); those historical files remain untouched.
 
