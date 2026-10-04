@@ -263,7 +263,7 @@ test("engine rejects invalid graph updates before mutating the last valid surfac
   assert.equal(engine.getSurface("main")?.components.label.props.text, "After");
 });
 
-test("applies message batches transactionally per surface", () => {
+test("keeps valid updates before and after a rejected message", () => {
   const errors = [];
   const engine = createA2UIEngine({
     catalogs: [graphCatalog],
@@ -282,8 +282,6 @@ test("applies message batches transactionally per surface", () => {
       },
     },
   ]);
-  const before = engine.getSurface("one");
-
   engine.applyMessages([
     {
       version: "v0.9",
@@ -301,6 +299,13 @@ test("applies message batches transactionally per surface", () => {
     },
     {
       version: "v0.9",
+      updateComponents: {
+        surfaceId: "one",
+        components: [{ id: "root", component: "Text", text: "Recovered" }],
+      },
+    },
+    {
+      version: "v0.9",
       createSurface: { surfaceId: "two", catalogId: graphCatalog.id },
     },
     {
@@ -312,8 +317,11 @@ test("applies message batches transactionally per surface", () => {
     },
   ]);
 
-  assert.equal(engine.getSurface("one"), before);
-  assert.equal(engine.getSurface("one")?.components.root.props.text, "Stable");
+  assert.equal(
+    engine.getSurface("one")?.components.root.props.text,
+    "Recovered",
+  );
+  assert.equal(engine.getSurface("one")?.revision, 4);
   assert.equal(
     engine.getSurface("two")?.components.root.props.text,
     "Committed",
@@ -321,7 +329,7 @@ test("applies message batches transactionally per surface", () => {
   assert.equal(errors.at(-1).surfaceId, "one");
 });
 
-test("does not create a surface when its initial graph is invalid", () => {
+test("retains an accepted surface create after an invalid initial graph", () => {
   const engine = createA2UIEngine({ catalogs: [graphCatalog] });
 
   engine.applyMessages([
@@ -338,7 +346,8 @@ test("does not create a surface when its initial graph is invalid", () => {
     },
   ]);
 
-  assert.equal(engine.getSurface("main"), undefined);
+  assert.equal(engine.getSurface("main")?.rootId, null);
+  assert.equal(engine.getSurface("main")?.revision, 1);
 });
 
 test("contains invalid surface lifecycle and data paths before core processing", () => {

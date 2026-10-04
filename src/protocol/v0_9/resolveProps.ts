@@ -1,4 +1,3 @@
-import { scrapeSchemaBehavior, type BehaviorNode } from "@a2ui/web_core/v0_9";
 import type { z } from "zod";
 
 import type {
@@ -12,6 +11,10 @@ import {
   resolveStructuralChildren,
 } from "./bindings.js";
 import { evaluateA2UIFunction } from "./functions.js";
+import {
+  inspectA2UISchemaBehavior,
+  type A2UISchemaBehavior,
+} from "./behavior.js";
 
 export type A2UIDataSetter = (path: string, value: unknown) => void;
 
@@ -23,7 +26,7 @@ export function resolvePresenterProps(
   setData: A2UIDataSetter,
   functions: readonly A2UIFunctionDefinition[],
 ): Readonly<Record<string, unknown>> {
-  const behavior = scrapeSchemaBehavior(schema);
+  const behavior = inspectA2UISchemaBehavior(schema);
   if (behavior.type !== "OBJECT") {
     return Object.freeze({ ...rawProps });
   }
@@ -35,7 +38,7 @@ export function resolvePresenterProps(
 
 function resolveValue(
   value: unknown,
-  behavior: BehaviorNode,
+  behavior: A2UISchemaBehavior,
   dataModel: unknown,
   scopePath: string,
   setData: A2UIDataSetter,
@@ -83,7 +86,7 @@ function resolveValue(
 
 function resolveObject(
   value: Readonly<Record<string, unknown>>,
-  behavior: Extract<BehaviorNode, { type: "OBJECT" }>,
+  behavior: Extract<A2UISchemaBehavior, { type: "OBJECT" }>,
   dataModel: unknown,
   scopePath: string,
   setData: A2UIDataSetter,

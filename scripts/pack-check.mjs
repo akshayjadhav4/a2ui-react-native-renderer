@@ -120,6 +120,20 @@ function assertPackageMetadata(packageJson, packageRoot) {
     throw new Error("Packed package has an unexpected name");
   }
 
+  const forbiddenDependencies = [
+    "@a2ui/web_core",
+    "lit",
+    "lit-html",
+    "lit-element",
+  ];
+  if (
+    forbiddenDependencies.some(
+      (name) => packageJson.dependencies?.[name] !== undefined,
+    )
+  ) {
+    throw new Error("Packed renderer includes a web runtime dependency");
+  }
+
   for (const target of [
     packageJson.main,
     packageJson.module,
@@ -161,6 +175,12 @@ function assertNoLocalPaths(packageRoot) {
     const contents = readFileSync(path, "utf8");
     if (contents.includes(repositoryRoot)) {
       throw new Error(`Packed file contains the repository path: ${path}`);
+    }
+    if (
+      path.startsWith(join(packageRoot, "lib")) &&
+      /@a2ui\/web_core|basic_catalog|lit-html|lit-element|@lit\//.test(contents)
+    ) {
+      throw new Error(`Packed runtime contains a web renderer module: ${path}`);
     }
   }
 }

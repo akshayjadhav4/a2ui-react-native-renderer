@@ -1,13 +1,13 @@
 # Architecture
 
-The package has one job: process A2UI v0.9 messages and render their surfaces
-through a consumer-owned native catalog.
+The package has one job: process A2UI v0.9 and v0.9.1 messages and render their
+surfaces through a consumer-owned native catalog.
 
 ```text
 agent or server
   -> consumer transport
   -> A2UIMessage
-  -> engine and v0.9 adapter
+  -> engine and in-package protocol core
   -> validated surface snapshots
   -> React surface resolver
   -> consumer presenters
@@ -27,23 +27,25 @@ duplicated in React state.
 ### Engine
 
 Each `createA2UIEngine` call creates isolated state. An engine owns catalog
-registration, surfaces, data models, revisions, actions, errors, and
-subscriptions. There is no module-level engine, catalog registry, or mutable
-global configuration.
+registration, actions, errors, and subscriptions. Its in-package protocol core
+owns the authoritative surface, component, data-model, and revision state.
+There is no module-level engine, catalog registry, or mutable global
+configuration.
 
-### Protocol Adapter
+### Protocol Core
 
-The v0.9 adapter wraps `@a2ui/web_core/v0_9`. It parses official messages,
-drives the upstream processor, and exposes renderer-owned immutable snapshots.
-Other package layers do not depend directly on upstream contexts or mutable
-models.
+The core parses v0.9 and v0.9.1 messages, validates each transition against the
+application's catalog, and publishes immutable surface snapshots. It contains
+only the protocol behavior the native renderer needs: lifecycle, component
+graphs, data models, bindings, and action values. React does not own a second
+copy of protocol state.
 
 ### Validation Transaction
 
 Candidate updates are validated before becoming visible. Message shape,
 catalog, component graph, Zod properties, pointers, cycles, and limits are
-checked per affected surface. A failed transaction retains the last valid
-revision; an independent valid surface in the same batch may still commit.
+checked for each message. A failed message retains the last valid revision;
+later valid messages in the same batch may still commit, even on that surface.
 
 ### Render Resolver
 
@@ -69,11 +71,13 @@ failures from escaping into the host application.
 
 Runtime dependencies are deliberately narrow:
 
-- `@a2ui/web_core` provides the official v0.9 protocol processor.
 - React provides rendering and subscriptions.
 - React Native is the host platform peer; presenters decide which primitives to
   use.
 - Zod is the shared catalog-schema peer.
+
+The package does not depend on `@a2ui/web_core` or include Basic Catalog, Lit,
+or DOM rendering modules.
 
 Expo, AG-UI, TanStack AI, CopilotKit, Hono, SSE, WebSocket clients, styling
 systems, and application stores belong outside the package.

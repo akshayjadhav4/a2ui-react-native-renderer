@@ -1,4 +1,4 @@
-import { FunctionCallSchema } from "@a2ui/web_core/v0_9";
+import { FunctionCallSchema } from "./commonSchemas.js";
 
 import type {
   A2UIFunctionDefinition,
@@ -81,7 +81,7 @@ function evaluateCall(
   }
 
   const resolvedArgs = Object.fromEntries(
-    Object.entries(parsedCall.data.args).map(([key, value]) => [
+    Object.entries(parsedCall.data.args ?? {}).map(([key, value]) => [
       key,
       resolveArgument(value, functions, dataModel, scopePath, depth + 1),
     ]),

@@ -18,7 +18,8 @@ const catalog = defineA2UICatalog({
 
 ## 2. Use Official Messages
 
-The renderer accepts v0.9 lifecycle messages, not a simplified object such as:
+The renderer accepts v0.9 and v0.9.1 lifecycle messages, not a simplified
+object such as:
 
 ```ts
 // Not accepted directly:
@@ -73,7 +74,17 @@ register every capability the application's A2UI producer may emit.
 
 ## Compatibility Notes
 
-- Initial releases support A2UI v0.9 only.
+Plan to release these public type and schema changes in `0.2.0`; this working
+tree does not change the package version or publish a release.
+
+- Both v0.9 and v0.9.1 complete component graphs are accepted. References to
+  components delivered in a later update remain unsupported for now.
+- From this version, a bad message in `applyMessages` leaves earlier valid
+  messages committed and does not stop later valid messages, even for the same
+  surface. Applications that depended on per-surface batch rollback should
+  group operations and handle rollback in their own transport layer.
+- `@a2ui/web_core` is no longer a runtime dependency. Public imports remain at
+  the package root; Zod schemas and the `A2UIMessage` type are now package-owned.
 - Zod 3.25 is a peer contract; Zod 4 schemas are not supported.
 - React Native Web is not a guaranteed initial target.
 - There is no native module, so both React Native architectures can consume the

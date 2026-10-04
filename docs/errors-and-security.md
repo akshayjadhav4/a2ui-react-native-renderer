@@ -7,7 +7,7 @@ component property, binding, URL, and action context as untrusted input.
 
 Before publishing a surface update, the engine checks:
 
-- A2UI v0.9 message shape and operation;
+- A2UI v0.9 or v0.9.1 message shape and operation;
 - registered and unique catalog IDs;
 - component names and Zod property schemas;
 - duplicate IDs and the reserved `root`;
@@ -22,8 +22,8 @@ restrict native capabilities exposed by their own components and functions.
 
 | Code                      | Meaning                                                       |
 | ------------------------- | ------------------------------------------------------------- |
-| `INVALID_MESSAGE`         | Message does not satisfy the v0.9 operation contract          |
-| `UNSUPPORTED_VERSION`     | Message declares a protocol version other than v0.9           |
+| `INVALID_MESSAGE`         | Message does not satisfy a supported operation contract       |
+| `UNSUPPORTED_VERSION`     | Message declares a version other than v0.9 or v0.9.1          |
 | `UNKNOWN_CATALOG`         | Surface requests a catalog not registered in its engine       |
 | `DUPLICATE_CATALOG`       | Engine configuration repeats a catalog ID                     |
 | `UNKNOWN_COMPONENT`       | Graph requests a component absent from the surface catalog    |

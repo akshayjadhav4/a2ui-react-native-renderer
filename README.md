@@ -1,7 +1,7 @@
 # a2ui-react-native-renderer
 
-A catalog-agnostic A2UI v0.9 renderer and protocol runtime for React Native and
-Expo.
+A catalog-agnostic A2UI v0.9 and v0.9.1 renderer and protocol runtime for React
+Native and Expo.
 
 The package turns official A2UI messages into consumer-owned native React
 presenters. It does not bundle a component catalog, visual design system, chat
@@ -13,7 +13,7 @@ UI, model SDK, or transport.
 - React Native 0.76 or newer, including Expo projects
 - Zod 3.25
 - Node.js 20 or newer for development and package tooling
-- A2UI messages using protocol version `v0.9`
+- A2UI messages using protocol version `v0.9` or `v0.9.1`
 
 ## Installation
 
@@ -50,14 +50,14 @@ const catalog = defineA2UICatalog({
 
 const messages: A2UIMessage[] = [
   {
-    version: "v0.9",
+    version: "v0.9.1",
     createSurface: {
       surfaceId: "welcome",
       catalogId: catalog.id,
     },
   },
   {
-    version: "v0.9",
+    version: "v0.9.1",
     updateComponents: {
       surfaceId: "welcome",
       components: [
@@ -145,6 +145,10 @@ the reserved `root`, references, cycles, JSON pointers, and configured resource
 limits. An invalid update reports a structured `A2UIRendererError` and keeps the
 last valid surface revision when possible.
 
+Messages in a batch apply in order. An invalid message is reported and skipped;
+later valid messages continue, including messages for that same surface. A
+batch exceeding `maxMessagesPerBatch` is rejected before any message applies.
+
 ```tsx
 <A2UIRenderer
   catalogs={[catalog]}
@@ -208,7 +212,9 @@ pnpm example:export
 
 ## Limitations
 
-- Only A2UI `v0.9` messages are accepted.
+- A2UI `v0.9` and `v0.9.1` complete component graphs are supported. A child
+  reference to a component delivered in a later message is still rejected;
+  progressive reference handling is planned separately.
 - No Basic Catalog or other visual catalog is bundled.
 - No transport, agent, model, chat UI, persistence, or server integration is
   included.

@@ -60,6 +60,25 @@ test("supports nested consumer function calls", () => {
   assert.equal(result, "4 items");
 });
 
+test("accepts a registered function call with omitted optional args", () => {
+  const greet = defineA2UIFunction({
+    name: "greet",
+    args: z.object({}),
+    returns: "string",
+    execute: () => "Hello",
+  });
+
+  assert.equal(
+    evaluateA2UIFunction({
+      call: { call: "greet", returnType: "string" },
+      functions: [greet],
+      dataModel: {},
+      scopePath: "/",
+    }),
+    "Hello",
+  );
+});
+
 test("rejects unknown functions and ships no implicit built-ins", () => {
   for (const functionName of ["missing", "openUrl", "formatCurrency"]) {
     assert.throws(

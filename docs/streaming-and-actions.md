@@ -6,7 +6,7 @@ the same engine.
 
 ## Message Lifecycle
 
-For v0.9, the runtime accepts:
+For v0.9 and v0.9.1, the runtime accepts:
 
 1. `createSurface` to establish a surface and catalog ID;
 2. `updateDataModel` to initialize or change bound data;
@@ -62,10 +62,15 @@ The engine owns surface content; the transcript owns where it appears.
 
 ## Batches And Recovery
 
-`applyMessages` validates and commits updates transactionally per affected
-surface. Use it when one tool result contains an A2UI operation array. One bad
-surface does not prevent an unrelated valid surface in the same batch from
-committing.
+`applyMessages` processes operations in order. Each valid message commits its
+surface revision; an invalid message is reported and skipped. Later valid
+messages still apply, including ones for the same surface. Subscribers receive
+one final notification for the batch. A batch over the configured message
+limit is rejected in full.
+
+Component updates currently need a complete resolvable graph. A reference to
+a child that arrives in a later message is rejected; the next valid update can
+recover the surface.
 
 Do not render raw operation JSON as assistant text. Parse the transport payload,
 pass only message objects to the engine, and expose failures through `onError`.
@@ -96,5 +101,5 @@ with text, data updates, component updates, or surface deletion.
 ## Lifetime
 
 Call `engine.dispose()` when an application-owned engine will never be used
-again. Disposal releases upstream reactive state and package subscriptions.
+again. Disposal releases protocol state and package subscriptions.
 Do not dispose an engine merely because one surface was deleted.

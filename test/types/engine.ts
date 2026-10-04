@@ -27,6 +27,12 @@ const message: A2UIMessage = {
   },
 };
 
+const currentMessage: A2UIMessage = {
+  version: "v0.9.1",
+  updateDataModel: { surfaceId: "main", path: "/title", value: "Hello" },
+};
+void currentMessage;
+
 const limits: A2UIResourceLimits = {
   ...DEFAULT_A2UI_RESOURCE_LIMITS,
   maxComponentsPerSurface: 100,
@@ -40,6 +46,6 @@ const failedSurfaceIds: readonly string[] =
   engine.getSnapshot().failedSurfaceIds;
 void failedSurfaceIds;
 
-// @ts-expect-error Only official v0.9 messages satisfy A2UIMessage.
+// @ts-expect-error Only official v0.9/v0.9.1 messages satisfy A2UIMessage.
 const futureMessage: A2UIMessage = { version: "v1.0" };
 void futureMessage;

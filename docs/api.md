@@ -27,7 +27,7 @@ Functions are registered through a catalog; the package provides no built-ins.
 
 ### `createA2UIEngine`
 
-Creates an isolated stateful A2UI v0.9 runtime. The engine applies messages,
+Creates an isolated stateful A2UI v0.9/v0.9.1 runtime. The engine applies messages,
 owns surface state and data models, dispatches actions, reports errors, and
 publishes external-store subscriptions. Call `dispose()` when an
 application-owned engine is permanently retired.
@@ -66,8 +66,8 @@ Returns the engine's immutable historical error collection. Must run below
 
 ## Protocol Schema Values
 
-These Zod schemas are aliases of the official v0.9 contracts used by the
-runtime. Use them inside consumer component schemas.
+These package-owned Zod schemas describe the v0.9/v0.9.1 value shapes used by
+the runtime. Use them inside consumer component schemas.
 
 | Export                        | Purpose                                          |
 | ----------------------------- | ------------------------------------------------ |
@@ -110,7 +110,7 @@ individual values through `createA2UIEngine({ limits })`.
 
 | Export                  | Contract                                                    |
 | ----------------------- | ----------------------------------------------------------- |
-| `A2UIMessage`           | Official A2UI v0.9 server-to-client message union           |
+| `A2UIMessage`           | A2UI v0.9/v0.9.1 server-to-client message union             |
 | `A2UIUserAction`        | Official resolved client action sent to consumer `onAction` |
 | `A2UIAction`            | Wire action accepted in a component schema                  |
 | `A2UIChildList`         | Wire child-list value                                       |
@@ -149,8 +149,8 @@ individual values through `createA2UIEngine({ limits })`.
 ## Compatibility Notes
 
 - Public error codes and root exports are semver-relevant after `0.1.0`.
-- Protocol types describe v0.9 only.
+- Protocol types describe v0.9 and v0.9.1 complete-graph messages.
 - Types may reference React, React Native, and Zod peer contracts, but no Expo or
   transport type is part of this API.
-- Internal adapters, JSON-pointer utilities, error boundaries, and mutable
+- Internal protocol state, JSON-pointer utilities, error boundaries, and mutable
   records are intentionally unavailable through deep imports.

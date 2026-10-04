@@ -1,4 +1,7 @@
-import { scrapeSchemaBehavior, type BehaviorNode } from "@a2ui/web_core/v0_9";
+import {
+  inspectA2UISchemaBehavior,
+  type A2UISchemaBehavior,
+} from "../protocol/v0_9/behavior.js";
 
 import type { A2UIRegisteredCatalog } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
@@ -152,7 +155,7 @@ export function validateComponentUpdate({
     try {
       collectBehaviorReferences(
         component.props,
-        scrapeSchemaBehavior(definition.schema),
+        inspectA2UISchemaBehavior(definition.schema),
         references,
       );
     } catch (cause) {
@@ -213,7 +216,7 @@ export function validateComponentUpdate({
 
 function collectBehaviorReferences(
   value: unknown,
-  behavior: BehaviorNode,
+  behavior: A2UISchemaBehavior,
   references: string[],
 ): void {
   switch (behavior.type) {

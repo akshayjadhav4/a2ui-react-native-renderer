@@ -34,7 +34,7 @@ control.
 An A2UI message is a protocol instruction. It is not React code and it is not a
 complete screen specification that must be replaced on every update.
 
-The v0.9 lifecycle includes messages such as:
+The v0.9/v0.9.1 lifecycle includes messages such as:
 
 - `createSurface`: start an independently updateable UI surface;
 - `updateComponents`: provide or replace component definitions;
@@ -134,9 +134,8 @@ The schema provides three protections:
 Schemas describe component-specific properties. Protocol properties such as
 `id` and `component` remain owned by the A2UI engine.
 
-`@a2ui/web_core` v0.9 uses Zod for component contracts, so the initial package
-API uses compatible Zod v3 schemas rather than introducing a second validation
-system.
+The package uses Zod v3 for consumer-owned component contracts and protocol
+value helpers, giving applications one schema system for both.
 
 ## Presenter
 
@@ -490,12 +489,12 @@ forwarded to the engine's `onAction` callback.
 
 ## Validation And Resource Limits
 
-The engine validates every candidate surface graph before forwarding messages
-to the protocol core. Validation covers component IDs and schemas, the reserved
-`root`, structural references, JSON pointer syntax, cycles, and resource
-limits. Messages for each surface form a transaction: if one fails, none of
-that surface's messages in the batch commit. Other valid surfaces remain
-independent.
+The protocol core validates each candidate message before committing it.
+Validation covers component IDs and schemas, the reserved `root`, structural
+references, JSON pointer syntax, cycles, and resource limits. If one message
+fails, the last valid revision remains; later valid messages in the batch still
+apply, including messages for the same surface. Component references must
+resolve within the current complete graph.
 
 ```tsx
 const engine = createA2UIEngine({

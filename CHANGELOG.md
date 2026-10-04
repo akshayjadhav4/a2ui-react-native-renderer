@@ -5,6 +5,21 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced `@a2ui/web_core` with an in-package protocol core that keeps native
+  bundles free of its Basic Catalog and Lit dependencies.
+- Added v0.9.1 messages alongside v0.9 for complete component graphs. The
+  `A2UIMessage` type and public value schemas are now package-owned.
+- `applyMessages` now continues after an invalid message and commits later
+  valid messages, including on the same surface. Each accepted message commits
+  atomically; oversized batches still reject in full.
+
+### Known limitation
+
+- Component references to children delivered in later messages still require
+  progressive-reference support and are rejected for now.
+
 ## [0.1.1] - 2026-07-18
 
 ### Fixed
