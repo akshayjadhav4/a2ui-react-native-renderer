@@ -39,7 +39,7 @@ type A2UIBindingSetters<Props extends object> = {
     Key in keyof Props as A2UIDataBindingValue extends NonNullable<Props[Key]>
       ? `set${Capitalize<string & Key>}`
       : never
-  ]?: (value: Exclude<NonNullable<Props[Key]>, A2UIDynamicWireValue>) => void;
+  ]?: (value: Exclude<Props[Key], A2UIDynamicWireValue | undefined>) => void;
 };
 
 export type A2UIResolvedProps<Props extends object> = {

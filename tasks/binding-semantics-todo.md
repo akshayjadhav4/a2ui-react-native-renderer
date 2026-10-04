@@ -56,7 +56,7 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 - [x] Invalid typed values cannot reach a presenter; action context and subscription tests pass.
 
-- [ ] **Task 6: Validate current-state local writes**
+- [x] **Task 6: Validate current-state local writes**
   - Acceptance: Setters reject wrong types and stale component bindings with a structured error and no model mutation. Valid rapid successive writes, template-scoped writes, and surface-isolated notifications continue to work.
   - Verify: `pnpm build && node --test test/integration/bound-presenter.test.mjs test/integration/surface-subscriptions.test.mjs test/unit/core-data.test.mjs`; `pnpm typecheck`.
   - Likely files: `src/protocol/v0_9/resolveProps.ts`, `src/rendering/presenterAdapter.tsx`, `src/engine/internals.ts`, `test/integration/bound-presenter.test.mjs`.
@@ -64,7 +64,7 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 ### Checkpoint D
 
-- [ ] Invalid and stale writes preserve snapshot identity/revision; valid writes affect only their surface.
+- [x] Invalid and stale writes preserve snapshot identity/revision; valid writes affect only their surface.
 
 ## Phase 3: Migration and consumer proof
 

@@ -34,6 +34,23 @@ const catalog = defineA2UICatalog({
           onChangeText: props.setValue,
         }),
     },
+    NestedInputs: {
+      schema: z.object({
+        rows: z.array(z.object({ value: A2UIDynamicStringSchema })),
+      }),
+      presenter: ({ props }) =>
+        React.createElement(
+          "NativeColumn",
+          null,
+          props.rows.map((row, index) =>
+            React.createElement("NativeInput", {
+              key: index,
+              value: row.value,
+              onChangeText: row.setValue,
+            }),
+          ),
+        ),
+    },
     Column: {
       schema: z.object({ children: A2UIChildListSchema }),
       presenter: ({ props, renderChild }) =>
@@ -266,4 +283,140 @@ test("contains a function result with the wrong dynamic field type", async () =>
   assert.equal(renderer.toJSON(), null);
   assert.equal(errors.at(-1)?.code, "FUNCTION_ERROR");
   assert.equal(errors.at(-1)?.componentId, "root");
+});
+
+test("rejects invalid setter values without changing the surface", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: "Before" },
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+  const setter = renderer.root.findByType("NativeInput").props.onChangeText;
+  const before = engine.getSurface("main");
+
+  await act(() => setter(42));
+
+  assert.strictEqual(engine.getSurface("main"), before);
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+  assert.equal(errors.at(-1)?.componentId, "root");
+
+  await act(() => {
+    setter("First");
+    setter("Second");
+  });
+  assert.deepEqual(engine.getSurface("main").dataModel, { name: "Second" });
+});
+
+test("saved setters cannot write after rebind or surface deletion", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: "Before", other: "Other" },
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+  const savedSetter =
+    renderer.root.findByType("NativeInput").props.onChangeText;
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "main",
+        components: [
+          { id: "root", component: "Input", value: { path: "/other" } },
+        ],
+      },
+    });
+  });
+  const rebound = engine.getSurface("main");
+
+  await act(() => savedSetter("Stale"));
+  assert.strictEqual(engine.getSurface("main"), rebound);
+  assert.deepEqual(rebound.dataModel, { name: "Before", other: "Other" });
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+
+  await act(() => {
+    renderer.root.findByType("NativeInput").props.onChangeText("Current");
+  });
+  assert.deepEqual(engine.getSurface("main").dataModel, {
+    name: "Before",
+    other: "Current",
+  });
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9",
+      deleteSurface: { surfaceId: "main" },
+    });
+  });
+  await act(() => savedSetter("Deleted"));
+  assert.equal(engine.getSurface("main"), undefined);
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+});
+
+test("nested setter paths stay bound to their own array item", async () => {
+  const engine = createEngineWithSurface(
+    [
+      {
+        id: "root",
+        component: "NestedInputs",
+        rows: [
+          { value: { path: "/names/0" } },
+          { value: { path: "/names/1" } },
+        ],
+      },
+    ],
+    { names: ["A", "B"] },
+  );
+  const renderer = await renderSurface(engine);
+  const inputs = renderer.root.findAllByType("NativeInput");
+
+  await act(() => inputs[1].props.onChangeText("Changed"));
+  assert.deepEqual(engine.getSurface("main").dataModel, {
+    names: ["A", "Changed"],
+  });
+});
+
+test("a local write notifies only its bound surface", async () => {
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: "Main" },
+  );
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "other", catalogId: catalog.id },
+    },
+    {
+      version: "v0.9",
+      updateDataModel: { surfaceId: "other", value: { name: "Other" } },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "other",
+        components: [
+          { id: "root", component: "Input", value: { path: "/name" } },
+        ],
+      },
+    },
+  ]);
+  const otherBefore = engine.getSurface("other");
+  let mainNotifications = 0;
+  let otherNotifications = 0;
+  engine.subscribeSurface("main", () => mainNotifications++);
+  engine.subscribeSurface("other", () => otherNotifications++);
+  const renderer = await renderSurface(engine);
+
+  await act(() => {
+    renderer.root.findByType("NativeInput").props.onChangeText("Updated");
+  });
+
+  assert.equal(mainNotifications, 1);
+  assert.equal(otherNotifications, 0);
+  assert.strictEqual(engine.getSurface("other"), otherBefore);
+  assert.deepEqual(engine.getSurface("main").dataModel, { name: "Updated" });
 });

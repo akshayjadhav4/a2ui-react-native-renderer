@@ -17,7 +17,10 @@ import {
   ChildListSchema,
   DynamicStringSchema,
 } from "../../lib/module/protocol/v0_9/commonSchemas.js";
-import { inspectA2UISchemaBehavior } from "../../lib/module/protocol/v0_9/behavior.js";
+import {
+  inspectA2UISchemaBehavior,
+  matchesA2UIDynamicKind,
+} from "../../lib/module/protocol/v0_9/behavior.js";
 
 test("recognizes existing public A2UI schema aliases inside component schemas", () => {
   const schema = z.object({
@@ -74,4 +77,24 @@ test("classifies typed and generic dynamic fields inside wrappers", () => {
   assert.equal(behavior.shape.anything.kind, "unknown");
   assert.equal(behavior.shape.custom.kind, "string");
   assert.equal(behavior.shape.ambiguous.kind, "unknown");
+});
+
+test("checks typed values and honors nullable dynamic wrappers", () => {
+  const behavior = inspectA2UISchemaBehavior(
+    z.object({
+      count: A2UIDynamicNumberSchema,
+      names: A2UIDynamicStringListSchema,
+      optionalName: A2UIDynamicStringSchema.nullable(),
+    }),
+  );
+
+  assert.equal(matchesA2UIDynamicKind(5, behavior.shape.count), true);
+  assert.equal(
+    matchesA2UIDynamicKind(Number.POSITIVE_INFINITY, behavior.shape.count),
+    false,
+  );
+  assert.equal(matchesA2UIDynamicKind(["A", "B"], behavior.shape.names), true);
+  assert.equal(matchesA2UIDynamicKind(["A", 3], behavior.shape.names), false);
+  assert.equal(matchesA2UIDynamicKind(null, behavior.shape.optionalName), true);
+  assert.equal(matchesA2UIDynamicKind(null, behavior.shape.count), false);
 });

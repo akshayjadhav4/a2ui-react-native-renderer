@@ -120,6 +120,14 @@ defineA2UIComponent({
 });
 
 defineA2UIComponent({
+  schema: z.object({ value: A2UIDynamicStringSchema.nullable() }),
+  presenter: ({ props }) => {
+    props.setValue?.(null);
+    return null;
+  },
+});
+
+defineA2UIComponent({
   schema: z.object({ action: A2UIActionSchema }),
   presenter: ({ props, dispatch }) => {
     dispatch(props.action);

@@ -19,9 +19,13 @@ import {
   A2UIRecoveryFallback,
   type A2UIRecoveryConfig,
 } from "../errors/DevelopmentFallback.js";
-import { readDataPointer } from "../protocol/v0_9/bindings.js";
+import { isDataBinding, readDataPointer } from "../protocol/v0_9/bindings.js";
+import { matchesA2UIDynamicKind } from "../protocol/v0_9/behavior.js";
 import { isA2UIFunctionInvocationError } from "../protocol/v0_9/functions.js";
-import { resolvePresenterProps } from "../protocol/v0_9/resolveProps.js";
+import {
+  resolvePresenterProps,
+  type A2UIDataSetter,
+} from "../protocol/v0_9/resolveProps.js";
 
 export interface A2UIComponentNodeProps {
   readonly engine: A2UIEngine;
@@ -48,6 +52,7 @@ export function A2UIComponentNode({
   recovery,
 }: A2UIComponentNodeProps): ReactNode {
   const internals = getA2UIEngineInternals(engine);
+  const sourceComponent = surface.components[componentId];
   const resolution = useMemo(
     () =>
       resolvePresenter(
@@ -55,11 +60,45 @@ export function A2UIComponentNode({
         surface,
         componentId,
         scopePath,
-        (path, value) => {
-          internals.setDataValue(surface.surfaceId, path, value);
+        (write) => {
+          const currentSurface = engine.getSurface(surface.surfaceId);
+          const currentComponent = currentSurface?.components[componentId];
+          const currentBinding = readNestedProperty(
+            currentComponent?.props,
+            write.propertyPath,
+          );
+          if (!matchesA2UIDynamicKind(write.value, write.behavior)) {
+            internals.reportError({
+              code: "BINDING_ERROR",
+              message: `A2UI component "${componentId}" setter received an invalid ${write.behavior.kind} value`,
+              severity: "error",
+              surfaceId: surface.surfaceId,
+              catalogId: surface.catalogId,
+              componentId,
+              path: write.path,
+            });
+            return;
+          }
+          if (
+            currentComponent !== sourceComponent ||
+            !isDataBinding(currentBinding) ||
+            currentBinding.path !== write.bindingPath
+          ) {
+            internals.reportError({
+              code: "BINDING_ERROR",
+              message: `A2UI component "${componentId}" setter is stale`,
+              severity: "error",
+              surfaceId: surface.surfaceId,
+              catalogId: surface.catalogId,
+              componentId,
+              path: write.path,
+            });
+            return;
+          }
+          internals.setDataValue(surface.surfaceId, write.path, write.value);
         },
       ),
-    [componentId, internals, scopePath, surface],
+    [componentId, engine, internals, scopePath, sourceComponent, surface],
   );
 
   useEffect(() => {
@@ -146,7 +185,7 @@ function resolvePresenter(
   surface: A2UISurfaceSnapshot,
   componentId: string,
   scopePath: string,
-  setData: (path: string, value: unknown) => void,
+  setData: A2UIDataSetter,
 ): PresenterResolution {
   if (catalog === undefined) {
     return failure({
@@ -238,6 +277,20 @@ function resolvePresenter(
       cause,
     });
   }
+}
+
+function readNestedProperty(
+  value: unknown,
+  path: readonly (string | number)[],
+): unknown {
+  let current = value;
+  for (const key of path) {
+    if (typeof current !== "object" || current === null) {
+      return undefined;
+    }
+    current = (current as Readonly<Record<string | number, unknown>>)[key];
+  }
+  return current;
 }
 
 function failure(error: A2UIRendererError): PresenterResolution {

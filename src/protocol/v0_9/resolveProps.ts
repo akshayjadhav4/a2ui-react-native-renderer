@@ -20,7 +20,15 @@ import {
   type A2UISchemaBehavior,
 } from "./behavior.js";
 
-export type A2UIDataSetter = (path: string, value: unknown) => void;
+export interface A2UIDataWrite {
+  readonly path: string;
+  readonly value: unknown;
+  readonly bindingPath: string;
+  readonly propertyPath: readonly (string | number)[];
+  readonly behavior: Extract<A2UISchemaBehavior, { type: "DYNAMIC" }>;
+}
+
+export type A2UIDataSetter = (write: A2UIDataWrite) => void;
 
 export function resolvePresenterProps(
   schema: z.AnyZodObject,
@@ -36,7 +44,15 @@ export function resolvePresenterProps(
   }
 
   return Object.freeze(
-    resolveObject(rawProps, behavior, dataModel, scopePath, setData, functions),
+    resolveObject(
+      rawProps,
+      behavior,
+      dataModel,
+      scopePath,
+      setData,
+      functions,
+      [],
+    ),
   );
 }
 
@@ -47,6 +63,7 @@ function resolveValue(
   scopePath: string,
   setData: A2UIDataSetter,
   functions: readonly A2UIFunctionDefinition[],
+  propertyPath: readonly (string | number)[],
 ): unknown {
   switch (behavior.type) {
     case "DYNAMIC":
@@ -62,7 +79,7 @@ function resolveValue(
     case "ARRAY":
       return Array.isArray(value)
         ? Object.freeze(
-            value.map((item) =>
+            value.map((item, index) =>
               resolveValue(
                 item,
                 behavior.element,
@@ -70,6 +87,7 @@ function resolveValue(
                 scopePath,
                 setData,
                 functions,
+                [...propertyPath, index],
               ),
             ),
           )
@@ -84,6 +102,7 @@ function resolveValue(
               scopePath,
               setData,
               functions,
+              propertyPath,
             ),
           )
         : value;
@@ -101,6 +120,7 @@ function resolveObject(
   scopePath: string,
   setData: A2UIDataSetter,
   functions: readonly A2UIFunctionDefinition[],
+  propertyPath: readonly (string | number)[],
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -112,6 +132,7 @@ function resolveObject(
       scopePath,
       setData,
       functions,
+      [...propertyPath, key],
     );
   }
 
@@ -124,7 +145,13 @@ function resolveObject(
     const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
     result[setterName] = (nextValue: unknown): void => {
       if (isDataBinding(rawValue)) {
-        setData(resolveBindingPath(scopePath, rawValue.path), nextValue);
+        setData({
+          path: resolveBindingPath(scopePath, rawValue.path),
+          value: nextValue,
+          bindingPath: rawValue.path,
+          propertyPath: [...propertyPath, key],
+          behavior: childBehavior,
+        });
       }
     };
   }
