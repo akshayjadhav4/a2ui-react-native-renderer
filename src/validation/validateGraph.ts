@@ -80,7 +80,12 @@ export function validateComponentUpdate({
       );
     }
 
-    const definition = catalog.components[type];
+    const definition = Object.prototype.hasOwnProperty.call(
+      catalog.components,
+      type,
+    )
+      ? catalog.components[type]
+      : undefined;
     if (definition === undefined) {
       return failure({
         code: "UNKNOWN_COMPONENT",
@@ -110,10 +115,11 @@ export function validateComponentUpdate({
       });
     }
 
-    candidate[id] = Object.freeze({
-      id,
-      type,
-      props: freezeRecord(props),
+    Object.defineProperty(candidate, id, {
+      value: Object.freeze({ id, type, props: freezeRecord(props) }),
+      enumerable: true,
+      writable: true,
+      configurable: true,
     });
   }
 
@@ -131,7 +137,12 @@ export function validateComponentUpdate({
 
   const edges = new Map<string, readonly string[]>();
   for (const component of Object.values(candidate)) {
-    const definition = catalog.components[component.type];
+    const definition = Object.prototype.hasOwnProperty.call(
+      catalog.components,
+      component.type,
+    )
+      ? catalog.components[component.type]
+      : undefined;
     if (definition === undefined) {
       return failure({
         code: "UNKNOWN_COMPONENT",

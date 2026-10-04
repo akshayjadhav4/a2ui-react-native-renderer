@@ -75,6 +75,7 @@ export const A2UISurface = memo(function A2UISurface({
       componentId: rootId,
       scopePath: "/",
       recovery,
+      ...(renderPending === undefined ? {} : { renderPending }),
     }),
   );
 });

@@ -6,6 +6,8 @@ import TestRenderer, { act } from "react-test-renderer";
 import { z } from "zod";
 
 import {
+  A2UIChildListSchema,
+  A2UIComponentIdSchema,
   A2UIProvider,
   A2UISurface,
   createA2UIEngine,
@@ -24,6 +26,40 @@ function createTextCatalog(onRender = () => undefined) {
           onRender(props);
           return React.createElement("NativeText", null, props.text);
         },
+      },
+    },
+  });
+}
+
+function createProgressiveCatalog() {
+  return defineA2UICatalog({
+    id: "urn:example:a2ui:progressive:v1",
+    components: {
+      Row: {
+        schema: z.object({ children: A2UIChildListSchema }),
+        presenter: ({ props, renderChild }) =>
+          React.createElement(
+            "NativeRow",
+            null,
+            ...props.children.map((child) =>
+              renderChild(child.id, child.basePath),
+            ),
+          ),
+      },
+      Single: {
+        schema: z.object({ child: A2UIComponentIdSchema }),
+        presenter: ({ props, renderChild }) =>
+          React.createElement("NativeRow", null, renderChild(props.child)),
+      },
+      Plain: {
+        schema: z.object({ child: z.string() }),
+        presenter: ({ props, renderChild }) =>
+          React.createElement("NativeRow", null, renderChild(props.child)),
+      },
+      Text: {
+        schema: z.object({ text: z.string() }),
+        presenter: ({ props }) =>
+          React.createElement("NativeText", null, props.text),
       },
     },
   });
@@ -210,6 +246,131 @@ test("shows an app-owned pending root only after the surface is created", async 
     );
   });
   assert.equal(renderer.toJSON()?.type, "NativeText");
+});
+
+test("renders available siblings while replacing a pending child", async () => {
+  const catalog = createProgressiveCatalog();
+  const errors = [];
+  const engine = createA2UIEngine({
+    catalogs: [catalog],
+    onError: (error) => errors.push(error),
+  });
+  engine.applyMessages([
+    {
+      version: "v0.9.1",
+      createSurface: { surfaceId: "main", catalogId: catalog.id },
+    },
+    {
+      version: "v0.9.1",
+      updateComponents: {
+        surfaceId: "main",
+        components: [
+          { id: "root", component: "Row", children: ["ready", "__proto__"] },
+          { id: "ready", component: "Text", text: "Available" },
+        ],
+      },
+    },
+  ]);
+  const calls = [];
+  const renderPending = (pending) => {
+    calls.push(pending);
+    return React.createElement("NativeLoading", null, pending.componentId);
+  };
+  const view = (pending) =>
+    React.createElement(
+      A2UIProvider,
+      { engine },
+      React.createElement(A2UISurface, {
+        surfaceId: "main",
+        ...(pending ? { renderPending } : {}),
+      }),
+    );
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(view(true));
+  });
+  assert.deepEqual(
+    renderer.toJSON().children.map((child) => child.type),
+    ["NativeText", "NativeLoading"],
+  );
+  assert.deepEqual(calls[0], {
+    surfaceId: "main",
+    componentId: "__proto__",
+    kind: "component",
+  });
+
+  await act(() => {
+    renderer.update(view(false));
+  });
+  assert.deepEqual(
+    renderer.toJSON().children.map((child) => child.type),
+    ["NativeText"],
+  );
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9.1",
+      updateComponents: {
+        surfaceId: "main",
+        components: [{ id: "__proto__", component: "Text", text: "Arrived" }],
+      },
+    });
+  });
+  assert.deepEqual(
+    renderer.toJSON().children.map((child) => child.type),
+    ["NativeText", "NativeText"],
+  );
+  assert.deepEqual(errors, []);
+});
+
+test("uses marked single-child references but reports arbitrary missing ids", async () => {
+  const catalog = createProgressiveCatalog();
+  const errors = [];
+  const engine = createA2UIEngine({
+    catalogs: [catalog],
+    onError: (error) => errors.push(error),
+  });
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "main", catalogId: catalog.id },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "main",
+        components: [{ id: "root", component: "Single", child: "later" }],
+      },
+    },
+  ]);
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(
+        A2UIProvider,
+        { engine },
+        React.createElement(A2UISurface, {
+          surfaceId: "main",
+          renderPending: (pending) =>
+            React.createElement("NativeLoading", null, pending.componentId),
+        }),
+      ),
+    );
+  });
+  assert.equal(renderer.toJSON().children[0].type, "NativeLoading");
+  assert.deepEqual(errors, []);
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "main",
+        components: [{ id: "root", component: "Plain", child: "unknown" }],
+      },
+    });
+  });
+  assert.equal(errors.at(-1)?.code, "INVALID_REFERENCE");
+  assert.equal(errors.at(-1)?.componentId, "unknown");
 });
 
 test("fails clearly when A2UISurface has no provider", async () => {

@@ -188,6 +188,10 @@ test("rejects duplicate ids and invalid properties", () => {
       updates: [{ id: "root", component: "Unknown" }],
       code: "UNKNOWN_COMPONENT",
     },
+    {
+      updates: [{ id: "root", component: "constructor" }],
+      code: "UNKNOWN_COMPONENT",
+    },
   ];
 
   for (const fixture of fixtures) {

@@ -14,6 +14,7 @@ import type {
   A2UISurfaceSnapshot,
 } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
+import type { A2UISurfaceProps } from "../react/A2UISurface.js";
 import { A2UIErrorBoundary } from "../errors/ErrorBoundary.js";
 import {
   A2UIRecoveryFallback,
@@ -33,6 +34,7 @@ export interface A2UIComponentNodeProps {
   readonly componentId: string;
   readonly scopePath: string;
   readonly recovery: A2UIRecoveryConfig;
+  readonly renderPending?: NonNullable<A2UISurfaceProps["renderPending"]>;
 }
 
 interface ResolvedPresenter {
@@ -50,59 +52,89 @@ export function A2UIComponentNode({
   componentId,
   scopePath,
   recovery,
+  renderPending,
 }: A2UIComponentNodeProps): ReactNode {
   const internals = getA2UIEngineInternals(engine);
-  const sourceComponent = surface.components[componentId];
+  const sourceComponent = Object.prototype.hasOwnProperty.call(
+    surface.components,
+    componentId,
+  )
+    ? surface.components[componentId]
+    : undefined;
+  const isPending =
+    sourceComponent === undefined &&
+    surface.pendingComponentIds.includes(componentId);
   const resolution = useMemo(
     () =>
-      resolvePresenter(
-        internals.getCatalog(surface.catalogId),
-        surface,
-        componentId,
-        scopePath,
-        (write) => {
-          const currentSurface = engine.getSurface(surface.surfaceId);
-          const currentComponent = currentSurface?.components[componentId];
-          const currentBinding = readNestedProperty(
-            currentComponent?.props,
-            write.propertyPath,
-          );
-          if (!matchesA2UIDynamicKind(write.value, write.behavior)) {
-            internals.reportError({
-              code: "BINDING_ERROR",
-              message: `A2UI component "${componentId}" setter received an invalid ${write.behavior.kind} value`,
-              severity: "error",
-              surfaceId: surface.surfaceId,
-              catalogId: surface.catalogId,
-              componentId,
-              path: write.path,
-            });
-            return;
-          }
-          if (
-            currentComponent !== sourceComponent ||
-            !isDataBinding(currentBinding) ||
-            currentBinding.path !== write.bindingPath
-          ) {
-            internals.reportError({
-              code: "BINDING_ERROR",
-              message: `A2UI component "${componentId}" setter is stale`,
-              severity: "error",
-              surfaceId: surface.surfaceId,
-              catalogId: surface.catalogId,
-              componentId,
-              path: write.path,
-            });
-            return;
-          }
-          internals.setDataValue(surface.surfaceId, write.path, write.value);
-        },
-      ),
-    [componentId, engine, internals, scopePath, sourceComponent, surface],
+      isPending
+        ? null
+        : resolvePresenter(
+            internals.getCatalog(surface.catalogId),
+            surface,
+            componentId,
+            scopePath,
+            (write) => {
+              const currentSurface = engine.getSurface(surface.surfaceId);
+              const currentComponent =
+                currentSurface !== undefined &&
+                Object.prototype.hasOwnProperty.call(
+                  currentSurface.components,
+                  componentId,
+                )
+                  ? currentSurface.components[componentId]
+                  : undefined;
+              const currentBinding = readNestedProperty(
+                currentComponent?.props,
+                write.propertyPath,
+              );
+              if (!matchesA2UIDynamicKind(write.value, write.behavior)) {
+                internals.reportError({
+                  code: "BINDING_ERROR",
+                  message: `A2UI component "${componentId}" setter received an invalid ${write.behavior.kind} value`,
+                  severity: "error",
+                  surfaceId: surface.surfaceId,
+                  catalogId: surface.catalogId,
+                  componentId,
+                  path: write.path,
+                });
+                return;
+              }
+              if (
+                currentComponent !== sourceComponent ||
+                !isDataBinding(currentBinding) ||
+                currentBinding.path !== write.bindingPath
+              ) {
+                internals.reportError({
+                  code: "BINDING_ERROR",
+                  message: `A2UI component "${componentId}" setter is stale`,
+                  severity: "error",
+                  surfaceId: surface.surfaceId,
+                  catalogId: surface.catalogId,
+                  componentId,
+                  path: write.path,
+                });
+                return;
+              }
+              internals.setDataValue(
+                surface.surfaceId,
+                write.path,
+                write.value,
+              );
+            },
+          ),
+    [
+      componentId,
+      engine,
+      internals,
+      isPending,
+      scopePath,
+      sourceComponent,
+      surface,
+    ],
   );
 
   useEffect(() => {
-    if (!resolution.success) {
+    if (resolution !== null && !resolution.success) {
       internals.reportError(resolution.error);
     }
   }, [internals, resolution]);
@@ -116,8 +148,9 @@ export function A2UIComponentNode({
         componentId: childId,
         scopePath: childScopePath,
         recovery,
+        ...(renderPending === undefined ? {} : { renderPending }),
       }),
-    [engine, recovery, scopePath, surface],
+    [engine, recovery, renderPending, scopePath, surface],
   );
 
   const dispatch = useCallback(
@@ -131,6 +164,16 @@ export function A2UIComponentNode({
     },
     [componentId, internals, scopePath, surface.surfaceId],
   );
+
+  if (resolution === null) {
+    return (
+      renderPending?.({
+        surfaceId: surface.surfaceId,
+        componentId,
+        kind: "component",
+      }) ?? null
+    );
+  }
 
   if (!resolution.success) {
     return createElement(A2UIRecoveryFallback, {
@@ -197,7 +240,12 @@ function resolvePresenter(
     });
   }
 
-  const component = surface.components[componentId];
+  const component = Object.prototype.hasOwnProperty.call(
+    surface.components,
+    componentId,
+  )
+    ? surface.components[componentId]
+    : undefined;
   if (component === undefined) {
     return failure({
       code: "INVALID_REFERENCE",
@@ -209,7 +257,12 @@ function resolvePresenter(
     });
   }
 
-  const definition = catalog.components[component.type];
+  const definition = Object.prototype.hasOwnProperty.call(
+    catalog.components,
+    component.type,
+  )
+    ? catalog.components[component.type]
+    : undefined;
   if (definition === undefined) {
     return failure({
       code: "UNKNOWN_COMPONENT",

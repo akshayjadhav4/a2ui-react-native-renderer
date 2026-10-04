@@ -6,6 +6,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import { z } from "zod";
 
 import {
+  A2UIChildListSchema,
   A2UIRenderer,
   createA2UIEngine,
   defineA2UICatalog,
@@ -16,6 +17,17 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
   components: {
+    Row: {
+      schema: z.object({ children: A2UIChildListSchema }),
+      presenter: ({ props, renderChild }) =>
+        React.createElement(
+          "NativeRow",
+          null,
+          ...props.children.map((child) =>
+            renderChild(child.id, child.basePath),
+          ),
+        ),
+    },
     Text: {
       schema: z.object({ text: z.string() }),
       presenter: ({ props }) =>
@@ -110,6 +122,26 @@ test("forwards pending-root rendering through the convenience API", async () => 
     );
   });
   assert.equal(renderer.toJSON()?.type, "NativeText");
+});
+
+test("forwards pending-child rendering through the convenience API", async () => {
+  const messages = createSurfaceMessages({
+    id: "root",
+    component: "Row",
+    children: ["later"],
+  });
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UIRenderer, {
+        catalogs: [catalog],
+        messages,
+        renderPending: ({ componentId }) =>
+          React.createElement("NativeLoading", null, componentId),
+      }),
+    );
+  });
+  assert.equal(renderer.toJSON()?.children?.[0]?.type, "NativeLoading");
 });
 
 test("does not reapply the same message collection", async () => {

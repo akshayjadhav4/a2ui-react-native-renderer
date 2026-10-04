@@ -61,16 +61,17 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Checkpoint B. Scope: Medium.
   - Evidence: Both React entry points call the app callback only for a created pending root, default output stays `null`, and the presenter replaces loading output when `root` arrives. Typecheck and all 132 tests pass.
 
-- [ ] **Task 6: Replace pending child positions as definitions arrive**
+- [x] **Task 6: Replace pending child positions as definitions arrive**
   - Acceptance: A presenter calling `renderChild` for a reachable pending structural ID receives app-owned pending UI or `null`, while valid siblings render. A later child definition replaces that position without an error. An arbitrary missing ID still reports `INVALID_REFERENCE`; missing data remains `undefined` for the presenter.
   - Verify: `pnpm build && node --test test/integration/surface-renderer.test.mjs test/integration/diagnostics.test.mjs test/integration/bound-presenter.test.mjs test/integration/performance-renderer.test.mjs && pnpm typecheck`.
   - Likely files: `src/rendering/presenterAdapter.tsx`, `src/react/A2UISurface.tsx`, `test/integration/surface-renderer.test.mjs`, `test/integration/diagnostics.test.mjs`, `test/integration/bound-presenter.test.mjs`.
   - Dependencies: Task 5. Scope: Medium.
+  - Evidence: Available siblings stay visible with and without app loading UI; a late child replaces its pending position. Both React entry points forward child loading, marked single IDs work, arbitrary missing IDs still report `INVALID_REFERENCE`, and valid IDs such as `__proto__` render safely. Bound-value and 500-component regressions pass.
 
 ### Checkpoint C
 
-- [ ] Both React entry points render app-owned root and child pending UI with exact callback arguments, then replace it after updates; default rendering omits only missing positions.
-- [ ] Valid pending references emit no `onError`; invalid child calls, presenter errors, and wrong-type data retain structured recovery. `pnpm test` and `pnpm typecheck` pass.
+- [x] Both React entry points render app-owned root and child pending UI with exact callback arguments, then replace it after updates; default rendering omits only missing positions.
+- [x] Valid pending references emit no `onError`; invalid child calls, presenter errors, and wrong-type data retain structured recovery. `pnpm test` and `pnpm typecheck` pass.
 
 ## Phase D: Migration and package proof
 
