@@ -2,7 +2,7 @@
 
 **Module id:** `catalog-contract` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Draft for human review on 2026-10-04. No implementation has started.
+**Status:** Approved for planning on 2026-10-04 when the user said “next.” No implementation has started.
 
 ## Assumptions
 
@@ -120,7 +120,6 @@ Use existing `A2UI` public names, strict TypeScript, double quotes, and stable o
 4. Representative generated messages agree between exported-schema validation and renderer validation for both v0.9 and v0.9.1.
 5. The installed renderer's root import and native bundles contain no Basic Catalog, server transport, model SDK, or schema-export converter code. Existing package tests and packed consumer checks pass.
 
-## Open questions for review
+## Review decision
 
-- Is the separate `catalog-schema` subpath the right tradeoff between ease of use and keeping schema conversion out of native bundles?
-- Should this first module include executable function schemas in the exported document, subject to strict wire/runtime parity, or initially export component definitions only and add functions after their argument contract is specified separately?
+The user's “next” after the spec review request approves planning with the proposed separate `catalog-schema` subpath. Function schemas are in scope only when the exporter can represent their wire contract accurately; otherwise export fails with a precise error. The implementation plan must resolve official schema shape and version details before implementation.
