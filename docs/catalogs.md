@@ -32,8 +32,49 @@ field emitted in `updateComponents`. The surface catalog ID must match
 `catalog.id`.
 
 Descriptions are optional runtime metadata. If provided, they cannot be empty.
-The renderer does not automatically send descriptions or schemas to a model;
-the consumer or server owns any catalog IDL used for generation.
+The renderer does not automatically send descriptions or schemas to a model.
+
+## Export A Catalog For An Agent
+
+Use the same catalog definition for mobile rendering and agent guidance:
+
+```ts
+import { exportA2UICatalogSchema } from "a2ui-react-native-renderer/catalog-schema";
+
+const document = exportA2UICatalogSchema(catalog);
+const json = JSON.stringify(document);
+// The application stores or sends json to its agent through its own infrastructure.
+```
+
+The document is an A2UI v0.9-family JSON Schema catalog for both `v0.9` and
+`v0.9.1`. Its `$id` and `catalogId` equal `catalog.id`. Component names and
+descriptions, supported Zod properties, marked structural references, and
+representable functions come from the catalog. The document contains no
+presenter or `execute` callback. The `catalog-schema` import is separate from
+the React Native package root; use it during a build or on a server that can
+load the app's catalog module. If that module imports native components,
+generate a JSON artifact in a compatible build environment and let the server
+deliver the artifact. The app owns that delivery.
+
+The exporter supports strings, numbers, booleans, literals, enums, nested
+objects, arrays, unions, optional and nullable fields, JSON defaults,
+representable bounds, and descriptions. `A2UIComponentIdSchema`,
+`A2UIChildListSchema`, `A2UIActionSchema`, `A2UIDataBindingSchema`, and the
+`A2UIDynamic*Schema` helpers export official A2UI common-type references.
+An ordinary `z.string()` remains a literal string. Unsupported transforms,
+refinements, coercion, unsupported formats, recursive schemas, and defaults
+that cannot be encoded as JSON throw a `TypeError` such as
+`Unsupported catalog schema at components.Card.title`. Fix that field or use
+another representable schema before delivering the document to an agent.
+
+For functions, a direct wire argument may be a compatible literal, a data
+binding, or a nested function call. The exporter rejects argument shapes that
+the official wire schema or local resolver cannot describe faithfully, with a
+path such as `functions.formatCount.args.count`. The generated `returnType`
+property shows the declared return kind as its default. The renderer checks
+the actual function result against the declared kind; a `returnType` value on
+the wire is advisory and does not control that check. Runtime errors such as
+unknown functions are reported when the function is evaluated during render.
 
 ## Presenter Contract
 

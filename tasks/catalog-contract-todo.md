@@ -82,11 +82,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
 
 ## Phase D: Adoption and native package proof
 
-- [ ] **Task 8: Document the single-source catalog workflow**
+- [x] **Task 8: Document the single-source catalog workflow**
   - Acceptance: README, API/catalog docs, and changelog show one app-owned catalog used for mobile rendering and server/build-time schema export, explain the separate import, unsupported-schema errors, catalog ID versioning, and app ownership of delivery to the agent. Documentation assertions include the new public subpath. No Basic Catalog or transport is introduced.
   - Verify: `pnpm exec prettier --check README.md docs/api.md docs/catalogs.md CHANGELOG.md && pnpm test`; inspect examples against generated declarations.
   - Likely files: `README.md`, `docs/api.md`, `docs/catalogs.md`, `CHANGELOG.md`, `test/unit/documentation.test.mjs`.
   - Dependencies: Checkpoint C. Scope: Medium.
+  - Evidence: README, API and catalog guides, and changelog document the separate export import, one app-owned catalog, build/server JSON delivery, supported Zod subset, path-specific failures, advisory wire returnType, and catalog ID versioning. The API documentation identifies the one public subpath. Documentation assertions, all 149 tests, targeted Prettier check, and `git diff --check` pass.
 
 - [ ] **Task 9: Verify packed native isolation and complete the module**
   - Acceptance: The packed `catalog-schema` subpath resolves and the root import's Expo/bare React Native iOS/Android bundles contain no exporter-only sentinel or new runtime package. Generated declarations and package contents match the documented API. Version `0.1.1`, Apache-2.0, app-owned components, and unpublished status remain unchanged.

@@ -1,8 +1,9 @@
 # Public API
 
-All supported imports come from `a2ui-react-native-renderer`. Deep imports are
-not public API. Runtime values and TypeScript types are grouped below; related
-symbols share examples in the linked guides.
+Renderer imports come from `a2ui-react-native-renderer`. Catalog schema export
+has one public subpath, `a2ui-react-native-renderer/catalog-schema`. Other deep
+imports are not public API. Runtime values and TypeScript types are grouped
+below; related symbols share examples in the linked guides.
 
 ## Catalog Values
 
@@ -22,6 +23,19 @@ component definitions may also be written inline in `defineA2UICatalog`.
 
 Defines a named, schema-validated consumer function with a declared return kind.
 Functions are registered through a catalog; the package provides no built-ins.
+
+### `exportA2UICatalogSchema`
+
+Import from `a2ui-react-native-renderer/catalog-schema` in server or build-time
+code. `exportA2UICatalogSchema(catalog)` returns a fresh, JSON-serializable A2UI
+v0.9-family catalog schema document for the same catalog used by the mobile
+renderer. `$id` and `catalogId` equal `catalog.id`; component and function
+entries use the catalog's registered names. The output excludes presenters and
+function implementations. Supported property schemas and A2UI marker
+references are described in [Catalogs](./catalogs.md#export-a-catalog-for-an-agent).
+Unsupported conversion throws a path-specific `TypeError`. The application
+decides where to store or send the document, and should version its catalog ID
+when its contract changes incompatibly.
 
 ## Runtime Values
 

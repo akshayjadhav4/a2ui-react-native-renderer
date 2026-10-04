@@ -38,7 +38,7 @@ import {
   type A2UIMessage,
 } from "a2ui-react-native-renderer";
 
-const catalog = defineA2UICatalog({
+export const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
   components: {
     Text: {
@@ -148,6 +148,31 @@ surface data model. Literal and function values have no setter.
 See [Catalogs](./docs/catalogs.md) for components, children, bindings, actions,
 and functions.
 
+## Give An Agent The Same Catalog
+
+The catalog used by `A2UIRenderer` can also produce an A2UI JSON Schema
+document for your agent. Export it during your app's build or in a server
+environment that can import your catalog definition:
+
+```ts
+import { exportA2UICatalogSchema } from "a2ui-react-native-renderer/catalog-schema";
+import { catalog } from "./catalog";
+
+const agentCatalog = exportA2UICatalogSchema(catalog);
+const json = JSON.stringify(agentCatalog);
+// Store or send json through your own agent infrastructure.
+```
+
+Use the same `catalog` with the mobile renderer. The separate import keeps
+schema conversion out of apps that only import the renderer. The exported
+document contains component and function contracts, not presenters or
+implementations. If the catalog module imports native components, generate the
+JSON in a build environment that can load that module, then deliver the JSON
+artifact from your server. Keep the document's `catalogId` in sync with the
+surface's catalog ID; give breaking changes a new ID. See
+[Catalogs](./docs/catalogs.md#export-a-catalog-for-an-agent) for supported Zod
+shapes and error handling.
+
 ## Errors And Untrusted Input
 
 A2UI messages must be treated as untrusted input. Before a surface revision is
@@ -184,6 +209,7 @@ error codes, limits, and trust boundaries.
 | Area               | Main exports                                                                             |
 | ------------------ | ---------------------------------------------------------------------------------------- |
 | Catalogs           | `defineA2UICatalog`, `defineA2UIComponent`, `defineA2UIFunction`                         |
+| Schema export      | `exportA2UICatalogSchema` from `a2ui-react-native-renderer/catalog-schema`               |
 | Simple rendering   | `A2UIRenderer`                                                                           |
 | Advanced rendering | `createA2UIEngine`, `A2UIProvider`, `A2UISurface`                                        |
 | React state        | `useA2UISurface`, `useA2UISurfaceIds`, `useA2UIErrors`                                   |

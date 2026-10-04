@@ -5,6 +5,15 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Added `exportA2UICatalogSchema` from
+  `a2ui-react-native-renderer/catalog-schema` so an app can generate an A2UI
+  v0.9/v0.9.1 catalog document from the same app-owned catalog used by the
+  renderer. Supported Zod properties, A2UI marker references, and representable
+  functions are exported without presenters or executable implementations;
+  unsupported schemas fail with a named path. Apps own delivery to the agent.
+
 ### Changed
 
 - Replaced `@a2ui/web_core` with an in-package protocol core that keeps native

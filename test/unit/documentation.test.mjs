@@ -59,3 +59,23 @@ test("keeps README documentation links and limitations valid", () => {
   assert.match(readme, /No Basic Catalog .* is bundled/);
   assert.match(readme, /No transport, agent, model, chat UI/);
 });
+
+test("documents the separate catalog schema export workflow", () => {
+  const readme = readFileSync(path.join(repositoryRoot, "README.md"), "utf8");
+  const api = readFileSync(path.join(repositoryRoot, "docs/api.md"), "utf8");
+  const catalogs = readFileSync(
+    path.join(repositoryRoot, "docs/catalogs.md"),
+    "utf8",
+  );
+  const changelog = readFileSync(
+    path.join(repositoryRoot, "CHANGELOG.md"),
+    "utf8",
+  );
+  for (const document of [readme, api, catalogs, changelog]) {
+    assert.match(document, /a2ui-react-native-renderer\/catalog-schema/);
+    assert.match(document, /exportA2UICatalogSchema/);
+  }
+  assert.match(catalogs, /Unsupported catalog schema at/);
+  assert.match(catalogs, /returnType/);
+  assert.match(catalogs, /catalog ID/i);
+});
