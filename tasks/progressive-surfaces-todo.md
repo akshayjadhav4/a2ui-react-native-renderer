@@ -33,11 +33,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
 
 ## Phase B: Protocol state
 
-- [ ] **Task 3: Establish pending snapshot state**
+- [x] **Task 3: Establish pending snapshot state**
   - Acceptance: A created surface has frozen `pendingComponentIds: ["root"]`; snapshots expose the readonly field and preserve its identity across data updates. Core root assignment is based on the actual presence of `components.root`. Deletion and recreation start clean.
   - Verify: `pnpm build && node --test test/unit/core-lifecycle.test.mjs test/unit/core-data.test.mjs test/unit/surface-lifecycle.test.mjs && pnpm typecheck`.
   - Likely files: `src/engine/types.ts`, `src/protocol/v0_9/core.ts`, `test/unit/core-lifecycle.test.mjs`, `test/unit/surface-lifecycle.test.mjs`.
   - Dependencies: Checkpoint A. Scope: Medium.
+  - Evidence: Created and recreated surfaces expose frozen `["root"]`, complete graphs expose `[]`, and data updates preserve the pending-array identity. Focused tests, typecheck, and all 124 tests pass.
 
 - [ ] **Task 4: Accept progressive component graphs atomically**
   - Acceptance: Child-first and root-first batches are accepted for v0.9/v0.9.1; reachable missing IDs appear once in deterministic order, while pre-root snapshots expose only `"root"`. Empty IDs and too many distinct unresolved IDs fail. Known cycles and depth violations, including those completed by late definitions, reject atomically; a following corrective message succeeds.

@@ -44,11 +44,13 @@ function dataUpdate(path, value, includeValue = true) {
 
 test("replaces the root and a path, then removes an omitted value", () => {
   const core = createCore();
+  const pendingBeforeData = core.getSurface("s").pendingComponentIds;
   assert.equal(
     core.apply(dataUpdate("/", { user: { name: "Ada" } })).success,
     true,
   );
   const first = core.getSurface("s");
+  assert.equal(first.pendingComponentIds, pendingBeforeData);
   assert.deepEqual(first.dataModel, { user: { name: "Ada" } });
   assert.ok(Object.isFrozen(first.dataModel.user));
 

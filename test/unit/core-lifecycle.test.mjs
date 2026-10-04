@@ -32,6 +32,8 @@ test("creates, deletes, and recreates a surface without retaining old state", ()
   assert.ok(first);
   assert.equal(first.revision, 1);
   assert.equal(first.rootId, null);
+  assert.deepEqual(first.pendingComponentIds, ["root"]);
+  assert.ok(Object.isFrozen(first.pendingComponentIds));
   assert.deepEqual(first.components, {});
   assert.deepEqual(first.dataModel, {});
   assert.ok(Object.isFrozen(first));
@@ -44,6 +46,11 @@ test("creates, deletes, and recreates a surface without retaining old state", ()
   assert.equal(core.getSurface("s"), undefined);
   assert.equal(core.apply(create).success, true);
   assert.equal(core.getSurface("s")?.revision, 1);
+  assert.deepEqual(core.getSurface("s")?.pendingComponentIds, ["root"]);
+  assert.notEqual(
+    core.getSurface("s")?.pendingComponentIds,
+    first.pendingComponentIds,
+  );
   assert.notEqual(core.getSurface("s"), first);
 });
 
@@ -108,6 +115,7 @@ for (const version of ["v0.9", "v0.9.1"]) {
       assert.equal(core.apply(message).success, true);
     }
     assert.equal(core.getSurface("s")?.revision, 3);
+    assert.deepEqual(core.getSurface("s")?.pendingComponentIds, []);
     assert.deepEqual(core.getSurface("s")?.dataModel, { name: "Ada" });
     assert.equal(
       core.apply({ version, deleteSurface: { surfaceId: "s" } }).success,
