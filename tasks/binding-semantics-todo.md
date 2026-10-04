@@ -12,13 +12,13 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 ## Phase 1: Contract and schema metadata
 
-- [ ] **Task 1: Freeze presenter baseline**
+- [x] **Task 1: Freeze presenter baseline**
   - Acceptance: Record literal, bound, and function dynamic values, current generated setter behavior, missing-path behavior, and nested presenter types without changing runtime code.
   - Verify: `pnpm build && node --test test/integration/bound-presenter.test.mjs test/integration/consumer-functions.test.mjs`; `pnpm typecheck`.
   - Likely files: `test/integration/bound-presenter.test.mjs`, `test/types/catalog.tsx`.
   - Dependencies: Approved spec. Scope: Small.
 
-- [ ] **Task 2: Correct public resolved-prop types**
+- [x] **Task 2: Correct public resolved-prop types**
   - Acceptance: `A2UIResolvedProps` models dynamic values as possibly `undefined`, makes generated setters optional, recursively resolves nested objects/arrays, and leaves static fields correctly typed.
   - Verify: `pnpm typecheck`; `pnpm build && node --test test/unit/catalog.test.mjs`.
   - Likely files: `src/catalog/types.ts`, `test/types/catalog.tsx`, `test/types/guides.tsx`.
@@ -26,7 +26,7 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 ### Checkpoint A
 
-- [ ] Type fixtures compile for optional setters and nested resolved values; existing runtime tests pass.
+- [x] Type fixtures compile for optional setters and nested resolved values; existing runtime tests pass.
 
 - [ ] **Task 3: Classify dynamic kinds and reject setter collisions**
   - Acceptance: The behavior inspector identifies known dynamic kinds through common Zod wrappers; ambiguous custom unions remain unknown. Catalog registration rejects a real `setX` property that a sibling dynamic field would overwrite.

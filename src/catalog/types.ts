@@ -20,16 +20,26 @@ export interface A2UIResolvedChild {
 
 type A2UIDynamicWireValue = A2UIDataBindingValue | A2UIFunctionCallValue;
 
-type A2UIResolvedProp<Value> = [NonNullable<Value>] extends [A2UIChildList]
-  ? readonly A2UIResolvedChild[] | Extract<Value, undefined>
-  : Exclude<Value, A2UIDynamicWireValue>;
+type A2UIResolvedProp<Value> = [NonNullable<Value>] extends [A2UIAction]
+  ? Value
+  : [NonNullable<Value>] extends [A2UIChildList]
+    ? readonly A2UIResolvedChild[] | Extract<Value, undefined>
+    : A2UIDataBindingValue extends NonNullable<Value>
+      ? A2UIResolvedLiteral<Exclude<Value, A2UIDynamicWireValue>> | undefined
+      : A2UIResolvedLiteral<Value>;
+
+type A2UIResolvedLiteral<Value> = Value extends readonly (infer Item)[]
+  ? readonly A2UIResolvedProp<Item>[]
+  : Value extends object
+    ? A2UIResolvedProps<Value>
+    : Value;
 
 type A2UIBindingSetters<Props extends object> = {
   readonly [
     Key in keyof Props as A2UIDataBindingValue extends NonNullable<Props[Key]>
       ? `set${Capitalize<string & Key>}`
       : never
-  ]: (value: Exclude<NonNullable<Props[Key]>, A2UIDynamicWireValue>) => void;
+  ]?: (value: Exclude<NonNullable<Props[Key]>, A2UIDynamicWireValue>) => void;
 };
 
 export type A2UIResolvedProps<Props extends object> = {
