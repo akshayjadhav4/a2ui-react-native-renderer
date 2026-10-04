@@ -4,9 +4,9 @@
 
 **Specification:** [SPEC-catalog-contract.md](../SPEC-catalog-contract.md)
 
-**Status:** Draft for human review on 2026-10-04. No implementation has started.
+**Status:** Approved for task breakdown on 2026-10-04 when the user said “approved next.” No implementation has started.
 
-The initial-release [plan.md](plan.md) and [todo.md](todo.md) still contain historical unchecked items. This module follows the approved per-module convention and uses this plan and a later `catalog-contract-todo.md`; those historical files remain untouched.
+The initial-release [plan.md](plan.md) and [todo.md](todo.md) still contain historical unchecked items. This module follows the approved per-module convention and uses this plan and [catalog-contract-todo.md](catalog-contract-todo.md); those historical files remain untouched.
 
 ## Outcome
 
@@ -120,8 +120,8 @@ Also inspect the generated subpath declaration, packed package `exports`, direct
 
 ## Task-list handoff
 
-After plan approval, create `tasks/catalog-contract-todo.md` with focused tasks of roughly five files or fewer, dependencies, acceptance criteria, verification commands, and checkpoints A–D. Preserve the historical `tasks/plan.md` and `tasks/todo.md`. No implementation begins until the task list is reviewed under the spec-driven workflow.
+The [module task list](catalog-contract-todo.md) contains focused tasks of roughly five files or fewer, dependencies, acceptance criteria, verification commands, and checkpoints A–D. Preserve the historical `tasks/plan.md` and `tasks/todo.md`. No implementation begins until the task list is reviewed under the spec-driven workflow.
 
 ## Review decisions
 
-The user approved the spec for planning with “next.” This plan proposes one dev-only `ajv` dependency for independent draft 2020-12 validation; approval of this plan would authorize that development dependency during implementation. All app-owned component and transport boundaries remain intact.
+The user approved the spec for planning with “next,” then approved this plan for task breakdown with “approved next.” That approval includes one dev-only `ajv` dependency for independent draft 2020-12 validation during implementation. All app-owned component and transport boundaries remain intact.
