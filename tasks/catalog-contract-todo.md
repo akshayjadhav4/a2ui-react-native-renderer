@@ -12,11 +12,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
 
 ## Phase A: Official contract and package entry
 
-- [ ] **Task 1: Pin and audit official v0.9-family catalog schemas**
+- [x] **Task 1: Pin and audit official v0.9-family catalog schemas**
   - Acceptance: Test-only fixtures pin the official v0.9 and v0.9.1 common-types, server-to-client, and sample catalog schema inputs with upstream commit and source URLs. An audit records required catalog fields, common-type reference URIs, function and theme shape, and whether one document works for both versions. If a version-specific public option is necessary, update the spec and obtain review before continuing.
   - Verify: Compare fixture checksums and `$id`/`catalogId`/`$ref` fields against the pinned upstream files; `git diff --check`.
   - Likely files: `test/fixtures/a2ui/`, `tasks/catalog-contract-schema-audit.md`.
   - Dependencies: Approved task list. Scope: Medium.
+  - Evidence: Six official schema files are pinned to upstream commit `1444719acd8833eeb5e70529c7ac47bc50b7390c` with SHA-256 checksums and source URLs. Their common-types and sample catalogs are byte-identical; the server envelope differs only in its four version constraints. Both versions use one v0.9-family catalog document and common-type URI, so no public version option is needed. The schema shape and function returnType caveat are recorded in the audit. An independent JSON/checksum comparison, `pnpm format:check`, all 135 tests, `pnpm pack:check`, and `git diff --check` pass; upstream JSON stays pristine through a narrow Prettier exclusion.
 
 - [ ] **Task 2: Expose a packed schema-export subpath**
   - Acceptance: `a2ui-react-native-renderer/catalog-schema` exports a typed `exportA2UICatalogSchema` from a dedicated built entry. One simple app-owned component produces a fresh, JSON-serializable document with matching `$id`/`catalogId` and a required component discriminator. Root imports do not load the converter. The approved `ajv` dependency is dev-only, and a packed Node consumer can import the subpath.
