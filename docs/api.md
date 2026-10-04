@@ -37,7 +37,8 @@ application-owned engine is permanently retired.
 Convenience React component that creates a stable internal engine or accepts an
 external engine, applies `messages`, and renders all active surfaces. Owned
 engine mode accepts `catalogs`, `onAction`, and `onError`; external engine mode
-does not, because those belong to the supplied engine.
+does not, because those belong to the supplied engine. Both modes accept
+`renderPending` for app-owned root and child loading UI.
 
 ### `A2UIProvider`
 
@@ -47,12 +48,18 @@ engine, apply messages, or render surfaces.
 ### `A2UISurface`
 
 Subscribes to and renders one `surfaceId` from the nearest `A2UIProvider`.
-Supports diagnostic mode selection and a consumer fallback renderer.
+Supports diagnostic mode selection, a consumer error fallback, and an optional
+`renderPending({ surfaceId, componentId, kind })` callback. `kind` is `"root"`
+before the root definition arrives or `"component"` at an unresolved child
+position. The default pending output is `null`.
 
 ### `useA2UISurface`
 
 Returns the current immutable `A2UISurfaceSnapshot` for one ID, or `undefined`
-when the surface does not exist. Must run below `A2UIProvider`.
+when the surface does not exist. `pendingComponentIds` is `["root"]` before the
+root definition arrives; later it lists distinct missing structural IDs
+reachable from root. Missing data paths are not in this list. Must run below
+`A2UIProvider`.
 
 ### `useA2UISurfaceIds`
 
@@ -135,27 +142,28 @@ stale calls through the engine's structured error channel.
 | `A2UIEngine`            | Public message, snapshot, subscription, error, and disposal methods |
 | `A2UIEngineOptions`     | Catalogs, callbacks, and resource-limit overrides                   |
 | `A2UIEngineSnapshot`    | Engine revision plus active/failed IDs and error count              |
-| `A2UISurfaceSnapshot`   | Immutable public state for one surface                              |
+| `A2UISurfaceSnapshot`   | Immutable surface state, including reachable pending component IDs  |
 | `A2UIComponentSnapshot` | Immutable component ID, type, and wire-property snapshot            |
 | `A2UIResourceLimits`    | Complete resource-limit configuration                               |
 
 ## Error And React Types
 
-| Export                      | Contract                                                     |
-| --------------------------- | ------------------------------------------------------------ |
-| `A2UIRendererError`         | Structured, identifier-rich runtime failure                  |
-| `A2UIRendererErrorCode`     | Stable union of public error codes                           |
-| `A2UIRendererErrorSeverity` | `"warning"` or `"error"`                                     |
-| `A2UIFallbackRenderer`      | Consumer callback from structured error to `ReactNode`       |
-| `A2UIDiagnosticsMode`       | `"auto"`, `"development"`, or `"production"`                 |
-| `A2UIProviderProps`         | Props accepted by `A2UIProvider`                             |
-| `A2UIRendererProps`         | Discriminated owned-engine or external-engine renderer props |
-| `A2UISurfaceProps`          | Surface ID, diagnostics, and fallback props                  |
+| Export                      | Contract                                                      |
+| --------------------------- | ------------------------------------------------------------- |
+| `A2UIRendererError`         | Structured, identifier-rich runtime failure                   |
+| `A2UIRendererErrorCode`     | Stable union of public error codes                            |
+| `A2UIRendererErrorSeverity` | `"warning"` or `"error"`                                      |
+| `A2UIFallbackRenderer`      | Consumer callback from structured error to `ReactNode`        |
+| `A2UIDiagnosticsMode`       | `"auto"`, `"development"`, or `"production"`                  |
+| `A2UIProviderProps`         | Props accepted by `A2UIProvider`                              |
+| `A2UIRendererProps`         | Discriminated owned-engine or external-engine renderer props  |
+| `A2UISurfaceProps`          | Surface ID, diagnostics, fallback, and pending renderer props |
 
 ## Compatibility Notes
 
 - Public error codes and root exports are semver-relevant after `0.1.0`.
-- Protocol types describe v0.9 and v0.9.1 complete-graph messages.
+- Protocol types describe v0.9 and v0.9.1 messages, including progressive
+  component updates.
 - Types may reference React, React Native, and Zod peer contracts, but no Expo or
   transport type is part of this API.
 - Internal protocol state, JSON-pointer utilities, error boundaries, and mutable

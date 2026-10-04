@@ -13,8 +13,10 @@ For v0.9 and v0.9.1, the runtime accepts:
 3. `updateComponents` to add or replace graph components;
 4. `deleteSurface` to remove the surface.
 
-Messages may arrive incrementally. A surface is renderable after a valid
-reserved `root` component resolves; until then `A2UISurface` returns `null`.
+Messages may arrive incrementally. Component definitions sent before `root` are
+buffered. A surface renders as soon as its reserved `root` definition arrives;
+present descendants render while missing child definitions stay pending. The
+default pending output is `null`, or the app can pass `renderPending`.
 
 ## Simple Collection
 
@@ -48,7 +50,11 @@ Mount one provider around the region that renders surfaces:
 <A2UIProvider engine={engine}>
   {items.map((item) =>
     item.kind === "surface" ? (
-      <A2UISurface key={item.id} surfaceId={item.surfaceId} />
+      <A2UISurface
+        key={item.id}
+        surfaceId={item.surfaceId}
+        renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
+      />
     ) : (
       <ChatMessage key={item.id} item={item} />
     ),
@@ -59,6 +65,33 @@ Mount one provider around the region that renders surfaces:
 The transport-to-transcript bridge should record surface placement when it
 observes `createSurface` and remove placement when it observes `deleteSurface`.
 The engine owns surface content; the transcript owns where it appears.
+The `Text` above is an app-owned React Native component.
+
+## Progressive Components And Data
+
+The producer may send children before their parent or send `root` before a
+child. Each accepted `updateComponents` advances that surface's revision. A
+created surface exposes `pendingComponentIds: ["root"]` until `root` arrives;
+afterward the list contains distinct missing structural IDs reachable from
+`root`. `useA2UISurface(surfaceId)` exposes this immutable snapshot. The
+renderer uses the same pending state to call `renderPending` at a missing root
+or at a child position requested through `renderChild`.
+
+```tsx
+<A2UISurface
+  surfaceId="checkout"
+  renderPending={({ componentId, kind }) => (
+    <MySkeleton componentId={componentId} kind={kind} />
+  )}
+/>
+```
+
+The callback is optional and supplies no package-owned visuals. Missing bound
+data resolves to `undefined` in a presenter; it is not listed among pending
+component IDs. The app decides whether that value means loading or empty. The
+protocol has no general completion signal, so an ID that never arrives stays
+pending until the surface is updated or deleted. Timeout and retry behavior
+belongs in the app transport.
 
 ## Batches And Recovery
 
@@ -68,9 +101,11 @@ messages still apply, including ones for the same surface. Subscribers receive
 one final notification for the batch. A batch over the configured message
 limit is rejected in full.
 
-Component updates currently need a complete resolvable graph. A reference to
-a child that arrives in a later message is rejected; the next valid update can
-recover the surface.
+An unresolved nonempty child ID does not cause an error. Malformed components,
+empty IDs, known cycles, excessive known depth, and resource-limit violations
+still reject that one update atomically; a later valid update can recover the
+surface. `onError` receives structured details if the app wants to send agent
+feedback through its own transport.
 
 Do not render raw operation JSON as assistant text. Parse the transport payload,
 pass only message objects to the engine, and expose failures through `onError`.

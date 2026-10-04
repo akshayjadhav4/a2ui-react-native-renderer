@@ -75,11 +75,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
 
 ## Phase D: Migration and package proof
 
-- [ ] **Task 7: Document the progressive API and migration**
+- [x] **Task 7: Document the progressive API and migration**
   - Acceptance: README and API/catalog/streaming/migration docs show an app-owned single-child presenter and loading callback, explain pending snapshot IDs and `undefined` data, and remove claims that progressive references are unsupported.
   - Verify: `pnpm exec prettier --check README.md docs/api.md docs/catalogs.md docs/streaming-and-actions.md docs/migration.md`; inspect examples against the generated declaration.
   - Likely files: `README.md`, `docs/api.md`, `docs/catalogs.md`, `docs/streaming-and-actions.md`, `docs/migration.md`.
   - Dependencies: Checkpoint C. Scope: Medium.
+  - Evidence: README and API/catalog/streaming/migration guides explain the new callback, snapshot state, single-child marker, and app-owned data/loading choices. Documentation assertions and all 135 tests pass.
 
 - [ ] **Task 8: Finish error guidance and native consumer proof**
   - Acceptance: Error docs and changelog distinguish pending refs from validation failures, document app-owned optional agent feedback, and update documentation assertions. Package version, license, runtime dependencies, and Basic Catalog ownership remain unchanged.

@@ -73,19 +73,43 @@ objects or arrays follow the same rule. Invalid bound values and local writes
 report structured errors. A setter saved before a component rebind or deletion
 cannot update the old path.
 
-## 6. Forward Actions
+## 6. Handle Progressive Components
+
+Earlier package behavior rejected an `updateComponents` message without `root`
+or with a child definition that had not arrived. These valid intermediate states
+now commit. Check `surface.pendingComponentIds` when the app needs to know which
+reachable definitions are missing. It contains `["root"]` before root arrives
+and becomes empty after all reachable definitions are present.
+
+Use `A2UIComponentIdSchema` for a single child ID; a plain `z.string()` is a
+literal. For app-owned loading UI, pass `renderPending` to `A2UISurface` or
+`A2UIRenderer`:
+
+```tsx
+<A2UISurface
+  surfaceId={surfaceId}
+  renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
+/>
+```
+
+Without the callback, missing child positions render nothing and present
+siblings remain visible. Missing bound data still reaches a presenter as
+`undefined`. Since the protocol has no general completion signal, any timeout
+or retry policy belongs to the app.
+
+## 7. Forward Actions
 
 Wire `onAction` at engine creation or in owned-engine `A2UIRenderer` mode. The
 callback receives the official action with context resolved from the latest
 surface model. Adapt that action to the selected transport outside the package.
 
-## 7. Configure Production Recovery
+## 8. Configure Production Recovery
 
 Provide `onError`, select `diagnostics="production"` for release behavior, and
 optionally provide an accessible `renderFallback`. Review and lower resource
 limits for the application's presenters and target devices.
 
-## 8. Remove Deep Imports And Bundled Assumptions
+## 9. Remove Deep Imports And Bundled Assumptions
 
 Import only from `a2ui-react-native-renderer`. The package does not include the
 Basic Catalog, functions such as `openUrl`, or native controls. Define and
@@ -96,8 +120,10 @@ register every capability the application's A2UI producer may emit.
 Plan to release these public type and schema changes in `0.2.0`; this working
 tree does not change the package version or publish a release.
 
-- Both v0.9 and v0.9.1 complete component graphs are accepted. References to
-  components delivered in a later update remain unsupported for now.
+- Both v0.9 and v0.9.1 progressive component graphs are accepted. A missing
+  root or child is pending; invalid schemas, known cycles, and configured limits
+  still reject an update atomically. Apps that previously retried a rejected
+  missing-child update can stop doing so.
 - From this version, a bad message in `applyMessages` leaves earlier valid
   messages committed and does not stop later valid messages, even for the same
   surface. Applications that depended on per-surface batch rollback should

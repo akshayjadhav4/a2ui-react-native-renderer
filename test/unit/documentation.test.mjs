@@ -53,9 +53,9 @@ test("keeps README documentation links and limitations valid", () => {
 
   assert.match(
     readme,
-    /`v0\.9` and `v0\.9\.1` complete component graphs are supported/,
+    /`v0\.9` and `v0\.9\.1` accept progressive component updates/,
   );
-  assert.match(readme, /progressive reference handling is planned separately/);
+  assert.match(readme, /renderPending/);
   assert.match(readme, /No Basic Catalog .* is bundled/);
   assert.match(readme, /No transport, agent, model, chat UI/);
 });

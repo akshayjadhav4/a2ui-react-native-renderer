@@ -90,8 +90,20 @@ absolute pointer context.
 
 ## Children And Templates
 
-Use `A2UIChildListSchema` for structural children. Resolved children contain an
-ID and base path:
+Use `A2UIComponentIdSchema` for one structural child. The presenter receives a
+string ID:
+
+```tsx
+const Card = defineA2UIComponent({
+  schema: z.object({ child: A2UIComponentIdSchema }),
+  presenter: ({ props, renderChild }) => (
+    <View>{renderChild(props.child)}</View>
+  ),
+});
+```
+
+Use `A2UIChildListSchema` for a child list. Resolved children contain an ID and
+base path:
 
 ```tsx
 const Column = defineA2UIComponent({
@@ -105,8 +117,10 @@ const Column = defineA2UIComponent({
 ```
 
 The wire form may be a static component-ID list or a structural template that
-repeats one component against a data-model path. Component graphs are checked
-for missing references, cycles, depth, and total count before commit.
+repeats one component against a data-model path. A plain `z.string()` remains a
+literal property and is never treated as a child reference. Missing marked
+children remain pending so a later update can fill them; known cycles, empty
+IDs, excessive depth, and resource limits are rejected before commit.
 
 ## Actions
 

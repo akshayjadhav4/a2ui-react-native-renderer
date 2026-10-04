@@ -87,6 +87,7 @@ turn that created it. In that case, let the application own the engine and
 render individual surfaces where they belong.
 
 ```tsx
+import { Text } from "react-native";
 import {
   A2UIProvider,
   A2UISurface,
@@ -108,11 +109,20 @@ export function acceptA2UIMessage(message: A2UIMessage) {
 export function ChatSurface({ surfaceId }: { surfaceId: string }) {
   return (
     <A2UIProvider engine={engine}>
-      <A2UISurface surfaceId={surfaceId} />
+      <A2UISurface
+        surfaceId={surfaceId}
+        renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
+      />
     </A2UIProvider>
   );
 }
 ```
+
+The callback receives `surfaceId`, `componentId`, and
+`kind: "root" | "component"`. Without
+it, missing positions render nothing while available components keep rendering.
+An absent bound data path reaches the presenter as `undefined`, so the presenter
+chooses its own loading or empty state.
 
 The host application decides how messages arrive, where surfaces appear, how
 long they remain, and how `A2UIUserAction` values return to the agent. The
@@ -142,9 +152,10 @@ and functions.
 
 A2UI messages must be treated as untrusted input. Before a surface revision is
 published, the engine validates message shape, catalog IDs, component schemas,
-the reserved `root`, references, cycles, JSON pointers, and configured resource
-limits. An invalid update reports a structured `A2UIRendererError` and keeps the
-last valid surface revision when possible.
+structural IDs, known cycles, JSON pointers, and configured resource limits.
+A root or child definition that has not arrived yet is pending, not invalid.
+An invalid update reports a structured `A2UIRendererError` and keeps the last
+valid surface revision when possible.
 
 Messages in a batch apply in order. An invalid message is reported and skipped;
 later valid messages continue, including messages for that same surface. A
@@ -170,14 +181,14 @@ error codes, limits, and trust boundaries.
 
 ## Public API
 
-| Area               | Main exports                                                     |
-| ------------------ | ---------------------------------------------------------------- |
-| Catalogs           | `defineA2UICatalog`, `defineA2UIComponent`, `defineA2UIFunction` |
-| Simple rendering   | `A2UIRenderer`                                                   |
-| Advanced rendering | `createA2UIEngine`, `A2UIProvider`, `A2UISurface`                |
-| React state        | `useA2UISurface`, `useA2UISurfaceIds`, `useA2UIErrors`           |
-| Protocol schemas   | `A2UIActionSchema`, `A2UIChildListSchema`, `A2UIDynamic*Schema`  |
-| Validation         | `DEFAULT_A2UI_RESOURCE_LIMITS`                                   |
+| Area               | Main exports                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| Catalogs           | `defineA2UICatalog`, `defineA2UIComponent`, `defineA2UIFunction`                         |
+| Simple rendering   | `A2UIRenderer`                                                                           |
+| Advanced rendering | `createA2UIEngine`, `A2UIProvider`, `A2UISurface`                                        |
+| React state        | `useA2UISurface`, `useA2UISurfaceIds`, `useA2UIErrors`                                   |
+| Protocol schemas   | `A2UIActionSchema`, `A2UIChildListSchema`, `A2UIComponentIdSchema`, `A2UIDynamic*Schema` |
+| Validation         | `DEFAULT_A2UI_RESOURCE_LIMITS`                                                           |
 
 The complete value and type reference is in [Public API](./docs/api.md).
 
@@ -213,9 +224,9 @@ pnpm example:export
 
 ## Limitations
 
-- A2UI `v0.9` and `v0.9.1` complete component graphs are supported. A child
-  reference to a component delivered in a later message is still rejected;
-  progressive reference handling is planned separately.
+- A2UI `v0.9` and `v0.9.1` accept progressive component updates. The protocol
+  does not tell the renderer when an unresolved reference will never arrive;
+  the application owns any timeout or retry policy.
 - No Basic Catalog or other visual catalog is bundled.
 - No transport, agent, model, chat UI, persistence, or server integration is
   included.
