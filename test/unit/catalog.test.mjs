@@ -7,6 +7,7 @@ import {
   defineA2UICatalog,
   defineA2UIComponent,
   defineA2UIFunction,
+  A2UIDynamicStringSchema,
 } from "../../lib/module/index.js";
 
 const TextComponent = defineA2UIComponent({
@@ -110,4 +111,30 @@ test("freezes component and function definitions", () => {
 
   assert.ok(Object.isFrozen(component));
   assert.ok(Object.isFrozen(fn));
+});
+
+test("rejects nested generated setter name collisions", () => {
+  assert.throws(
+    () =>
+      defineA2UIComponent({
+        schema: z.object({
+          content: z.object({
+            value: A2UIDynamicStringSchema,
+            setValue: z.string(),
+          }),
+        }),
+        presenter: () => null,
+      }),
+    {
+      name: "TypeError",
+      message: /generated setter "setValue" conflicts with a schema property/,
+    },
+  );
+
+  assert.doesNotThrow(() =>
+    defineA2UIComponent({
+      schema: z.object({ value: z.string(), setValue: z.string() }),
+      presenter: () => null,
+    }),
+  );
 });

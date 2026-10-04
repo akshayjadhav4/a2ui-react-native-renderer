@@ -6,7 +6,11 @@ import { z } from "zod";
 import {
   A2UIActionSchema,
   A2UIChildListSchema,
+  A2UIDynamicBooleanSchema,
+  A2UIDynamicNumberSchema,
   A2UIDynamicStringSchema,
+  A2UIDynamicStringListSchema,
+  A2UIDynamicValueSchema,
 } from "../../lib/module/index.js";
 import {
   ActionSchema,
@@ -44,4 +48,30 @@ test("recognizes new core schemas after wrapping and nesting", () => {
   assert.equal(behavior.shape.title.type, "DYNAMIC");
   assert.equal(behavior.shape.action.type, "ACTION");
   assert.equal(behavior.shape.children.type, "STRUCTURAL");
+});
+
+test("classifies typed and generic dynamic fields inside wrappers", () => {
+  const behavior = inspectA2UISchemaBehavior(
+    z.object({
+      text: A2UIDynamicStringSchema.optional(),
+      count: A2UIDynamicNumberSchema,
+      enabled: A2UIDynamicBooleanSchema,
+      names: A2UIDynamicStringListSchema,
+      anything: A2UIDynamicValueSchema,
+      custom: z.union([z.string(), z.object({ path: z.string() })]),
+      ambiguous: z.union([
+        z.string(),
+        z.number(),
+        z.object({ path: z.string() }),
+      ]),
+    }),
+  );
+
+  assert.equal(behavior.shape.text.kind, "string");
+  assert.equal(behavior.shape.count.kind, "number");
+  assert.equal(behavior.shape.enabled.kind, "boolean");
+  assert.equal(behavior.shape.names.kind, "string-list");
+  assert.equal(behavior.shape.anything.kind, "unknown");
+  assert.equal(behavior.shape.custom.kind, "string");
+  assert.equal(behavior.shape.ambiguous.kind, "unknown");
 });

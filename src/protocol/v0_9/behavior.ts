@@ -2,14 +2,21 @@ import { z } from "zod";
 
 export type A2UISchemaBehavior =
   | {
-      readonly type:
-        "STATIC" | "DYNAMIC" | "ACTION" | "STRUCTURAL" | "CHECKABLE";
+      readonly type: "STATIC" | "ACTION" | "STRUCTURAL" | "CHECKABLE";
+    }
+  | {
+      readonly type: "DYNAMIC";
+      readonly kind: A2UIDynamicKind;
+      readonly allowsNull: boolean;
     }
   | { readonly type: "ARRAY"; readonly element: A2UISchemaBehavior }
   | {
       readonly type: "OBJECT";
       readonly shape: Readonly<Record<string, A2UISchemaBehavior>>;
     };
+
+export type A2UIDynamicKind =
+  "string" | "number" | "boolean" | "string-list" | "unknown";
 
 export function inspectA2UISchemaBehavior(
   schema: z.ZodTypeAny,
@@ -31,7 +38,11 @@ function inspect(schema: z.ZodTypeAny, key?: string): A2UISchemaBehavior {
     return { type: "STRUCTURAL" };
   }
   if (/^(A2UI:|REF:common_types\.json#\/\$defs\/)Dynamic/.test(tag)) {
-    return { type: "DYNAMIC" };
+    return {
+      type: "DYNAMIC",
+      kind: taggedDynamicKind(tag),
+      allowsNull: schema.safeParse(null).success,
+    };
   }
 
   if (current instanceof z.ZodUnion) {
@@ -43,7 +54,11 @@ function inspect(schema: z.ZodTypeAny, key?: string): A2UISchemaBehavior {
       return { type: "STRUCTURAL" };
     }
     if (options.some((option) => hasFields(option, "path"))) {
-      return { type: "DYNAMIC" };
+      return {
+        type: "DYNAMIC",
+        kind: inferredDynamicKind(options),
+        allowsNull: schema.safeParse(null).success,
+      };
     }
   }
 
@@ -67,6 +82,43 @@ function inspect(schema: z.ZodTypeAny, key?: string): A2UISchemaBehavior {
   }
 
   return { type: "STATIC" };
+}
+
+function taggedDynamicKind(tag: string): A2UIDynamicKind {
+  if (tag.endsWith("DynamicStringList")) return "string-list";
+  if (tag.endsWith("DynamicString")) return "string";
+  if (tag.endsWith("DynamicNumber")) return "number";
+  if (tag.endsWith("DynamicBoolean")) return "boolean";
+  return "unknown";
+}
+
+function inferredDynamicKind(
+  options: readonly z.ZodTypeAny[],
+): A2UIDynamicKind {
+  const literalKinds = new Set<A2UIDynamicKind>();
+  for (const option of options) {
+    if (hasFields(option, "path") || hasFields(option, "call")) {
+      continue;
+    }
+
+    const current = unwrap(option);
+    const kind: A2UIDynamicKind =
+      current instanceof z.ZodString
+        ? "string"
+        : current instanceof z.ZodNumber
+          ? "number"
+          : current instanceof z.ZodBoolean
+            ? "boolean"
+            : current instanceof z.ZodArray &&
+                unwrap(current.element as z.ZodTypeAny) instanceof z.ZodString
+              ? "string-list"
+              : "unknown";
+    literalKinds.add(kind);
+  }
+
+  return literalKinds.size === 1
+    ? (literalKinds.values().next().value ?? "unknown")
+    : "unknown";
 }
 
 function unwrap(schema: z.ZodTypeAny): z.ZodTypeAny {
