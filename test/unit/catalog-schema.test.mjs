@@ -8,6 +8,15 @@ import { z } from "zod";
 
 import { exportA2UICatalogSchema } from "../../lib/module/catalog-schema.js";
 import {
+  A2UIActionSchema,
+  A2UIChildListSchema,
+  A2UIComponentIdSchema,
+  A2UIDataBindingSchema,
+  A2UIDynamicBooleanSchema,
+  A2UIDynamicNumberSchema,
+  A2UIDynamicStringListSchema,
+  A2UIDynamicStringSchema,
+  A2UIDynamicValueSchema,
   defineA2UICatalog,
   defineA2UIComponent,
 } from "../../lib/module/index.js";
@@ -315,4 +324,116 @@ test("defaults remain JSON-safe and detached from their source values", () => {
       name,
     );
   }
+});
+
+test("exports nested and wrapped A2UI markers as official references", () => {
+  const markerSchema = z.object({
+    child: A2UIComponentIdSchema.describe("Single child").optional(),
+    children: A2UIChildListSchema.default([]),
+    action: A2UIActionSchema.nullable(),
+    label: A2UIDynamicStringSchema.describe("Bound label").optional(),
+    count: A2UIDynamicNumberSchema,
+    active: A2UIDynamicBooleanSchema,
+    names: A2UIDynamicStringListSchema,
+    value: A2UIDynamicValueSchema,
+    binding: A2UIDataBindingSchema,
+    literal: z.string(),
+    nested: z.object({ items: z.array(A2UIComponentIdSchema) }),
+  });
+  const markerCatalog = defineA2UICatalog({
+    id: "https://example.com/a2ui/markers/v1",
+    components: {
+      Panel: defineA2UIComponent({
+        schema: markerSchema,
+        presenter: () => null,
+      }),
+    },
+  });
+  const document = exportA2UICatalogSchema(markerCatalog);
+  const props = document.components.Panel.allOf[2].properties;
+  const ref = (name) => ({
+    $ref: `https://a2ui.org/specification/v0_9/common_types.json#/$defs/${name}`,
+  });
+  assert.deepEqual(props.child, {
+    ...ref("ComponentId"),
+    minLength: 1,
+    description: "Single child",
+  });
+  assert.deepEqual(props.children, { ...ref("ChildList"), default: [] });
+  assert.deepEqual(props.action, {
+    anyOf: [ref("Action"), { type: "null" }],
+  });
+  assert.deepEqual(props.label, {
+    ...ref("DynamicString"),
+    description: "Bound label",
+  });
+  for (const [key, name] of [
+    ["count", "DynamicNumber"],
+    ["active", "DynamicBoolean"],
+    ["names", "DynamicStringList"],
+    ["value", "DynamicValue"],
+    ["binding", "DataBinding"],
+  ]) {
+    assert.deepEqual(props[key], ref(name));
+  }
+  assert.deepEqual(props.literal, { type: "string" });
+  assert.deepEqual(props.nested.properties.items.items, {
+    ...ref("ComponentId"),
+    minLength: 1,
+  });
+
+  const ajv = new Ajv2020({ strict: false, validateFormats: false });
+  ajv.addSchema(officialSchema("v0_9_1", "common_types.json"));
+  ajv.addSchema(document, "https://a2ui.org/specification/v0_9/catalog.json");
+  const validate = ajv.compile(
+    officialSchema("v0_9_1", "server_to_client.json"),
+  );
+  const valid = {
+    child: "item",
+    children: ["item"],
+    action: null,
+    count: { path: "/count" },
+    active: true,
+    names: ["one"],
+    value: "ready",
+    binding: { path: "/title" },
+    literal: "ordinary text",
+    nested: { items: ["item"] },
+  };
+  const accepts = (propsValue) =>
+    validate({
+      version: "v0.9.1",
+      updateComponents: {
+        surfaceId: "surface-1",
+        components: [{ id: "root", component: "Panel", ...propsValue }],
+      },
+    });
+  assert.equal(markerSchema.safeParse(valid).success, true);
+  assert.equal(accepts(valid), true, JSON.stringify(validate.errors));
+  for (const rejected of [
+    { ...valid, child: "" },
+    { ...valid, children: [1] },
+    { ...valid, nested: { items: [""] } },
+  ]) {
+    assert.equal(markerSchema.safeParse(rejected).success, false);
+    assert.equal(accepts(rejected), false);
+  }
+});
+
+test("rejects a modified marker when its reference would lose a constraint", () => {
+  const modifiedCatalog = defineA2UICatalog({
+    id: "https://example.com/a2ui/modified-marker/v1",
+    components: {
+      Panel: defineA2UIComponent({
+        schema: z.object({ child: A2UIComponentIdSchema.min(2) }),
+        presenter: () => null,
+      }),
+    },
+  });
+  assert.throws(
+    () => exportA2UICatalogSchema(modifiedCatalog),
+    (error) =>
+      error instanceof TypeError &&
+      error.message.includes("components.Panel.child"),
+  );
 });

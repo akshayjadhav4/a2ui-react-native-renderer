@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  getA2UISchemaMarker,
+  isA2UISchemaMarkerUnchanged,
+} from "../protocol/v0_9/marker.js";
+
 export type A2UIJsonSchema = Record<string, unknown>;
 
 export function isRequiredCatalogProperty(schema: z.ZodTypeAny): boolean {
@@ -17,6 +22,11 @@ export function convertCatalogSchema(
   path: string,
 ): A2UIJsonSchema {
   let result: A2UIJsonSchema;
+  const underlying = unwrapA2UIWrappers(schema);
+  const marker = getA2UISchemaMarker(underlying);
+  if (marker !== undefined && !isA2UISchemaMarkerUnchanged(underlying)) {
+    throw unsupported(path);
+  }
 
   if (schema instanceof z.ZodOptional) {
     result = convertCatalogSchema(schema.unwrap() as z.ZodTypeAny, path);
@@ -32,6 +42,11 @@ export function convertCatalogSchema(
     result = {
       ...convertCatalogSchema(schema.removeDefault() as z.ZodTypeAny, path),
       default: cloneJsonValue(value, path, new WeakSet()),
+    };
+  } else if (marker !== undefined) {
+    result = {
+      $ref: `https://a2ui.org/specification/v0_9/common_types.json#/$defs/${marker}`,
+      ...(marker === "ComponentId" ? { minLength: 1 } : {}),
     };
   } else if (schema instanceof z.ZodString) {
     result = convertString(schema, path);
@@ -87,7 +102,8 @@ export function convertCatalogSchema(
     throw unsupported(path);
   }
 
-  return schema.description === undefined
+  return schema.description === undefined ||
+    (marker !== undefined && schema.description === `A2UI:${marker}`)
     ? result
     : { ...result, description: schema.description };
 }
@@ -208,6 +224,22 @@ function isJsonScalar(value: unknown): boolean {
 
 function isJsonLength(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
+}
+
+function unwrapA2UIWrappers(schema: z.ZodTypeAny): z.ZodTypeAny {
+  let current = schema;
+  while (
+    current instanceof z.ZodOptional ||
+    current instanceof z.ZodNullable ||
+    current instanceof z.ZodDefault
+  ) {
+    current = (
+      current instanceof z.ZodDefault
+        ? current.removeDefault()
+        : current.unwrap()
+    ) as z.ZodTypeAny;
+  }
+  return current;
 }
 
 function cloneJsonValue(

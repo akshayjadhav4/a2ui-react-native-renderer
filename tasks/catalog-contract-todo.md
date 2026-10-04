@@ -47,16 +47,17 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Task 3. Scope: Medium.
   - Evidence: Focused tests confirm path-specific `TypeError` for transforms, refinements, recursion, coercion, unsupported formats and regex flags, catchalls, invalid JSON Schema bounds, repeated constraints that would be overwritten, and reserved component props. Defaults are cloned into JSON-safe values; non-JSON and cyclic defaults fail with paths. Repeated exports match and source defaults remain unchanged. Build, focused tests, typecheck, lint, formatting, and `git diff --check` pass.
 
-- [ ] **Task 5: Preserve A2UI marker references**
+- [x] **Task 5: Preserve A2UI marker references**
   - Acceptance: Marked `ComponentId`, `ChildList`, `Action`, and `Dynamic*` fields emit the exact official common-type `$ref`, including nested and optional/nullable/default forms. An ordinary `z.string()` remains a literal string; descriptions do not erase marker identity. Accepted and rejected child examples match renderer behavior.
   - Verify: `pnpm build && node --test test/unit/catalog-schema.test.mjs test/unit/schema-behavior.test.mjs test/unit/validation.test.mjs && pnpm typecheck`.
   - Likely files: `src/catalog/convertCatalogSchema.ts`, `src/catalog/exportCatalogSchema.ts`, `src/protocol/v0_9/behavior.ts`, `test/unit/catalog-schema.test.mjs`.
   - Dependencies: Task 4. Scope: Medium.
+  - Evidence: All public A2UI markers now carry stable internal identity across `.describe()` and the supported wrappers. Exported schemas use exact official common-type URIs for ComponentId, ChildList, Action, DataBinding, and Dynamic* markers, including nested fields; ordinary strings stay literal. The ComponentId reference retains the renderer's nonempty constraint. Modified marker constraints fail at the property path. Accepted and rejected child examples match Zod and the official v0.9.1 envelope. The focused catalog, behavior, and validation suites pass.
 
 ### Checkpoint B: Component contract
 
-- [ ] Generated component schemas and renderer Zod validation agree on representative accepted/rejected values, including required fields, bounds, unknown keys, structural IDs, bindings, and nested properties.
-- [ ] Unsupported constructs fail at named paths; `pnpm test`, `pnpm typecheck`, and `git diff --check` pass before function export work.
+- [x] Generated component schemas and renderer Zod validation agree on representative accepted/rejected values, including required fields, bounds, unknown keys, structural IDs, bindings, and nested properties.
+- [x] Unsupported constructs fail at named paths; all 144 tests, `pnpm typecheck`, lint, format, and `git diff --check` pass before function export work.
 
 ## Phase C: Functions and validation parity
 
