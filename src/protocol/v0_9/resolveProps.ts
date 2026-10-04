@@ -107,6 +107,7 @@ function resolveValue(
           )
         : value;
     case "ACTION":
+    case "COMPONENT_ID":
     case "CHECKABLE":
     case "STATIC":
       return value;

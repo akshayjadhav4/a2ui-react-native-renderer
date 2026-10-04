@@ -19,16 +19,17 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Approved task list. Scope: Medium.
   - Evidence: The schema rejects empty and nonstring IDs, the public type fixture infers a string child prop, and all 122 tests plus typecheck pass. `docs/api.md` lists the new root export so the documentation contract remains green.
 
-- [ ] **Task 2: Recognize marked single-child references**
+- [x] **Task 2: Recognize marked single-child references**
   - Acceptance: The schema inspector reports a distinct `COMPONENT_ID` behavior through nested and optional/nullable wrappers. Graph extraction records its string as one edge; prop resolution keeps it a string. An ordinary `z.string()` creates no edge, and child-list/template behavior remains unchanged.
   - Verify: `pnpm build && node --test test/unit/schema-behavior.test.mjs test/unit/validation.test.mjs test/integration/bound-presenter.test.mjs && pnpm typecheck`.
   - Likely files: `src/protocol/v0_9/behavior.ts`, `src/protocol/v0_9/resolveProps.ts`, `src/validation/validateGraph.ts`, `test/unit/schema-behavior.test.mjs`, `test/unit/validation.test.mjs`.
   - Dependencies: Task 1. Scope: Medium.
+  - Evidence: A nested marked ID is a graph edge and remains a string in resolved props; a plain string stays static. Focused tests, typecheck, and all 124 tests pass.
 
 ### Checkpoint A
 
-- [ ] Public declarations show a string single-child prop; graph and presenter tests cover tagged and untagged strings, nested fields, child lists, and template scopes.
-- [ ] `pnpm typecheck`, focused tests, and `git diff --check` pass.
+- [x] Public declarations show a string single-child prop; graph and presenter tests cover tagged and untagged strings, nested fields, child lists, and template scopes.
+- [x] `pnpm typecheck`, focused tests, and `git diff --check` pass.
 
 ## Phase B: Protocol state
 

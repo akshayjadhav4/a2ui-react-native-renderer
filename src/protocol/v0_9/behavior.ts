@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export type A2UISchemaBehavior =
   | {
-      readonly type: "STATIC" | "ACTION" | "STRUCTURAL" | "CHECKABLE";
+      readonly type:
+        "STATIC" | "ACTION" | "STRUCTURAL" | "COMPONENT_ID" | "CHECKABLE";
     }
   | {
       readonly type: "DYNAMIC";
@@ -67,6 +68,9 @@ function inspect(schema: z.ZodTypeAny, key?: string): A2UISchemaBehavior {
   }
   if (/^(A2UI:|REF:common_types\.json#\/\$defs\/)ChildList/.test(tag)) {
     return { type: "STRUCTURAL" };
+  }
+  if (/^(A2UI:|REF:common_types\.json#\/\$defs\/)ComponentId/.test(tag)) {
+    return { type: "COMPONENT_ID" };
   }
   if (/^(A2UI:|REF:common_types\.json#\/\$defs\/)Dynamic/.test(tag)) {
     return {

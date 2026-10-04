@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import {
   A2UIChildListSchema,
+  A2UIComponentIdSchema,
   A2UIDynamicStringSchema,
   DEFAULT_A2UI_RESOURCE_LIMITS,
   createA2UIEngine,
@@ -32,6 +33,13 @@ const graphCatalog = defineA2UICatalog({
     },
     Text: {
       schema: z.object({ text: A2UIDynamicStringSchema }),
+      presenter: () => null,
+    },
+    Single: {
+      schema: z.object({
+        content: z.object({ child: A2UIComponentIdSchema }),
+        title: z.string(),
+      }),
       presenter: () => null,
     },
   },
@@ -133,6 +141,30 @@ test("accepts a valid component graph", () => {
 
   assert.equal(result.success, true);
   assert.deepEqual(Object.keys(result.components), ["root", "label"]);
+});
+
+test("validates marked single-child references inside nested props", () => {
+  const valid = validateGraph([
+    {
+      id: "root",
+      component: "Single",
+      content: { child: "label" },
+      title: "plain literal",
+    },
+    { id: "label", component: "Text", text: "Present" },
+  ]);
+  const missing = validateGraph([
+    {
+      id: "root",
+      component: "Single",
+      content: { child: "absent" },
+      title: "plain literal",
+    },
+  ]);
+
+  assert.equal(valid.success, true);
+  assert.equal(missing.success, false);
+  assert.equal(missing.error.code, "INVALID_REFERENCE");
 });
 
 test("rejects duplicate ids, missing roots, and invalid properties", () => {

@@ -243,6 +243,11 @@ function collectBehaviorReferences(
         }
       }
       return;
+    case "COMPONENT_ID":
+      if (typeof value === "string") {
+        references.push(value);
+      }
+      return;
     case "ARRAY":
       if (Array.isArray(value)) {
         for (const item of value) {

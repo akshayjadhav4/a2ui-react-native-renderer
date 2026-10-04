@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   A2UIActionSchema,
   A2UIChildListSchema,
+  A2UIComponentIdSchema,
   A2UIDynamicBooleanSchema,
   A2UIDynamicNumberSchema,
   A2UIDynamicStringSchema,
@@ -21,6 +22,30 @@ import {
   inspectA2UISchemaBehavior,
   matchesA2UIDynamicKind,
 } from "../../lib/module/protocol/v0_9/behavior.js";
+import { resolvePresenterProps } from "../../lib/module/protocol/v0_9/resolveProps.js";
+
+test("keeps a marked single child as a presenter string", () => {
+  const schema = z.object({
+    content: z.object({ child: A2UIComponentIdSchema.optional() }),
+    title: z.string(),
+    children: A2UIChildListSchema,
+  });
+  const behavior = inspectA2UISchemaBehavior(schema);
+  assert.equal(behavior.shape.content.shape.child.type, "COMPONENT_ID");
+  assert.equal(behavior.shape.title.type, "STATIC");
+  assert.equal(behavior.shape.children.type, "STRUCTURAL");
+
+  const resolved = resolvePresenterProps(
+    schema,
+    { content: { child: "label" }, title: "literal", children: ["label"] },
+    {},
+    "/",
+    () => undefined,
+    [],
+  );
+  assert.equal(resolved.content.child, "label");
+  assert.deepEqual(resolved.children, [{ id: "label", basePath: "/" }]);
+});
 
 test("recognizes existing public A2UI schema aliases inside component schemas", () => {
   const schema = z.object({
