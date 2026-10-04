@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { A2UIComponentIdSchema } from "../../lib/module/index.js";
 import {
   A2UIWireMessageSchema,
   A2UIWireActionEnvelopeSchema,
@@ -72,6 +73,9 @@ test("rejects unsupported versions, extra operations, and malformed payloads", (
 });
 
 test("common value schemas accept bindings, typed values, and app-owned child references", () => {
+  assert.equal(A2UIComponentIdSchema.safeParse("child").success, true);
+  assert.equal(A2UIComponentIdSchema.safeParse("").success, false);
+  assert.equal(A2UIComponentIdSchema.safeParse(42).success, false);
   assert.equal(DynamicStringSchema.safeParse("Hello").success, true);
   assert.equal(DynamicStringSchema.safeParse({ path: "/title" }).success, true);
   assert.equal(

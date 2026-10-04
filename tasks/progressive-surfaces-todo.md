@@ -6,17 +6,18 @@
 
 **Plan:** [progressive-surfaces-plan.md](progressive-surfaces-plan.md)
 
-**Status:** Proposed for review on 2026-10-04. No implementation has started.
+**Status:** Approved for implementation on 2026-10-04. In progress on `codex/native-core`.
 
 Tasks follow dependency order. Add a focused failing test or type fixture before each behavior change, then make it pass and record verification. Keep each implementation slice on `codex/native-core` and commit it separately. The old `tasks/todo.md` is a historical initial-release record and is not the active checklist.
 
 ## Phase A: Structural contract
 
-- [ ] **Task 1: Export the single-child schema marker**
+- [x] **Task 1: Export the single-child schema marker**
   - Acceptance: `A2UIComponentIdSchema` is a nonempty, tagged Zod string exported from the package root; type fixtures infer a string presenter prop, while `A2UIChildListSchema` still infers a resolved child list.
   - Verify: `pnpm build && pnpm typecheck && node --test test/unit/protocol-schemas.test.mjs`.
   - Likely files: `src/protocol/v0_9/commonSchemas.ts`, `src/protocol/v0_9/schemas.ts`, `src/index.ts`, `test/types/guides.tsx`.
   - Dependencies: Approved task list. Scope: Medium.
+  - Evidence: The schema rejects empty and nonstring IDs, the public type fixture infers a string child prop, and all 122 tests plus typecheck pass. `docs/api.md` lists the new root export so the documentation contract remains green.
 
 - [ ] **Task 2: Recognize marked single-child references**
   - Acceptance: The schema inspector reports a distinct `COMPONENT_ID` behavior through nested and optional/nullable wrappers. Graph extraction records its string as one edge; prop resolution keeps it a string. An ordinary `z.string()` creates no edge, and child-list/template behavior remains unchanged.

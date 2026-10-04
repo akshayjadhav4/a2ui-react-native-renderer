@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   A2UIActionSchema,
   A2UIChildListSchema,
+  A2UIComponentIdSchema,
   A2UIDynamicStringSchema,
   A2UIProvider,
   A2UISurface,
@@ -43,6 +44,13 @@ const Column = defineA2UIComponent({
   ),
 });
 
+const SingleChild = defineA2UIComponent({
+  schema: z.object({ child: A2UIComponentIdSchema }),
+  presenter: ({ props, renderChild }) => (
+    <View>{renderChild(props.child)}</View>
+  ),
+});
+
 const Button = defineA2UIComponent({
   schema: z.object({
     label: A2UIDynamicStringSchema,
@@ -64,7 +72,7 @@ const formatCount = defineA2UIFunction({
 
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
-  components: { Button, Column, Input, Label },
+  components: { Button, Column, Input, Label, SingleChild },
   functions: [formatCount],
 });
 

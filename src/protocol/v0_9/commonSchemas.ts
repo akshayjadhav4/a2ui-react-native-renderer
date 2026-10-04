@@ -61,6 +61,8 @@ export const ChildListSchema = z
   ])
   .describe("A2UI:ChildList");
 
+export const ComponentIdSchema = z.string().min(1).describe("A2UI:ComponentId");
+
 export const ActionSchema = z
   .union([
     z

@@ -73,6 +73,7 @@ the runtime. Use them inside consumer component schemas.
 | ----------------------------- | ------------------------------------------------ |
 | `A2UIActionSchema`            | Event actions and local function-call actions    |
 | `A2UIChildListSchema`         | Static or structurally repeated child references |
+| `A2UIComponentIdSchema`       | A single structural child component ID           |
 | `A2UIDataBindingSchema`       | A2UI JSON-pointer data binding                   |
 | `A2UIDynamicBooleanSchema`    | Boolean literal, binding, or function call       |
 | `A2UIDynamicNumberSchema`     | Number literal, binding, or function call        |

@@ -13,6 +13,7 @@ export {
 export {
   A2UIActionSchema,
   A2UIChildListSchema,
+  A2UIComponentIdSchema,
   A2UIDataBindingSchema,
   A2UIDynamicBooleanSchema,
   A2UIDynamicNumberSchema,

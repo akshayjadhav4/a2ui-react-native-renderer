@@ -1,6 +1,7 @@
 export {
   ActionSchema as A2UIActionSchema,
   ChildListSchema as A2UIChildListSchema,
+  ComponentIdSchema as A2UIComponentIdSchema,
   DataBindingSchema as A2UIDataBindingSchema,
   DynamicBooleanSchema as A2UIDynamicBooleanSchema,
   DynamicNumberSchema as A2UIDynamicNumberSchema,
