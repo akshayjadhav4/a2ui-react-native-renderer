@@ -2,7 +2,7 @@
 
 **Module id:** `progressive-surfaces` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Proposed for review on 2026-10-04. No implementation has started.
+**Status:** Approved for planning on 2026-10-04 when the user said “start work.” No implementation has started.
 
 ## Assumptions
 
@@ -69,7 +69,7 @@ An unresolved but syntactically valid root or child reference is pending, not an
 3. When `root` arrives, render it immediately. A presenter may call `renderChild` for an unresolved structural child and receive the optional pending UI. Other valid children render normally. A later accepted update replaces that pending position with the real presenter.
 4. `A2UIComponentIdSchema` and `A2UIChildListSchema` mark graph edges. Ordinary strings and dynamic data bindings are not graph edges. References inside nested objects and arrays follow their marked schemas.
 5. Validate known graph edges for cycles and depth, including buffered components not yet reachable from `root`. Treat an unresolved edge as a terminal for those checks. Enforce the existing component count, data size, and message limits. Limit the number of distinct unresolved IDs across the stored graph to `maxComponentsPerSurface` as well, so a small set of definitions cannot create unbounded pending state.
-6. Invalid schema values, duplicate IDs within a batch, unknown component types, malformed paths, and resource-limit violations remain immediate errors. A missing definition alone never produces `INVALID_ROOT` or `INVALID_REFERENCE`.
+6. Invalid schema values, empty structural child IDs, duplicate IDs within a batch, unknown component types, malformed paths, and resource-limit violations remain immediate errors. A missing definition alone never produces `INVALID_ROOT` or `INVALID_REFERENCE`.
 7. Missing bound data stays `undefined`; a later `updateDataModel` or local write updates the presenter through normal surface subscriptions. Present values of the wrong typed kind retain the existing `BINDING_ERROR` behavior.
 8. `deleteSurface` removes buffered definitions and pending state. A new surface using the same ID starts clean.
 
@@ -140,7 +140,7 @@ Use existing `A2UI` names, strict TypeScript, immutable snapshots, and double qu
 
 ## Review decisions
 
-Please review these API choices before planning:
+The user approved these API choices for planning on 2026-10-04:
 
 1. Expose `pendingComponentIds` on the snapshot, including `["root"]` before the root arrives.
 2. Offer one optional `renderPending` callback on both React entry points, defaulting to `null`.
