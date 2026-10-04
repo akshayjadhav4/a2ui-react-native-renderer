@@ -106,7 +106,7 @@ function resolveObject(
   }
 
   for (const [key, childBehavior] of Object.entries(behavior.shape)) {
-    if (childBehavior.type !== "DYNAMIC") {
+    if (childBehavior.type !== "DYNAMIC" || !isDataBinding(value[key])) {
       continue;
     }
 

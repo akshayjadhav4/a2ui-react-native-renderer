@@ -12,6 +12,7 @@ import {
   A2UISurface,
   createA2UIEngine,
   defineA2UICatalog,
+  defineA2UIFunction,
 } from "../../lib/module/index.js";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -43,6 +44,14 @@ const catalog = defineA2UICatalog({
         ),
     },
   },
+  functions: [
+    defineA2UIFunction({
+      name: "fixedLabel",
+      args: z.object({}),
+      returns: "string",
+      execute: () => "From function",
+    }),
+  ],
 });
 
 function createEngineWithSurface(components, dataModel) {
@@ -168,4 +177,44 @@ test("writes through a relative two-way binding", async () => {
     renderer.root.findAllByType("NativeInput")[1].props.value,
     "Mango",
   );
+});
+
+test("only direct bindings expose an input setter", async () => {
+  const literalEngine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: "Fixed" }],
+    {},
+  );
+  const literalRenderer = await renderSurface(literalEngine);
+  const literalInput = literalRenderer.root.findByType("NativeInput");
+  assert.equal(literalInput.props.value, "Fixed");
+  assert.equal(literalInput.props.onChangeText, undefined);
+
+  const functionEngine = createEngineWithSurface(
+    [
+      {
+        id: "root",
+        component: "Input",
+        value: { call: "fixedLabel", returnType: "string" },
+      },
+    ],
+    {},
+  );
+  const functionRenderer = await renderSurface(functionEngine);
+  const functionInput = functionRenderer.root.findByType("NativeInput");
+  assert.equal(functionInput.props.value, "From function");
+  assert.equal(functionInput.props.onChangeText, undefined);
+
+  const boundEngine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    {},
+  );
+  const boundRenderer = await renderSurface(boundEngine);
+  const boundInput = boundRenderer.root.findByType("NativeInput");
+  assert.equal(boundInput.props.value, undefined);
+  assert.equal(typeof boundInput.props.onChangeText, "function");
+
+  await act(() => boundInput.props.onChangeText("Created"));
+  assert.deepEqual(boundEngine.getSurface("main").dataModel, {
+    name: "Created",
+  });
 });

@@ -40,7 +40,7 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 ## Phase 2: Runtime read and write behavior
 
-- [ ] **Task 4: Expose setters only for current bindings**
+- [x] **Task 4: Expose setters only for current bindings**
   - Acceptance: A direct `{ path }` receives a setter even if the data path is missing; literals and function calls receive no setter. Relative and escaped paths still resolve correctly.
   - Verify: `pnpm build && node --test test/integration/bound-presenter.test.mjs test/unit/bindings.test.mjs`.
   - Likely files: `src/protocol/v0_9/resolveProps.ts`, `test/integration/bound-presenter.test.mjs`.
