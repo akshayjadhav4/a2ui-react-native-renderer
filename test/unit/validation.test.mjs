@@ -163,11 +163,11 @@ test("validates marked single-child references inside nested props", () => {
   ]);
 
   assert.equal(valid.success, true);
-  assert.equal(missing.success, false);
-  assert.equal(missing.error.code, "INVALID_REFERENCE");
+  assert.equal(missing.success, true);
+  assert.deepEqual(missing.pendingComponentIds, ["absent"]);
 });
 
-test("rejects duplicate ids, missing roots, and invalid properties", () => {
+test("rejects duplicate ids and invalid properties", () => {
   const fixtures = [
     {
       updates: [
@@ -175,10 +175,6 @@ test("rejects duplicate ids, missing roots, and invalid properties", () => {
         { id: "root", component: "Text", text: "Two" },
       ],
       code: "INVALID_REFERENCE",
-    },
-    {
-      updates: [{ id: "label", component: "Text", text: "No root" }],
-      code: "INVALID_ROOT",
     },
     {
       updates: [{ id: "root", component: "Text" }],
@@ -202,7 +198,7 @@ test("rejects duplicate ids, missing roots, and invalid properties", () => {
   }
 });
 
-test("rejects missing references and component cycles", () => {
+test("keeps missing references pending but rejects component cycles", () => {
   const missing = validateGraph([
     { id: "root", component: "Row", children: ["missing"] },
   ]);
@@ -211,10 +207,71 @@ test("rejects missing references and component cycles", () => {
     { id: "nested", component: "Row", children: ["root"] },
   ]);
 
-  assert.equal(missing.success, false);
-  assert.equal(missing.error.code, "INVALID_REFERENCE");
+  assert.equal(missing.success, true);
+  assert.deepEqual(missing.pendingComponentIds, ["missing"]);
   assert.equal(cycle.success, false);
   assert.equal(cycle.error.code, "INVALID_REFERENCE");
+});
+
+test("buffers pre-root definitions and reports only reachable pending ids", () => {
+  const beforeRoot = validateGraph([
+    { id: "a", component: "Row", children: ["c"] },
+    { id: "unreachable", component: "Row", children: ["orphan"] },
+  ]);
+  assert.equal(beforeRoot.success, true);
+  assert.deepEqual(beforeRoot.pendingComponentIds, ["root"]);
+
+  const afterRoot = validateComponentUpdate({
+    surfaceId: "main",
+    catalog: graphCatalog,
+    current: beforeRoot.components,
+    updates: [{ id: "root", component: "Row", children: ["a", "b", "a"] }],
+    limits: DEFAULT_A2UI_RESOURCE_LIMITS,
+  });
+  assert.equal(afterRoot.success, true);
+  assert.deepEqual(afterRoot.pendingComponentIds, ["c", "b"]);
+  assert.ok(Object.isFrozen(afterRoot.pendingComponentIds));
+});
+
+test("rejects empty and excessive distinct pending ids", () => {
+  const empty = validateGraph([
+    { id: "root", component: "Row", children: [""] },
+  ]);
+  const excessive = validateGraph(
+    [{ id: "root", component: "Row", children: ["a", "b"] }],
+    { maxComponentsPerSurface: 1 },
+  );
+  assert.equal(empty.success, false);
+  assert.equal(empty.error.code, "INVALID_REFERENCE");
+  assert.equal(excessive.success, false);
+  assert.equal(excessive.error.code, "RESOURCE_LIMIT_EXCEEDED");
+});
+
+test("rejects a late cycle or excessive known depth without changing the graph", () => {
+  const pending = validateGraph([
+    { id: "root", component: "Row", children: ["child"] },
+  ]);
+  assert.equal(pending.success, true);
+
+  const lateCycle = validateComponentUpdate({
+    surfaceId: "main",
+    catalog: graphCatalog,
+    current: pending.components,
+    updates: [{ id: "child", component: "Row", children: ["root"] }],
+    limits: DEFAULT_A2UI_RESOURCE_LIMITS,
+  });
+  const lateDepth = validateComponentUpdate({
+    surfaceId: "main",
+    catalog: graphCatalog,
+    current: pending.components,
+    updates: [{ id: "child", component: "Text", text: "Too deep" }],
+    limits: { ...DEFAULT_A2UI_RESOURCE_LIMITS, maxComponentDepth: 1 },
+  });
+  assert.equal(lateCycle.success, false);
+  assert.equal(lateCycle.error.code, "INVALID_REFERENCE");
+  assert.equal(lateDepth.success, false);
+  assert.equal(lateDepth.error.code, "RESOURCE_LIMIT_EXCEEDED");
+  assert.deepEqual(Object.keys(pending.components), ["root"]);
 });
 
 test("rejects invalid binding pointers", () => {
@@ -278,7 +335,7 @@ test("engine rejects invalid graph updates before mutating the last valid surfac
     version: "v0.9",
     updateComponents: {
       surfaceId: "main",
-      components: [{ id: "root", component: "Row", children: ["missing"] }],
+      components: [{ id: "root", component: "Row", children: ["root"] }],
     },
   });
 
@@ -373,7 +430,7 @@ test("retains an accepted surface create after an invalid initial graph", () => 
       version: "v0.9",
       updateComponents: {
         surfaceId: "main",
-        components: [{ id: "root", component: "Row", children: ["missing"] }],
+        components: [{ id: "root", component: "Text", text: 42 }],
       },
     },
   ]);

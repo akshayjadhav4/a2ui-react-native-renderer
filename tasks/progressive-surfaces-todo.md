@@ -40,16 +40,17 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Checkpoint A. Scope: Medium.
   - Evidence: Created and recreated surfaces expose frozen `["root"]`, complete graphs expose `[]`, and data updates preserve the pending-array identity. Focused tests, typecheck, and all 124 tests pass.
 
-- [ ] **Task 4: Accept progressive component graphs atomically**
+- [x] **Task 4: Accept progressive component graphs atomically**
   - Acceptance: Child-first and root-first batches are accepted for v0.9/v0.9.1; reachable missing IDs appear once in deterministic order, while pre-root snapshots expose only `"root"`. Empty IDs and too many distinct unresolved IDs fail. Known cycles and depth violations, including those completed by late definitions, reject atomically; a following corrective message succeeds.
   - Verify: `pnpm build && node --test test/unit/validation.test.mjs test/unit/core-components.test.mjs test/unit/engine-minimal.test.mjs && pnpm typecheck`.
   - Likely files: `src/validation/validateGraph.ts`, `src/protocol/v0_9/core.ts`, `test/unit/validation.test.mjs`, `test/unit/core-components.test.mjs`, `test/unit/engine-minimal.test.mjs`.
   - Dependencies: Task 3. Scope: Medium.
+  - Evidence: Both wire versions buffer child-first updates, reachable pending IDs are frozen and deterministic, and late cycles/depth violations or excessive pending counts reject without mutation. Focused checks, typecheck, and all 130 tests pass.
 
 ### Checkpoint B
 
-- [ ] Both message orders converge to the same graph and pending state; batch recovery, surface subscriptions, and immutable snapshot checks pass.
-- [ ] `pnpm test`, `pnpm typecheck`, and `git diff --check` pass before React API changes.
+- [x] Both message orders converge to the same graph and pending state; batch recovery, surface subscriptions, and immutable snapshot checks pass.
+- [x] `pnpm test`, `pnpm typecheck`, and `git diff --check` pass before React API changes.
 
 ## Phase C: React rendering
 

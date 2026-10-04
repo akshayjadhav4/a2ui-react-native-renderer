@@ -23,7 +23,6 @@ export type A2UIProtocolCoreResult =
 
 const EMPTY_COMPONENTS = Object.freeze({});
 const EMPTY_DATA_MODEL = Object.freeze({});
-const EMPTY_PENDING_COMPONENTS = Object.freeze([]);
 
 export class A2UIProtocolCore {
   private readonly catalogs: ReadonlyMap<string, A2UIRegisteredCatalog>;
@@ -142,10 +141,7 @@ export class A2UIProtocolCore {
         snapshot: Object.freeze({
           ...current.snapshot,
           rootId: validation.components.root === undefined ? null : "root",
-          pendingComponentIds:
-            validation.components.root === undefined
-              ? current.snapshot.pendingComponentIds
-              : EMPTY_PENDING_COMPONENTS,
+          pendingComponentIds: validation.pendingComponentIds,
           components: validation.components,
           revision: current.snapshot.revision + 1,
         }),

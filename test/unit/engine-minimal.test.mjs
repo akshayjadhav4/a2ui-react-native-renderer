@@ -84,6 +84,28 @@ test("publishes one stable snapshot notification for a message batch", () => {
   unsubscribe();
 });
 
+test("notifies a surface subscriber when a pre-root component is buffered", () => {
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  engine.applyMessage(welcomeMessages[0]);
+  let notifications = 0;
+  engine.subscribeSurface("welcome", () => {
+    notifications += 1;
+  });
+
+  engine.applyMessage({
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "welcome",
+      components: [{ id: "label", component: "Text", text: "Early" }],
+    },
+  });
+
+  assert.equal(notifications, 1);
+  assert.equal(engine.getSurface("welcome").rootId, null);
+  assert.deepEqual(engine.getSurface("welcome").pendingComponentIds, ["root"]);
+  assert.equal(engine.getSurface("welcome").revision, 2);
+});
+
 test("reports malformed messages without throwing or replacing valid state", () => {
   const errors = [];
   const engine = createA2UIEngine({

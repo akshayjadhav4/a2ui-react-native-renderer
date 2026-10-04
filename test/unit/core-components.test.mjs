@@ -89,7 +89,7 @@ test("a late invalid component rejects the entire update", () => {
   assert.equal(core.getSurface("s")?.components.other, undefined);
 });
 
-test("a missing surface or child reference does not mutate state", () => {
+test("a missing surface fails while a missing child stays pending", () => {
   const core = createCore();
   const missing = core.apply({
     version: "v0.9.1",
@@ -101,11 +101,56 @@ test("a missing surface or child reference does not mutate state", () => {
   assert.equal(missing.success, false);
   assert.equal(missing.error.code, "INVALID_MESSAGE");
 
-  const before = core.getSurface("s");
-  const invalid = core.apply(
+  const pending = core.apply(
     update([{ id: "root", component: "Row", children: ["missing"] }]),
+  );
+  assert.equal(pending.success, true);
+  assert.equal(core.getSurface("s").rootId, "root");
+  assert.deepEqual(core.getSurface("s").pendingComponentIds, ["missing"]);
+
+  const beforeInvalid = core.getSurface("s");
+  const invalid = core.apply(
+    update([{ id: "missing", component: "Row", children: ["root"] }]),
   );
   assert.equal(invalid.success, false);
   assert.equal(invalid.error.code, "INVALID_REFERENCE");
-  assert.equal(core.getSurface("s"), before);
+  assert.equal(core.getSurface("s"), beforeInvalid);
+
+  assert.equal(
+    core.apply(update([{ id: "missing", component: "Text", text: "Ready" }]))
+      .success,
+    true,
+  );
+  assert.deepEqual(core.getSurface("s").pendingComponentIds, []);
 });
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} buffers components before root and notifies on each accepted update`, () => {
+    const core = createCore();
+    const childFirst = {
+      version,
+      updateComponents: {
+        surfaceId: "s",
+        components: [{ id: "label", component: "Text", text: "First" }],
+      },
+    };
+    assert.equal(core.apply(childFirst).success, true);
+    assert.equal(core.getSurface("s").rootId, null);
+    assert.deepEqual(core.getSurface("s").pendingComponentIds, ["root"]);
+    assert.equal(core.getSurface("s").revision, 2);
+
+    assert.equal(
+      core.apply({
+        version,
+        updateComponents: {
+          surfaceId: "s",
+          components: [{ id: "root", component: "Row", children: ["label"] }],
+        },
+      }).success,
+      true,
+    );
+    assert.equal(core.getSurface("s").rootId, "root");
+    assert.deepEqual(core.getSurface("s").pendingComponentIds, []);
+    assert.equal(core.getSurface("s").revision, 3);
+  });
+}
