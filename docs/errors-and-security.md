@@ -30,7 +30,7 @@ restrict native capabilities exposed by their own components and functions.
 | `INVALID_COMPONENT_PROPS` | Component properties fail the consumer Zod schema             |
 | `INVALID_ROOT`            | Surface has no valid reserved root                            |
 | `INVALID_REFERENCE`       | Component ID, child link, or graph relation is invalid        |
-| `BINDING_ERROR`           | Data binding or structural pointer is invalid                 |
+| `BINDING_ERROR`           | Data pointer, typed bound value, or local setter is invalid   |
 | `FUNCTION_ERROR`          | Function lookup, arguments, execution, or return value failed |
 | `PRESENTER_ERROR`         | Consumer presenter or fallback failed during React rendering  |
 | `RESOURCE_LIMIT_EXCEEDED` | Configured batch, graph, depth, or data limit was exceeded    |

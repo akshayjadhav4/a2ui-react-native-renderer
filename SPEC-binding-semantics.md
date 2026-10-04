@@ -2,7 +2,7 @@
 
 **Module id:** `binding-semantics` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Approved by the user on 2026-10-04 with “ok next”; implementation planning is in progress. No binding implementation changes have been made.
+**Status:** Approved and implemented on 2026-10-04. See [verification results](tasks/binding-semantics-todo.md).
 
 ## Assumptions
 
@@ -111,4 +111,4 @@ Use existing `A2UI` names, strict TypeScript, immutable snapshots, and double qu
 
 ## Review decision
 
-The user approved the proposed **optional generated `setX` callback** contract by asking to proceed on 2026-10-04. It is present for a direct `{ path }` binding and absent for a literal or function value. The implementation plan and task list are recorded under `tasks/`.
+The user approved the proposed **optional generated `setX` callback** contract by asking to proceed on 2026-10-04, then approved implementation with “start.” It is present for a direct `{ path }` binding and absent for a literal or function value. The implementation plan and verified task list are recorded under `tasks/`.

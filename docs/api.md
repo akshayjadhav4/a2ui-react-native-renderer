@@ -88,23 +88,28 @@ individual values through `createA2UIEngine({ limits })`.
 
 ## Catalog Types
 
-| Export                     | Contract                                                                 |
-| -------------------------- | ------------------------------------------------------------------------ |
-| `A2UIBindingScope`         | Current template value and absolute JSON-pointer path                    |
-| `A2UICatalog`              | Immutable normalized catalog returned by `defineA2UICatalog`             |
-| `A2UICatalogDefinition`    | Input contract accepted by `defineA2UICatalog`                           |
-| `A2UIChildRenderer`        | Presenter callback for rendering a referenced child in an optional scope |
-| `A2UIComponentAction`      | Action value a presenter may dispatch                                    |
-| `A2UIComponentDefinition`  | One Zod schema, presenter, and optional description                      |
-| `A2UIComponentDefinitions` | Component-name to definition map inferred from schemas                   |
-| `A2UIComponentSchemas`     | Component-name to Zod object schema map                                  |
-| `A2UIFunctionDefinition`   | Named function schema, return kind, implementation, and description      |
-| `A2UIFunctionReturnKind`   | Allowed declared return kinds                                            |
-| `A2UIFunctionReturnMap`    | Type mapping from return kind to runtime value                           |
-| `A2UIPresenter`            | React presenter function for resolved component properties               |
-| `A2UIPresenterProps`       | Presenter input: props, IDs, scope, child renderer, and dispatch         |
-| `A2UIResolvedChild`        | Resolved child component ID and template base path                       |
-| `A2UIResolvedProps`        | Maps wire properties to presenter values and typed binding setters       |
+| Export                     | Contract                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `A2UIBindingScope`         | Current template value and absolute JSON-pointer path                           |
+| `A2UICatalog`              | Immutable normalized catalog returned by `defineA2UICatalog`                    |
+| `A2UICatalogDefinition`    | Input contract accepted by `defineA2UICatalog`                                  |
+| `A2UIChildRenderer`        | Presenter callback for rendering a referenced child in an optional scope        |
+| `A2UIComponentAction`      | Action value a presenter may dispatch                                           |
+| `A2UIComponentDefinition`  | One Zod schema, presenter, and optional description                             |
+| `A2UIComponentDefinitions` | Component-name to definition map inferred from schemas                          |
+| `A2UIComponentSchemas`     | Component-name to Zod object schema map                                         |
+| `A2UIFunctionDefinition`   | Named function schema, return kind, implementation, and description             |
+| `A2UIFunctionReturnKind`   | Allowed declared return kinds                                                   |
+| `A2UIFunctionReturnMap`    | Type mapping from return kind to runtime value                                  |
+| `A2UIPresenter`            | React presenter function for resolved component properties                      |
+| `A2UIPresenterProps`       | Presenter input: props, IDs, scope, child renderer, and dispatch                |
+| `A2UIResolvedChild`        | Resolved child component ID and template base path                              |
+| `A2UIResolvedProps`        | Recursively maps wire properties to presenter values and optional typed setters |
+
+A dynamic presenter value can be `undefined` when its data path is missing.
+Generated `setX` exists only while that property is directly bound; it is
+absent for literals and function results. The setter reports invalid values or
+stale calls through the engine's structured error channel.
 
 ## Protocol Types
 

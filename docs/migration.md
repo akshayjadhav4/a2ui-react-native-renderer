@@ -54,19 +54,38 @@ Remove app-local renderer contexts that duplicate those capabilities. Keep
 theme, localization, and domain providers if they are genuine application
 concerns.
 
-## 5. Forward Actions
+## 5. Handle Optional Binding Setters
+
+Generated `setX` callbacks are now present only for direct `{ path }` bindings.
+Literal and function values are read-only, and a missing bound path resolves to
+`undefined`. Update presenters that called setters unconditionally:
+
+```tsx
+<TextInput
+  value={props.value ?? ""}
+  editable={props.setValue !== undefined}
+  onChangeText={props.setValue}
+/>
+```
+
+For a manual write, use `props.setValue?.(next)`. Dynamic fields nested in
+objects or arrays follow the same rule. Invalid bound values and local writes
+report structured errors. A setter saved before a component rebind or deletion
+cannot update the old path.
+
+## 6. Forward Actions
 
 Wire `onAction` at engine creation or in owned-engine `A2UIRenderer` mode. The
 callback receives the official action with context resolved from the latest
 surface model. Adapt that action to the selected transport outside the package.
 
-## 6. Configure Production Recovery
+## 7. Configure Production Recovery
 
 Provide `onError`, select `diagnostics="production"` for release behavior, and
 optionally provide an accessible `renderFallback`. Review and lower resource
 limits for the application's presenters and target devices.
 
-## 7. Remove Deep Imports And Bundled Assumptions
+## 8. Remove Deep Imports And Bundled Assumptions
 
 Import only from `a2ui-react-native-renderer`. The package does not include the
 Basic Catalog, functions such as `openUrl`, or native controls. Define and
@@ -85,6 +104,9 @@ tree does not change the package version or publish a release.
   group operations and handle rollback in their own transport layer.
 - `@a2ui/web_core` is no longer a runtime dependency. Public imports remain at
   the package root; Zod schemas and the `A2UIMessage` type are now package-owned.
+- `A2UIResolvedProps` now models optional binding setters, missing values, and
+  nested resolved properties. A TypeScript consumer may need to guard `setX`
+  calls and handle `undefined` values.
 - Zod 3.25 is a peer contract; Zod 4 schemas are not supported.
 - React Native Web is not a guaranteed initial target.
 - There is no native module, so both React Native architectures can consume the

@@ -97,6 +97,7 @@ function InputPresenter({ props }: PresenterProps<typeof InputSchema>) {
   return (
     <TextInput
       accessibilityLabel={props.placeholder ?? "A2UI text input"}
+      editable={props.setValue !== undefined}
       onChangeText={props.setValue}
       placeholder={props.placeholder}
       placeholderTextColor={colors.muted}
@@ -110,7 +111,7 @@ function InputPresenter({ props }: PresenterProps<typeof InputSchema>) {
         paddingHorizontal: 14,
         paddingVertical: 12,
       }}
-      value={props.value}
+      value={props.value ?? ""}
     />
   );
 }

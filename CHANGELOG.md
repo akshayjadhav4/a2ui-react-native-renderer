@@ -14,6 +14,10 @@ project follows [Semantic Versioning](https://semver.org/).
 - `applyMessages` now continues after an invalid message and commits later
   valid messages, including on the same surface. Each accepted message commits
   atomically; oversized batches still reject in full.
+- Presenter `setX` callbacks now exist only for direct data bindings and are
+  optional in `A2UIResolvedProps`. Missing bound values remain `undefined`;
+  nested resolved props are inferred recursively. Wrong-type reads and writes
+  report structured errors, and stale setters cannot update old bindings.
 
 ### Known limitation
 

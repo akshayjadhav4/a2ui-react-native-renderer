@@ -131,8 +131,9 @@ application-owned allowlist:
 
 Use ordinary Zod fields for static values. Use the exported
 `A2UIDynamic*Schema` helpers for values that may be literals, data bindings, or
-function calls. Bound presenter properties receive typed setters such as
-`setValue`, allowing native controls to update the surface data model.
+function calls. Directly bound presenter properties receive optional typed
+setters such as `setValue`, allowing app-owned native controls to update the
+surface data model. Literal and function values have no setter.
 
 See [Catalogs](./docs/catalogs.md) for components, children, bindings, actions,
 and functions.

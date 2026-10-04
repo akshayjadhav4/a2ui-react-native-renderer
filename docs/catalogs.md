@@ -60,15 +60,29 @@ call.
 const Input = defineA2UIComponent({
   schema: z.object({ value: A2UIDynamicStringSchema }),
   presenter: ({ props }) => (
-    <TextInput value={props.value} onChangeText={props.setValue} />
+    <TextInput
+      value={props.value ?? ""}
+      editable={props.setValue !== undefined}
+      onChangeText={props.setValue}
+    />
   ),
 });
 ```
 
 If the wire value is `{ path: "/form/name" }`, the presenter receives the
-resolved string and a generated `setValue` setter. The setter updates that
-surface's data model at the same pointer. JSON Pointer escaping follows RFC
-6901 (`~0` for `~`, `~1` for `/`).
+resolved string or `undefined` when the path is missing, plus a generated
+`setValue` setter. Literal and function values have no setter. Its public type
+is optional: call `props.setValue?.(next)` or use its presence to control native
+editability. The setter updates only that surface's data model; it does not send
+a network message. JSON Pointer escaping follows RFC 6901 (`~0` for `~`, `~1`
+for `/`).
+
+Typed dynamic fields reject wrong-type bound reads, function results, and local
+writes through `onError`. A saved setter cannot write after its component is
+replaced or its surface is deleted. Nested object and array fields follow the
+same resolved-value and optional-setter rules. A component schema cannot define
+a real property with the same name as a generated setter for a sibling dynamic
+field.
 
 Relative paths resolve against the current template scope. This allows one
 template component to read and write each repeated item without losing its

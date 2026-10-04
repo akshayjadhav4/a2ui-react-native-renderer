@@ -6,7 +6,7 @@
 
 **Plan:** [binding-semantics-plan.md](binding-semantics-plan.md)
 
-**Status:** Draft for review. No binding implementation task has started.
+**Status:** Approved and implemented on 2026-10-04; final checks recorded below.
 
 Tasks are ordered by dependency. Each should finish with its focused checks passing before moving on.
 
@@ -68,7 +68,7 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 ## Phase 3: Migration and consumer proof
 
-- [ ] **Task 7: Document migration and verify packed consumers**
+- [x] **Task 7: Document migration and verify packed consumers**
   - Acceptance: Docs and Expo example show optional setters and explicit native editability; changelog records the public type change; no runtime dependency or bundled catalog is added.
   - Verify: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm pack:check`, `pnpm consumer:smoke`.
   - Likely files: `docs/catalogs.md`, `docs/api.md`, `docs/migration.md`, `CHANGELOG.md`, `example/expo/src/catalog.tsx`.
@@ -76,6 +76,13 @@ Tasks are ordered by dependency. Each should finish with its focused checks pass
 
 ### Checkpoint E: Module complete
 
-- [ ] All approved spec criteria pass and generated public declarations match the optional setter contract.
-- [ ] Packed Expo and bare React Native iOS/Android consumers build without web renderer modules.
-- [ ] The package still owns no Basic Catalog, transport, or network synchronization.
+- [x] All approved spec criteria pass and generated public declarations match the optional setter contract.
+- [x] Packed Expo and bare React Native iOS/Android consumers build without web renderer modules.
+- [x] The package still owns no Basic Catalog, transport, or network synchronization.
+
+## Verification results
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, and `pnpm example:check` passed.
+- `pnpm test` passed with 122 tests, including read/write validation, nested bindings, stale callbacks, and surface isolation.
+- `pnpm pack:check` verified the packed declaration and rejected web runtime dependencies; `pnpm consumer:smoke` passed packed Expo and bare React Native iOS/Android type and bundle checks.
+- `git diff --check` passed; the package version, license, and dependency manifest were unchanged.

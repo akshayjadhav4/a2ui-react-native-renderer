@@ -177,7 +177,8 @@ const TextFieldComponent = defineA2UIComponent({
   presenter: ({ props }) => (
     <TextInput
       accessibilityLabel={props.label}
-      value={props.value}
+      value={props.value ?? ""}
+      editable={props.setValue !== undefined}
       onChangeText={props.setValue}
     />
   ),
@@ -185,9 +186,10 @@ const TextFieldComponent = defineA2UIComponent({
 ```
 
 An incoming `{ path: "/form/name" }` is validated by the dynamic schema, read
-from that surface's data model, and delivered as a string. The generated
-`setValue` writes through the same binding. Relative paths are resolved against
-the presenter's `scope.path`, which lets one template component render and edit
+from that surface's data model, and delivered as a string or `undefined` when
+missing. The generated `setValue` writes through the same binding. It is absent
+for literal and function values. Relative paths are resolved against the
+presenter's `scope.path`, which lets one template component render and edit
 each item in a structural list without losing pointer context.
 
 ## `defineA2UIComponent`

@@ -6,7 +6,7 @@
 
 **Task list:** [binding-semantics-todo.md](binding-semantics-todo.md)
 
-**Status:** Draft implementation plan for review. The user approved the module spec on 2026-10-04; no binding implementation changes have been made.
+**Status:** Approved and implemented on 2026-10-04. Verification is recorded in the task list.
 
 The initial-release `tasks/plan.md` and `tasks/todo.md` and the completed wire-compatibility records remain intact. This plan is specific to the next module in [CAPABILITY-MAP.md](../CAPABILITY-MAP.md).
 
@@ -107,4 +107,4 @@ Inspect the public declaration for `A2UIResolvedProps`, check `git diff --check`
 
 ## Review decisions
 
-The spec's optional setter contract was approved when the user said “ok next” on 2026-10-04. This plan defines the implementation order and checkpoints for review before code changes, following the requested spec-driven workflow. No Basic Catalog, transport, license, publication, or progressive-reference work is included.
+The spec's optional setter contract was approved when the user said “ok next” on 2026-10-04, and the plan and task list were approved when the user said “start.” The implementation followed these checkpoints. No Basic Catalog, transport, license, publication, or progressive-reference work is included.
