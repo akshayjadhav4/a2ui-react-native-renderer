@@ -62,6 +62,7 @@ test("classifies typed and generic dynamic fields inside wrappers", () => {
       names: A2UIDynamicStringListSchema,
       anything: A2UIDynamicValueSchema,
       custom: z.union([z.string(), z.object({ path: z.string() })]),
+      literal: z.union([z.literal("ready"), z.object({ path: z.string() })]),
       ambiguous: z.union([
         z.string(),
         z.number(),
@@ -76,6 +77,7 @@ test("classifies typed and generic dynamic fields inside wrappers", () => {
   assert.equal(behavior.shape.names.kind, "string-list");
   assert.equal(behavior.shape.anything.kind, "unknown");
   assert.equal(behavior.shape.custom.kind, "string");
+  assert.equal(behavior.shape.literal.kind, "string");
   assert.equal(behavior.shape.ambiguous.kind, "unknown");
 });
 
@@ -85,6 +87,7 @@ test("checks typed values and honors nullable dynamic wrappers", () => {
       count: A2UIDynamicNumberSchema,
       names: A2UIDynamicStringListSchema,
       optionalName: A2UIDynamicStringSchema.nullable(),
+      literal: z.union([z.literal("ready"), z.object({ path: z.string() })]),
     }),
   );
 
@@ -97,4 +100,6 @@ test("checks typed values and honors nullable dynamic wrappers", () => {
   assert.equal(matchesA2UIDynamicKind(["A", 3], behavior.shape.names), false);
   assert.equal(matchesA2UIDynamicKind(null, behavior.shape.optionalName), true);
   assert.equal(matchesA2UIDynamicKind(null, behavior.shape.count), false);
+  assert.equal(matchesA2UIDynamicKind("ready", behavior.shape.literal), true);
+  assert.equal(matchesA2UIDynamicKind("other", behavior.shape.literal), false);
 });

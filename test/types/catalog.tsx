@@ -128,6 +128,20 @@ defineA2UIComponent({
 });
 
 defineA2UIComponent({
+  schema: z.object({
+    value: z.union([z.literal("ready"), z.object({ path: z.string() })]),
+  }),
+  presenter: ({ props }) => {
+    props.setValue?.("ready");
+
+    // @ts-expect-error A custom literal union only accepts its literal value.
+    props.setValue?.("other");
+
+    return null;
+  },
+});
+
+defineA2UIComponent({
   schema: z.object({ action: A2UIActionSchema }),
   presenter: ({ props, dispatch }) => {
     dispatch(props.action);

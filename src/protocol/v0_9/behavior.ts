@@ -8,6 +8,7 @@ export type A2UISchemaBehavior =
       readonly type: "DYNAMIC";
       readonly kind: A2UIDynamicKind;
       readonly allowsNull: boolean;
+      readonly literalSchemas?: readonly z.ZodTypeAny[];
     }
   | { readonly type: "ARRAY"; readonly element: A2UISchemaBehavior }
   | {
@@ -23,20 +24,29 @@ export function matchesA2UIDynamicKind(
   behavior: Extract<A2UISchemaBehavior, { type: "DYNAMIC" }>,
 ): boolean {
   if (value === null) return behavior.allowsNull;
+  let matchesKind: boolean;
   switch (behavior.kind) {
     case "string":
-      return typeof value === "string";
+      matchesKind = typeof value === "string";
+      break;
     case "number":
-      return typeof value === "number" && Number.isFinite(value);
+      matchesKind = typeof value === "number" && Number.isFinite(value);
+      break;
     case "boolean":
-      return typeof value === "boolean";
+      matchesKind = typeof value === "boolean";
+      break;
     case "string-list":
-      return (
-        Array.isArray(value) && value.every((item) => typeof item === "string")
-      );
+      matchesKind =
+        Array.isArray(value) && value.every((item) => typeof item === "string");
+      break;
     case "unknown":
-      return true;
+      matchesKind = true;
   }
+  return (
+    matchesKind &&
+    (behavior.literalSchemas === undefined ||
+      behavior.literalSchemas.some((schema) => schema.safeParse(value).success))
+  );
 }
 
 export function inspectA2UISchemaBehavior(
@@ -75,10 +85,14 @@ function inspect(schema: z.ZodTypeAny, key?: string): A2UISchemaBehavior {
       return { type: "STRUCTURAL" };
     }
     if (options.some((option) => hasFields(option, "path"))) {
+      const literalSchemas = options.filter(
+        (option) => !hasFields(option, "path") && !hasFields(option, "call"),
+      );
       return {
         type: "DYNAMIC",
         kind: inferredDynamicKind(options),
         allowsNull: schema.safeParse(null).success,
+        literalSchemas,
       };
     }
   }
@@ -122,24 +136,38 @@ function inferredDynamicKind(
       continue;
     }
 
-    const current = unwrap(option);
-    const kind: A2UIDynamicKind =
-      current instanceof z.ZodString
-        ? "string"
-        : current instanceof z.ZodNumber
-          ? "number"
-          : current instanceof z.ZodBoolean
-            ? "boolean"
-            : current instanceof z.ZodArray &&
-                unwrap(current.element as z.ZodTypeAny) instanceof z.ZodString
-              ? "string-list"
-              : "unknown";
-    literalKinds.add(kind);
+    literalKinds.add(literalSchemaKind(option));
   }
 
   return literalKinds.size === 1
     ? (literalKinds.values().next().value ?? "unknown")
     : "unknown";
+}
+
+function literalSchemaKind(schema: z.ZodTypeAny): A2UIDynamicKind {
+  const current = unwrap(schema);
+  if (current instanceof z.ZodString || current instanceof z.ZodEnum) {
+    return "string";
+  }
+  if (current instanceof z.ZodNumber) return "number";
+  if (current instanceof z.ZodBoolean) return "boolean";
+  if (current instanceof z.ZodLiteral) {
+    return literalKind(current.value as unknown);
+  }
+  if (
+    current instanceof z.ZodArray &&
+    unwrap(current.element as z.ZodTypeAny) instanceof z.ZodString
+  ) {
+    return "string-list";
+  }
+  return "unknown";
+}
+
+function literalKind(value: unknown): A2UIDynamicKind {
+  if (typeof value === "string") return "string";
+  if (typeof value === "number" && Number.isFinite(value)) return "number";
+  if (typeof value === "boolean") return "boolean";
+  return "unknown";
 }
 
 function unwrap(schema: z.ZodTypeAny): z.ZodTypeAny {
