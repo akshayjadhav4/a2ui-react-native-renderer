@@ -2,7 +2,7 @@
 
 **Module id:** `binding-semantics` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Draft for user review. No binding implementation changes have been made.
+**Status:** Approved by the user on 2026-10-04 with “ok next”; implementation planning is in progress. No binding implementation changes have been made.
 
 ## Assumptions
 
@@ -111,4 +111,4 @@ Use existing `A2UI` names, strict TypeScript, immutable snapshots, and double qu
 
 ## Review decision
 
-The key API choice for review is an **optional generated `setX` callback**: present for a direct `{ path }` binding and absent for a literal or function value. It preserves the current presenter shape while making read-only values visible to consumers. After this spec is approved, the implementation plan and task list can be drafted under `tasks/`.
+The user approved the proposed **optional generated `setX` callback** contract by asking to proceed on 2026-10-04. It is present for a direct `{ path }` binding and absent for a literal or function value. The implementation plan and task list are recorded under `tasks/`.
