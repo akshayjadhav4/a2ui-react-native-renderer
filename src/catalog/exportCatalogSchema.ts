@@ -1,0 +1,103 @@
+import { z } from "zod";
+
+import type {
+  A2UICatalog,
+  A2UIComponentDefinition,
+  A2UIComponentSchemas,
+  A2UIFunctionDefinition,
+} from "./types.js";
+
+const COMMON_TYPES_URI =
+  "https://a2ui.org/specification/v0_9/common_types.json";
+const JSON_SCHEMA_URI = "https://json-schema.org/draft/2020-12/schema";
+
+interface A2UICatalogSchemaDocument {
+  readonly $schema: string;
+  readonly $id: string;
+  readonly catalogId: string;
+  readonly components: Readonly<Record<string, unknown>>;
+  readonly functions: Readonly<Record<string, unknown>>;
+  readonly $defs: Readonly<Record<string, unknown>>;
+}
+
+export function exportA2UICatalogSchema<
+  Schemas extends A2UIComponentSchemas,
+  Functions extends readonly A2UIFunctionDefinition[],
+>(catalog: A2UICatalog<Schemas, Functions>): A2UICatalogSchemaDocument {
+  if (catalog.functions.length > 0) {
+    throw new TypeError("A2UI function schema export is not yet supported");
+  }
+
+  const definitions = catalog.components as Readonly<
+    Record<string, Pick<A2UIComponentDefinition, "schema" | "description">>
+  >;
+  const components = Object.fromEntries(
+    Object.entries(definitions).map(([name, definition]) => {
+      const properties = Object.fromEntries(
+        Object.entries(
+          definition.schema.shape as Record<string, z.ZodTypeAny>,
+        ).map(([key, schema]) => [
+          key,
+          convertSimpleString(schema, `components.${name}.${key}`),
+        ]),
+      );
+
+      return [
+        name,
+        {
+          type: "object",
+          ...(definition.description === undefined
+            ? {}
+            : { description: definition.description }),
+          allOf: [
+            { $ref: `${COMMON_TYPES_URI}#/$defs/ComponentCommon` },
+            { $ref: "#/$defs/CatalogComponentCommon" },
+            {
+              type: "object",
+              properties: { component: { const: name }, ...properties },
+              required: ["component", ...Object.keys(properties)],
+            },
+          ],
+        },
+      ];
+    }),
+  );
+
+  return {
+    $schema: JSON_SCHEMA_URI,
+    $id: catalog.id,
+    catalogId: catalog.id,
+    components,
+    functions: {},
+    $defs: {
+      CatalogComponentCommon: {
+        type: "object",
+        properties: { weight: { type: "number" } },
+      },
+      theme: { type: "object", additionalProperties: true },
+      anyComponent: {
+        oneOf: Object.keys(components).map((name) => ({
+          $ref: `#/components/${escapePointerToken(name)}`,
+        })),
+        discriminator: { propertyName: "component" },
+      },
+      anyFunction: false,
+    },
+  };
+}
+
+function convertSimpleString(schema: z.ZodTypeAny, path: string): object {
+  if (schema instanceof z.ZodString && schema._def.checks.length === 0) {
+    return {
+      type: "string",
+      ...(schema.description === undefined
+        ? {}
+        : { description: schema.description }),
+    };
+  }
+  throw new TypeError(`Unsupported catalog schema at ${path}`);
+}
+
+function escapePointerToken(value: string): string {
+  return value.replaceAll("~", "~0").replaceAll("/", "~1");
+}

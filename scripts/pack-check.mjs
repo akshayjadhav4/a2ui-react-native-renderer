@@ -30,6 +30,8 @@ const requiredFiles = [
   "package.json",
   "lib/module/index.js",
   "lib/typescript/index.d.ts",
+  "lib/module/catalog-schema.js",
+  "lib/typescript/catalog-schema.d.ts",
 ];
 const localDependencyPrefixes = ["file:", "link:", "workspace:"];
 
@@ -144,6 +146,14 @@ function assertPackageMetadata(packageJson, packageRoot) {
       throw new Error("Packed package is missing a public entrypoint");
     }
     readFileSync(resolve(packageRoot, target), "utf8");
+  }
+
+  const catalogSchemaExport = packageJson.exports?.["./catalog-schema"];
+  if (
+    catalogSchemaExport?.import !== "./lib/module/catalog-schema.js" ||
+    catalogSchemaExport?.types !== "./lib/typescript/catalog-schema.d.ts"
+  ) {
+    throw new Error("Packed package is missing the catalog-schema subpath");
   }
 
   for (const dependencyGroup of [

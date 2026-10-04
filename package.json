@@ -38,6 +38,11 @@
       "import": "./lib/module/index.js",
       "default": "./lib/module/index.js"
     },
+    "./catalog-schema": {
+      "types": "./lib/typescript/catalog-schema.d.ts",
+      "import": "./lib/module/catalog-schema.js",
+      "default": "./lib/module/catalog-schema.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -94,6 +99,7 @@
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-test-renderer": "^19.1.0",
+    "ajv": "8.20.0",
     "eslint": "^10.7.0",
     "prettier": "^3.9.5",
     "react": "19.2.3",

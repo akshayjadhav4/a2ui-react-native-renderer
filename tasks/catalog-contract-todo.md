@@ -19,16 +19,17 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Approved task list. Scope: Medium.
   - Evidence: Six official schema files are pinned to upstream commit `1444719acd8833eeb5e70529c7ac47bc50b7390c` with SHA-256 checksums and source URLs. Their common-types and sample catalogs are byte-identical; the server envelope differs only in its four version constraints. Both versions use one v0.9-family catalog document and common-type URI, so no public version option is needed. The schema shape and function returnType caveat are recorded in the audit. An independent JSON/checksum comparison, `pnpm format:check`, all 135 tests, `pnpm pack:check`, and `git diff --check` pass; upstream JSON stays pristine through a narrow Prettier exclusion.
 
-- [ ] **Task 2: Expose a packed schema-export subpath**
+- [x] **Task 2: Expose a packed schema-export subpath**
   - Acceptance: `a2ui-react-native-renderer/catalog-schema` exports a typed `exportA2UICatalogSchema` from a dedicated built entry. One simple app-owned component produces a fresh, JSON-serializable document with matching `$id`/`catalogId` and a required component discriminator. Root imports do not load the converter. The approved `ajv` dependency is dev-only, and a packed Node consumer can import the subpath.
   - Verify: `pnpm build && pnpm typecheck && node --test test/unit/catalog-schema.test.mjs && pnpm pack:check`; inspect `lib/typescript/catalog-schema.d.ts`, package exports, and packed import.
   - Likely files: `package.json`, `pnpm-lock.yaml`, `src/catalog-schema.ts`, `src/catalog/exportCatalogSchema.ts`, `test/unit/catalog-schema.test.mjs`.
   - Dependencies: Task 1. Scope: Medium.
+  - Evidence: A single `Label` catalog exports a fresh JSON document with matching IDs and no executable values. Ajv 2020 validates that catalog through the pinned v0.9 and v0.9.1 server envelopes and rejects an unknown component. The `catalog-schema` subpath builds with a public type fixture and imports from an unpacked tarball in a separate Node consumer; package-root code does not import it. Ajv 8.20.0 is dev-only. Three focused tests, 138 full tests, typecheck, lint, formatting, and `pnpm pack:check` pass.
 
 ### Checkpoint A: Official and packaging boundary
 
-- [ ] The generated one-component catalog passes the official envelope setup for both supported versions, or a documented spec revision resolves a real version split.
-- [ ] The packed subpath imports in Node; the package root remains independent of it. `pnpm typecheck`, focused tests, and `git diff --check` pass.
+- [x] The generated one-component catalog passes the official envelope setup for both supported versions; the pinned schema audit found no version split.
+- [x] The packed subpath imports in Node; the package root remains independent of it. `pnpm typecheck`, focused tests, and `git diff --check` pass.
 
 ## Phase B: Component schema fidelity
 
