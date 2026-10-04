@@ -4,9 +4,9 @@
 
 **Specification:** [SPEC-progressive-surfaces.md](../SPEC-progressive-surfaces.md)
 
-**Status:** Proposed for review on 2026-10-04. No implementation has started.
+**Status:** Approved for task breakdown on 2026-10-04 when the user said “start next.” No implementation has started.
 
-The initial-release [plan.md](plan.md) and [todo.md](todo.md) contain historical unchecked checkpoints, so this module uses its own plan and, after plan review, will use `tasks/progressive-surfaces-todo.md`. The completed wire-compatibility and binding-semantics records remain intact.
+The initial-release [plan.md](plan.md) and [todo.md](todo.md) contain historical unchecked checkpoints, so this module uses its own plan and [progressive-surfaces-todo.md](progressive-surfaces-todo.md). The completed wire-compatibility and binding-semantics records remain intact.
 
 ## Outcome
 
@@ -124,8 +124,8 @@ Also inspect the generated declaration for `A2UIComponentIdSchema`, `pendingComp
 
 ## Task-list handoff
 
-After plan review, write `tasks/progressive-surfaces-todo.md` with focused tasks of no more than about five files each, explicit acceptance and verification steps, dependencies, and checkpoints A–D. Do not overwrite the historical `tasks/plan.md` or `tasks/todo.md`.
+The [module task list](progressive-surfaces-todo.md) contains focused tasks of no more than about five likely files each, explicit acceptance and verification steps, dependencies, and checkpoints A–D. The historical `tasks/plan.md` and `tasks/todo.md` remain untouched.
 
 ## Review decisions
 
-The plan uses the exact public API approved in the spec. The main implementation choice for review is the separate `COMPONENT_ID` schema behavior, which keeps single-child presenter props as strings while recording graph edges. No new public API, dependency, transport, or package-owned UI is proposed.
+The user approved the plan by saying “start next” on 2026-10-04. It uses the exact public API approved in the spec, including a separate `COMPONENT_ID` schema behavior that keeps single-child presenter props as strings while recording graph edges. No new public API, dependency, transport, or package-owned UI is proposed.
