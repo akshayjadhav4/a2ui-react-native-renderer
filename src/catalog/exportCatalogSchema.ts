@@ -37,17 +37,26 @@ export function exportA2UICatalogSchema<
   >;
   const components = Object.fromEntries(
     Object.entries(definitions).map(([name, definition]) => {
+      const shape = definition.schema.shape as Record<string, z.ZodTypeAny>;
+      if (!(definition.schema._def.catchall instanceof z.ZodNever)) {
+        throw new TypeError(
+          `Unsupported catalog schema at components.${name}.catchall`,
+        );
+      }
+      for (const reserved of ["id", "component"]) {
+        if (Object.hasOwn(shape, reserved)) {
+          throw new TypeError(
+            `Unsupported catalog schema at components.${name}.${reserved}`,
+          );
+        }
+      }
       const properties = Object.fromEntries(
-        Object.entries(
-          definition.schema.shape as Record<string, z.ZodTypeAny>,
-        ).map(([key, schema]) => [
+        Object.entries(shape).map(([key, schema]) => [
           key,
           convertCatalogSchema(schema, `components.${name}.${key}`),
         ]),
       );
-      const required = Object.entries(
-        definition.schema.shape as Record<string, z.ZodTypeAny>,
-      )
+      const required = Object.entries(shape)
         .filter(([, schema]) => isRequiredCatalogProperty(schema))
         .map(([key]) => key);
 

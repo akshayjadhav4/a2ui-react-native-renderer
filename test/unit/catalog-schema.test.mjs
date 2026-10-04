@@ -199,3 +199,120 @@ test("converts ordinary nested Zod wire properties without losing constraints", 
     assert.equal(accepts(invalidProps), false);
   }
 });
+
+test("unsupported Zod behavior fails at the exact component property", () => {
+  const cases = [
+    ["transform", z.string().transform((value) => value.toUpperCase())],
+    ["refine", z.string().refine((value) => value.startsWith("a"))],
+    ["recursive", z.lazy(() => z.object({ recursive: z.string() }))],
+    ["format", z.string().email()],
+    ["coerce", z.coerce.number()],
+    ["catchall", z.object({ known: z.string() }).catchall(z.string())],
+    ["regex", z.string().regex(/a/g)],
+    ["twoMins", z.string().min(5).min(2)],
+    ["twoPatterns", z.string().regex(/a/).regex(/b/)],
+    ["twoNumberMins", z.number().min(5).min(2)],
+    ["twoMultiples", z.number().multipleOf(2).multipleOf(3)],
+    ["negativeLength", z.string().min(-1)],
+    ["infiniteBound", z.number().min(Number.POSITIVE_INFINITY)],
+    ["zeroMultiple", z.number().multipleOf(0)],
+    ["negativeArrayLength", z.array(z.string()).min(-1)],
+  ];
+
+  for (const [name, schema] of cases) {
+    const unsupportedCatalog = defineA2UICatalog({
+      id: "https://example.com/a2ui/unsupported/v1",
+      components: {
+        Form: defineA2UIComponent({
+          schema: z.object({ nested: z.object({ [name]: schema }) }),
+          presenter: () => null,
+        }),
+      },
+    });
+    assert.throws(
+      () => exportA2UICatalogSchema(unsupportedCatalog),
+      (error) =>
+        error instanceof TypeError &&
+        error.message.includes(`components.Form.nested.${name}`),
+      name,
+    );
+  }
+});
+
+test("component root shapes that cannot match renderer props fail export", () => {
+  for (const [name, schema] of [
+    ["id", z.object({ id: z.string().optional() })],
+    ["component", z.object({ component: z.string().optional() })],
+    ["catchall", z.object({ label: z.string() }).catchall(z.string())],
+  ]) {
+    const invalidCatalog = defineA2UICatalog({
+      id: "https://example.com/a2ui/invalid-root/v1",
+      components: {
+        Form: defineA2UIComponent({ schema, presenter: () => null }),
+      },
+    });
+    assert.throws(
+      () => exportA2UICatalogSchema(invalidCatalog),
+      (error) =>
+        error instanceof TypeError &&
+        error.message.includes(`components.Form.${name}`),
+      name,
+    );
+  }
+});
+
+test("defaults remain JSON-safe and detached from their source values", () => {
+  const sourceDefault = { label: "Ready", tags: ["one"] };
+  const defaultCatalog = defineA2UICatalog({
+    id: "https://example.com/a2ui/default/v1",
+    components: {
+      Form: defineA2UIComponent({
+        schema: z.object({
+          options: z
+            .object({ label: z.string(), tags: z.array(z.string()) })
+            .default(sourceDefault),
+        }),
+        presenter: () => null,
+      }),
+    },
+  });
+
+  const first = exportA2UICatalogSchema(defaultCatalog);
+  const second = exportA2UICatalogSchema(defaultCatalog);
+  assert.deepEqual(first, second);
+  first.components.Form.allOf[2].properties.options.default.tags.push("two");
+  assert.deepEqual(sourceDefault.tags, ["one"]);
+  assert.deepEqual(
+    second.components.Form.allOf[2].properties.options.default.tags,
+    ["one"],
+  );
+
+  const cyclic = {};
+  cyclic.self = cyclic;
+  for (const [name, schema] of [
+    ["date", z.string().default(new Date("2020-01-01T00:00:00Z"))],
+    [
+      "undefined",
+      z.object({ value: z.string().optional() }).default({ value: undefined }),
+    ],
+    ["nonfinite", z.number().default(Number.POSITIVE_INFINITY)],
+    ["cyclic", z.object({}).default(cyclic)],
+  ]) {
+    const badCatalog = defineA2UICatalog({
+      id: "https://example.com/a2ui/default/v1",
+      components: {
+        Form: defineA2UIComponent({
+          schema: z.object({ [name]: schema }),
+          presenter: () => null,
+        }),
+      },
+    });
+    assert.throws(
+      () => exportA2UICatalogSchema(badCatalog),
+      (error) =>
+        error instanceof TypeError &&
+        error.message.includes(`components.Form.${name}`),
+      name,
+    );
+  }
+});

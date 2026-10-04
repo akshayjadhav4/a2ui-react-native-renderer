@@ -31,7 +31,7 @@ export function convertCatalogSchema(
     const value: unknown = schema._def.defaultValue();
     result = {
       ...convertCatalogSchema(schema.removeDefault() as z.ZodTypeAny, path),
-      default: value,
+      default: cloneJsonValue(value, path, new WeakSet()),
     };
   } else if (schema instanceof z.ZodString) {
     result = convertString(schema, path);
@@ -50,6 +50,15 @@ export function convertCatalogSchema(
       enum: [...(schema.options as readonly string[])],
     };
   } else if (schema instanceof z.ZodArray) {
+    for (const length of [
+      schema._def.minLength?.value,
+      schema._def.maxLength?.value,
+      schema._def.exactLength?.value,
+    ]) {
+      if (length !== undefined && !isJsonLength(length)) {
+        throw unsupported(path);
+      }
+    }
     result = {
       type: "array",
       items: convertCatalogSchema(schema.element as z.ZodTypeAny, `${path}[]`),
@@ -86,7 +95,25 @@ export function convertCatalogSchema(
 function convertString(schema: z.ZodString, path: string): A2UIJsonSchema {
   if (schema._def.coerce) throw unsupported(path);
   const result: A2UIJsonSchema = { type: "string" };
+  const seen = new Set<string>();
   for (const check of schema._def.checks) {
+    if (
+      (check.kind === "min" ||
+        check.kind === "max" ||
+        check.kind === "length") &&
+      !isJsonLength(check.value)
+    ) {
+      throw unsupported(path);
+    }
+    const key = check.kind === "length" ? "min,max" : check.kind;
+    if (
+      seen.has(key) ||
+      (check.kind === "length" && (seen.has("min") || seen.has("max"))) ||
+      ((check.kind === "min" || check.kind === "max") && seen.has("min,max"))
+    ) {
+      throw unsupported(path);
+    }
+    seen.add(key);
     switch (check.kind) {
       case "min":
         result.minLength = check.value;
@@ -112,7 +139,22 @@ function convertString(schema: z.ZodString, path: string): A2UIJsonSchema {
 function convertNumber(schema: z.ZodNumber, path: string): A2UIJsonSchema {
   if (schema._def.coerce) throw unsupported(path);
   const result: A2UIJsonSchema = { type: "number" };
+  const seen = new Set<string>();
   for (const check of schema._def.checks) {
+    if (
+      (check.kind === "min" || check.kind === "max") &&
+      !Number.isFinite(check.value)
+    ) {
+      throw unsupported(path);
+    }
+    if (
+      check.kind === "multipleOf" &&
+      (!Number.isFinite(check.value) || check.value <= 0)
+    ) {
+      throw unsupported(path);
+    }
+    if (seen.has(check.kind)) throw unsupported(path);
+    seen.add(check.kind);
     switch (check.kind) {
       case "int":
         result.type = "integer";
@@ -162,6 +204,55 @@ function isJsonScalar(value: unknown): boolean {
     typeof value === "boolean" ||
     (typeof value === "number" && Number.isFinite(value))
   );
+}
+
+function isJsonLength(value: number): boolean {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function cloneJsonValue(
+  value: unknown,
+  path: string,
+  seen: WeakSet<object>,
+): unknown {
+  if (isJsonScalar(value)) return value;
+  if (typeof value !== "object" || value === null || seen.has(value)) {
+    throw unsupported(path);
+  }
+
+  seen.add(value);
+  if (Array.isArray(value)) {
+    if (Object.keys(value).length !== value.length) throw unsupported(path);
+    const result = Array.from({ length: value.length }, (_, index) => {
+      if (!Object.hasOwn(value, index)) throw unsupported(path);
+      return cloneJsonValue(value[index], path, seen);
+    });
+    seen.delete(value);
+    return result;
+  }
+
+  const prototype: unknown = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw unsupported(path);
+  }
+  const result: Record<string, unknown> = {};
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== "string") throw unsupported(path);
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor === undefined || !("value" in descriptor)) {
+      throw unsupported(path);
+    }
+    if (descriptor.enumerable) {
+      Object.defineProperty(result, key, {
+        value: cloneJsonValue(descriptor.value as unknown, path, seen),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+  }
+  seen.delete(value);
+  return result;
 }
 
 function unsupported(path: string): TypeError {

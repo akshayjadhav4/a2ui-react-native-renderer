@@ -40,11 +40,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Checkpoint A. Scope: Medium.
   - Evidence: Converted strings, numbers, booleans, literals, enums, arrays, nested objects, unions, optional/nullable/default wrappers, descriptions, and supported bounds. A strict component and strict nested object reject unknown properties in both Zod and the official v0.9.1 envelope. Focused tests, build, typecheck, lint, formatting, and `git diff --check` pass.
 
-- [ ] **Task 4: Reject lossy or unsupported Zod schemas**
+- [x] **Task 4: Reject lossy or unsupported Zod schemas**
   - Acceptance: Transforms, unrepresentable refinements, recursive schemas, and unsupported constraints fail with a `TypeError` naming the component or function and property path. The exporter never emits an empty permissive schema for these cases; catalog definitions remain unmodified.
   - Verify: `pnpm build && node --test test/unit/catalog-schema.test.mjs && pnpm typecheck`; inspect error paths and confirm repeat exports match exactly.
   - Likely files: `src/catalog/convertCatalogSchema.ts`, `src/catalog/exportCatalogSchema.ts`, `test/unit/catalog-schema.test.mjs`.
   - Dependencies: Task 3. Scope: Medium.
+  - Evidence: Focused tests confirm path-specific `TypeError` for transforms, refinements, recursion, coercion, unsupported formats and regex flags, catchalls, invalid JSON Schema bounds, repeated constraints that would be overwritten, and reserved component props. Defaults are cloned into JSON-safe values; non-JSON and cyclic defaults fail with paths. Repeated exports match and source defaults remain unchanged. Build, focused tests, typecheck, lint, formatting, and `git diff --check` pass.
 
 - [ ] **Task 5: Preserve A2UI marker references**
   - Acceptance: Marked `ComponentId`, `ChildList`, `Action`, and `Dynamic*` fields emit the exact official common-type `$ref`, including nested and optional/nullable/default forms. An ordinary `z.string()` remains a literal string; descriptions do not erase marker identity. Accepted and rejected child examples match renderer behavior.
