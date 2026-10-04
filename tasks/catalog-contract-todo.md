@@ -6,7 +6,7 @@
 
 **Plan:** [catalog-contract-plan.md](catalog-contract-plan.md)
 
-**Status:** Draft for human review on 2026-10-04. No implementation has started.
+**Status:** Approved for implementation on 2026-10-04. In progress.
 
 Tasks follow dependency order. Add a focused failing test or type fixture before each behavior change, then make it pass and record verification. Keep implementation on `codex/native-core`, commit each slice separately, and preserve the historical initial-release `tasks/plan.md` and `tasks/todo.md`.
 
@@ -33,11 +33,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
 
 ## Phase B: Component schema fidelity
 
-- [ ] **Task 3: Convert supported ordinary Zod wire properties**
+- [x] **Task 3: Convert supported ordinary Zod wire properties**
   - Acceptance: Strings, numbers, booleans, literals, enums, nested objects, arrays, unions, and optional/nullable/default wrappers preserve required fields, supported bounds, defaults, descriptions, and representable unknown-key policy. Output is deterministic and detached from source definitions.
   - Verify: `pnpm build && node --test test/unit/catalog-schema.test.mjs && pnpm typecheck`; validate representative allowed and rejected objects with Ajv 2020 and the source Zod schema.
   - Likely files: `src/catalog/convertCatalogSchema.ts`, `src/catalog/exportCatalogSchema.ts`, `test/unit/catalog-schema.test.mjs`.
   - Dependencies: Checkpoint A. Scope: Medium.
+  - Evidence: Converted strings, numbers, booleans, literals, enums, arrays, nested objects, unions, optional/nullable/default wrappers, descriptions, and supported bounds. A strict component and strict nested object reject unknown properties in both Zod and the official v0.9.1 envelope. Focused tests, build, typecheck, lint, formatting, and `git diff --check` pass.
 
 - [ ] **Task 4: Reject lossy or unsupported Zod schemas**
   - Acceptance: Transforms, unrepresentable refinements, recursive schemas, and unsupported constraints fail with a `TypeError` naming the component or function and property path. The exporter never emits an empty permissive schema for these cases; catalog definitions remain unmodified.

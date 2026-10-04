@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  convertCatalogSchema,
+  isRequiredCatalogProperty,
+} from "./convertCatalogSchema.js";
 import type {
   A2UICatalog,
   A2UIComponentDefinition,
@@ -38,9 +42,14 @@ export function exportA2UICatalogSchema<
           definition.schema.shape as Record<string, z.ZodTypeAny>,
         ).map(([key, schema]) => [
           key,
-          convertSimpleString(schema, `components.${name}.${key}`),
+          convertCatalogSchema(schema, `components.${name}.${key}`),
         ]),
       );
+      const required = Object.entries(
+        definition.schema.shape as Record<string, z.ZodTypeAny>,
+      )
+        .filter(([, schema]) => isRequiredCatalogProperty(schema))
+        .map(([key]) => key);
 
       return [
         name,
@@ -54,8 +63,17 @@ export function exportA2UICatalogSchema<
             { $ref: "#/$defs/CatalogComponentCommon" },
             {
               type: "object",
-              properties: { component: { const: name }, ...properties },
-              required: ["component", ...Object.keys(properties)],
+              properties: {
+                ...(definition.schema._def.unknownKeys === "strict"
+                  ? { id: true }
+                  : {}),
+                component: { const: name },
+                ...properties,
+              },
+              required: ["component", ...required],
+              ...(definition.schema._def.unknownKeys === "strict"
+                ? { additionalProperties: false }
+                : {}),
             },
           ],
         },
@@ -84,18 +102,6 @@ export function exportA2UICatalogSchema<
       anyFunction: false,
     },
   };
-}
-
-function convertSimpleString(schema: z.ZodTypeAny, path: string): object {
-  if (schema instanceof z.ZodString && schema._def.checks.length === 0) {
-    return {
-      type: "string",
-      ...(schema.description === undefined
-        ? {}
-        : { description: schema.description }),
-    };
-  }
-  throw new TypeError(`Unsupported catalog schema at ${path}`);
 }
 
 function escapePointerToken(value: string): string {
