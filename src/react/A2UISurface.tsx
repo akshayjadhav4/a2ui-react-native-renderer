@@ -17,12 +17,18 @@ export interface A2UISurfaceProps {
   readonly surfaceId: string;
   readonly diagnostics?: A2UIDiagnosticsMode;
   readonly renderFallback?: A2UIFallbackRenderer;
+  readonly renderPending?: (pending: {
+    readonly surfaceId: string;
+    readonly componentId: string;
+    readonly kind: "root" | "component";
+  }) => ReactNode;
 }
 
 export const A2UISurface = memo(function A2UISurface({
   surfaceId,
   diagnostics = "auto",
   renderFallback,
+  renderPending,
 }: A2UISurfaceProps): ReactNode {
   const engine = useA2UIEngine();
   const internals = getA2UIEngineInternals(engine);
@@ -46,7 +52,8 @@ export const A2UISurface = memo(function A2UISurface({
   if (rootId === null) {
     const error = internals.getSurfaceError(surfaceId);
     return error === undefined
-      ? null
+      ? (renderPending?.({ surfaceId, componentId: "root", kind: "root" }) ??
+          null)
       : createElement(A2UIRecoveryFallback, { ...recovery, error });
   }
 

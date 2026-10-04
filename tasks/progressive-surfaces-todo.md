@@ -54,11 +54,12 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
 
 ## Phase C: React rendering
 
-- [ ] **Task 5: Show an app-owned pending root**
+- [x] **Task 5: Show an app-owned pending root**
   - Acceptance: `A2UISurface` and `A2UIRenderer` accept the same optional `renderPending` callback. A created surface without `root` calls it with `{ surfaceId, componentId: "root", kind: "root" }`; default output remains `null`. A surface ID not yet created retains current behavior. Public prop types compile.
   - Verify: `pnpm build && node --test test/integration/surface-renderer.test.mjs test/integration/convenience-renderer.test.mjs && pnpm typecheck`.
   - Likely files: `src/react/A2UISurface.tsx`, `src/react/A2UIRenderer.tsx`, `test/integration/surface-renderer.test.mjs`, `test/integration/convenience-renderer.test.mjs`, `test/types/renderer.tsx`.
   - Dependencies: Checkpoint B. Scope: Medium.
+  - Evidence: Both React entry points call the app callback only for a created pending root, default output stays `null`, and the presenter replaces loading output when `root` arrives. Typecheck and all 132 tests pass.
 
 - [ ] **Task 6: Replace pending child positions as definitions arrive**
   - Acceptance: A presenter calling `renderChild` for a reachable pending structural ID receives app-owned pending UI or `null`, while valid siblings render. A later child definition replaces that position without an error. An arbitrary missing ID still reports `INVALID_REFERENCE`; missing data remains `undefined` for the presenter.

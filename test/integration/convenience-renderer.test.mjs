@@ -73,6 +73,45 @@ test("renders the README-level convenience API", async () => {
   });
 });
 
+test("forwards pending-root rendering through the convenience API", async () => {
+  const create = createSurfaceMessages({
+    id: "root",
+    component: "Text",
+    text: "Ready",
+  });
+  const calls = [];
+  const renderPending = (pending) => {
+    calls.push(pending);
+    return React.createElement("NativeLoading", null, pending.kind);
+  };
+
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UIRenderer, {
+        catalogs: [catalog],
+        messages: [create[0]],
+        renderPending,
+      }),
+    );
+  });
+  assert.equal(renderer.toJSON()?.type, "NativeLoading");
+  assert.deepEqual(calls, [
+    { surfaceId: "main", componentId: "root", kind: "root" },
+  ]);
+
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UIRenderer, {
+        catalogs: [catalog],
+        messages: create,
+        renderPending,
+      }),
+    );
+  });
+  assert.equal(renderer.toJSON()?.type, "NativeText");
+});
+
 test("does not reapply the same message collection", async () => {
   const engine = createA2UIEngine({ catalogs: [catalog] });
   const messages = createSurfaceMessages({

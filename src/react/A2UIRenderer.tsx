@@ -13,7 +13,7 @@ import type { A2UIDiagnosticsMode } from "../errors/diagnostics.js";
 import { shouldShowDevelopmentDiagnostics } from "../errors/diagnostics.js";
 import type { A2UIMessage, A2UIUserAction } from "../types/messages.js";
 import { A2UIProvider } from "./A2UIProvider.js";
-import { A2UISurface } from "./A2UISurface.js";
+import { A2UISurface, type A2UISurfaceProps } from "./A2UISurface.js";
 import { useA2UIFailedSurfaceIds, useA2UISurfaceIds } from "./hooks.js";
 import { useStableEngine } from "./useStableEngine.js";
 
@@ -21,6 +21,7 @@ interface A2UIRendererBaseProps {
   readonly messages: readonly A2UIMessage[];
   readonly diagnostics?: A2UIDiagnosticsMode;
   readonly renderFallback?: A2UIFallbackRenderer;
+  readonly renderPending?: NonNullable<A2UISurfaceProps["renderPending"]>;
 }
 
 interface A2UIRendererOwnedEngineProps extends A2UIRendererBaseProps {
@@ -67,6 +68,9 @@ export function A2UIRenderer(props: A2UIRendererProps): ReactNode {
       ...(props.renderFallback === undefined
         ? {}
         : { renderFallback: props.renderFallback }),
+      ...(props.renderPending === undefined
+        ? {}
+        : { renderPending: props.renderPending }),
     }),
   );
 }
@@ -74,6 +78,7 @@ export function A2UIRenderer(props: A2UIRendererProps): ReactNode {
 interface A2UIActiveSurfacesProps {
   readonly diagnostics?: A2UIDiagnosticsMode;
   readonly renderFallback?: A2UIFallbackRenderer;
+  readonly renderPending?: NonNullable<A2UISurfaceProps["renderPending"]>;
 }
 
 function A2UIActiveSurfaces(props: A2UIActiveSurfacesProps): ReactNode {

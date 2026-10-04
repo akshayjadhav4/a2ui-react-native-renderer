@@ -165,6 +165,53 @@ test("waits for a streaming surface root without reporting a false error", async
   assert.deepEqual(errors, []);
 });
 
+test("shows an app-owned pending root only after the surface is created", async () => {
+  const catalog = createTextCatalog();
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  const calls = [];
+  const renderPending = (pending) => {
+    calls.push(pending);
+    return React.createElement("NativeLoading", null, pending.componentId);
+  };
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(
+        A2UIProvider,
+        { engine },
+        React.createElement(A2UISurface, { surfaceId: "main", renderPending }),
+      ),
+    );
+  });
+  assert.equal(renderer.toJSON(), null);
+  assert.deepEqual(calls, []);
+
+  await act(() => {
+    engine.applyMessage(
+      createSurfaceMessages({
+        id: "root",
+        component: "Text",
+        text: "Ready",
+      })[0],
+    );
+  });
+  assert.deepEqual(calls, [
+    { surfaceId: "main", componentId: "root", kind: "root" },
+  ]);
+  assert.equal(renderer.toJSON()?.type, "NativeLoading");
+
+  await act(() => {
+    engine.applyMessage(
+      createSurfaceMessages({
+        id: "root",
+        component: "Text",
+        text: "Ready",
+      })[1],
+    );
+  });
+  assert.equal(renderer.toJSON()?.type, "NativeText");
+});
+
 test("fails clearly when A2UISurface has no provider", async () => {
   await assert.rejects(
     async () =>
