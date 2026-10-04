@@ -68,16 +68,17 @@ Tasks follow dependency order. Add a focused failing test or type fixture before
   - Dependencies: Checkpoint B. Scope: Medium.
   - Evidence: Function entries export names, descriptions, direct literal/binding/nested-call alternatives, and a documented declared return-kind default without serializing `execute`. The returnType field remains advisory because the current evaluator accepts mismatched wire values; focused tests prove that parity across both official versions. Required and optional arguments, invalid literals, unknown calls, and nested calls are checked. Null direct literals and object shapes that the resolver would reinterpret fail with function/argument paths. Build, focused function suites, typecheck, lint, format, and `git diff --check` pass; no runtime semantic change was made.
 
-- [ ] **Task 7: Prove generated-schema and renderer agreement**
+- [x] **Task 7: Prove generated-schema and renderer agreement**
   - Acceptance: A small app-owned catalog shared by exporter and renderer validates representative v0.9/v0.9.1 messages through Ajv with official common types and through the renderer. It covers nested properties, children, bindings, actions, functions, rejected values, stable JSON serialization, and detached output. No presenter or callback value appears in exported JSON.
   - Verify: `pnpm build && node --test test/integration/catalog-schema.test.mjs test/unit/catalog-schema.test.mjs && pnpm typecheck`.
   - Likely files: `test/integration/catalog-schema.test.mjs`, `test/unit/catalog-schema.test.mjs`, `test/fixtures/a2ui/`, `src/catalog/exportCatalogSchema.ts`.
   - Dependencies: Task 6. Scope: Medium.
+  - Evidence: One app-owned catalog feeds the exporter and engine. Its generated document validates v0.9 and v0.9.1 messages with the pinned official common types. Accepted components and rejected structural, nested, and unknown-component values agree with engine validation; an unknown function is rejected by the schema and reported at the renderer's function-evaluation stage. Stable JSON serialization, matching IDs, detached output, and absence of presenters/execute callbacks are checked. All 148 tests, typecheck, lint, formatting, and `git diff --check` pass.
 
 ### Checkpoint C: Shared catalog proof
 
-- [ ] Component and representable function fixtures pass both validators for v0.9 and v0.9.1; unsupported function shapes fail clearly.
-- [ ] `pnpm test`, `pnpm typecheck`, and `git diff --check` pass with no runtime dependency or renderer behavior change.
+- [x] Component and representable function fixtures pass both validators for v0.9 and v0.9.1; unsupported function shapes fail clearly.
+- [x] `pnpm test`, `pnpm typecheck`, and `git diff --check` pass with no runtime dependency or renderer behavior change.
 
 ## Phase D: Adoption and native package proof
 
