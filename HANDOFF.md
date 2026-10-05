@@ -1,9 +1,9 @@
 # Handoff: React Native A2UI Renderer
 
-- **As of:** 2026-10-04
+- **As of:** 2026-10-05
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first four capability-map modules are complete. No implementation is currently in progress.
+- **State:** The first four capability-map modules are complete. `react-surface-api` has a draft spec awaiting review; no implementation is in progress.
 
 ## What the user wants
 
@@ -100,18 +100,19 @@ before this handoff document. The completed catalog module ends at commit
 ## Suggested next step
 
 `react-surface-api` is the next module in the approved capability map and
-depends on the completed `progressive-surfaces` module. `render-reactivity` is
-also eligible for specification; `consumer-tooling` depends on
-`react-surface-api`. No spec, plan, or task list exists yet for these modules.
+depends on the completed `progressive-surfaces` module. Its
+[draft spec](./SPEC-react-surface-api.md) proposes a lifecycle-managed
+`useA2UIEngine` hook, an optional direct `engine` prop on `A2UISurface`, and
+optional `messages` in external-engine `A2UIRenderer` mode. The spec needs
+human review before planning under the user's requested
+`spec-driven-development` workflow. No plan, task list, or implementation
+exists for this module yet. `render-reactivity` is also eligible for
+specification; `consumer-tooling` depends on `react-surface-api`.
 
-For `react-surface-api`, first inspect the current `A2UIRenderer`,
-`A2UIProvider`, `A2UISurface`, hooks, streaming example, and user-facing docs.
-Then use the user's requested `spec-driven-development` workflow to draft
-`SPEC-react-surface-api.md` against the capability map. Get the spec reviewed,
-then create its plan and task list with their reviews before implementation.
-Preserve the established per-module files under `tasks/`, use focused tests
-before behavior changes, and commit each verified slice on this branch. Do not
-assume the next module or a release has already been approved for coding.
+After approval, create the per-module plan and task list under `tasks/`, with
+their separate reviews before implementation. Use focused tests before
+behavior changes and commit each verified slice on this branch. Do not assume
+a release or publication is approved.
 
 Start a new session by checking `git status --short --branch`, reading this
 handoff and the capability map, and confirming the user's next requested
