@@ -7,6 +7,11 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Added `useA2UIEngine(options)` to manage a mounted feature's engine lifetime,
+  preserve state across rerenders, and use current action/error callbacks.
+  Catalogs and effective resource limits remain construction settings.
+- Added optional `engine` placement to `A2UISurface`, allowing one surface to
+  render without an outer provider while retaining provider-based usage.
 - Added `exportA2UICatalogSchema` from
   `a2ui-react-native-renderer/catalog-schema` so an app can generate an A2UI
   v0.9/v0.9.1 catalog document from the same app-owned catalog used by the
@@ -16,6 +21,9 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- External-engine `A2UIRenderer` now permits omitted `messages`; it observes
+  imperative engine updates without requiring an empty array. Owned-engine
+  mode still requires messages and retains existing collection replay rules.
 - Replaced `@a2ui/web_core` with an in-package protocol core that keeps native
   bundles free of its Basic Catalog and Lit dependencies.
 - Added v0.9.1 messages alongside v0.9 for complete component graphs. The
@@ -33,6 +41,14 @@ project follows [Semantic Versioning](https://semver.org/).
   points accept app-owned `renderPending`, and `A2UIComponentIdSchema` marks a
   single child without changing presenter props into a list. Missing references
   no longer raise an error; malformed IDs, known cycles, and limits still do.
+
+### Fixed
+
+- Pending and absent surfaces now update error fallback UI when a rejected
+  operation leaves their accepted snapshot unchanged. Rendered content stays
+  stable after rejected updates.
+- Switching a surface's engine or ID clears old presenter failures even when
+  the new surface has the same revision.
 
 ### Known limitation
 

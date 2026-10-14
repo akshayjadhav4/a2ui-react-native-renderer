@@ -34,8 +34,34 @@ ambiguous client converter.
 ## 3. Choose Ownership
 
 Use `A2UIRenderer` for one colocated active-surface region. Use an
-application-owned `createA2UIEngine` plus `A2UIProvider` and `A2UISurface` when
-surfaces belong to individual chat turns or screens.
+`useA2UIEngine` in a mounted conversation or feature owner when surfaces belong
+to individual chat turns or screens:
+
+```tsx
+const engine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
+return <A2UISurface engine={engine} surfaceId={surfaceId} />;
+```
+
+The hook handles final disposal, including Strict Mode effect replay. Apply
+messages from event handlers or effects; return your source's unsubscribe from
+the subscription effect. One conversation owner can share its engine with
+several surfaces. See the complete [streaming example](./streaming-and-actions.md).
+
+Existing `createA2UIEngine`, `A2UIProvider`, and context hooks remain supported.
+Keep explicit creation for an engine that outlives a mounted feature. When
+adopting the hook, remove manual disposal of that hook-owned engine. A direct
+`A2UISurface.engine` selects its engine over a surrounding provider and supplies
+that context to app presenters.
+
+External renderer mode can omit `messages`: replace
+`<A2UIRenderer engine={engine} messages={[]} />` with
+`<A2UIRenderer engine={engine} />` when your source already applies operations.
+Owned renderer mode still requires messages and retains collection replay rules.
+
+The hook accepts new inline option containers with equivalent catalog objects
+and effective limits. Changed catalog identities/order or limits throw; remount
+the owning subtree with a new key to use new construction settings. Action/error
+callbacks may change and use the latest values.
 
 Do not create one engine during every React render. Store it at module,
 provider, or stable component-instance scope according to the application's
@@ -99,7 +125,7 @@ or retry policy belongs to the app.
 
 ## 7. Forward Actions
 
-Wire `onAction` at engine creation or in owned-engine `A2UIRenderer` mode. The
+Wire `onAction` through `useA2UIEngine`, explicit engine creation, or owned-engine `A2UIRenderer` mode. The
 callback receives the official action with context resolved from the latest
 surface model. Adapt that action to the selected transport outside the package.
 
@@ -111,7 +137,9 @@ limits for the application's presenters and target devices.
 
 ## 9. Remove Deep Imports And Bundled Assumptions
 
-Import only from `a2ui-react-native-renderer`. The package does not include the
+Import renderer APIs from `a2ui-react-native-renderer`; schema export uses the
+public `a2ui-react-native-renderer/catalog-schema` subpath. Other deep imports
+are private. The package does not include the
 Basic Catalog, functions such as `openUrl`, or native controls. Define and
 register every capability the application's A2UI producer may emit.
 

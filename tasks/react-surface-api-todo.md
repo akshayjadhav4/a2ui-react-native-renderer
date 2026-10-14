@@ -82,16 +82,17 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
   - Dependencies: Task 7. Scope: Medium.
   - Evidence: README and streaming guide show hook-owned lifetime, direct placement, unsubscribe cleanup, shared transcript ownership, stable settings, latest callbacks, and explicit-engine alternatives. The API reference was completed during Task 6. Guide type fixtures compile the complete source-to-transcript flow. Typecheck and existing documentation assertions pass; targeted formatting is clean.
 
-- [ ] **Task 9: Record adoption and migration guidance**
+- [x] **Task 9: Record adoption and migration guidance**
   - Acceptance: Migration docs and unreleased changelog explain the additive APIs and retained provider/collection entry points. Documentation assertions match the public API. Package version/license remain unchanged.
   - Verify: `pnpm build && node --test test/unit/documentation.test.mjs && pnpm exec prettier --check docs/migration.md CHANGELOG.md test/unit/documentation.test.mjs`; `git diff --check`.
   - Files: `docs/migration.md`, `CHANGELOG.md`, `test/unit/documentation.test.mjs`.
   - Dependencies: Task 8. Scope: Medium.
+  - Evidence: Migration guide explains hook ownership, source cleanup, direct/provider placement, callback updates, construction settings, and optional external messages; unreleased changelog records APIs and recovered fallback behavior. Existing public-export and documentation assertions pass, and targeted formatting/diff checks are clean. No new documentation-only tests were needed.
 
 ### Checkpoint C: Consumer examples ready
 
-- [ ] Example checks and guide type fixtures pass; stream examples include cleanup and app-owned placement.
-- [ ] Documentation accurately describes callback updates, configuration changes, and hook-owned versus application-owned disposal.
+- [x] Example checks and guide type fixtures pass; stream examples include cleanup and app-owned placement.
+- [x] Documentation accurately describes callback updates, configuration changes, and hook-owned versus application-owned disposal.
 
 ## Phase D: Final verification
 
