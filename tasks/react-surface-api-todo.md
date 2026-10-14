@@ -6,7 +6,7 @@
 
 **Plan:** [react-surface-api-plan.md](react-surface-api-plan.md)
 
-**Status:** Approved with “ok start” on 2026-10-14. Implementation in progress.
+**Status:** Complete on `codex/native-core` on 2026-10-14 after approval with “ok start.”
 
 Follow dependency order on `codex/native-core` and commit each verified slice. Add meaningful failing tests before behavior changes, then implement and record evidence below. Preserve the historical initial-release `tasks/plan.md` and `tasks/todo.md`. Each task's file scope excludes its small evidence update in this tracker.
 
@@ -96,17 +96,18 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
 
 ## Phase D: Final verification
 
-- [ ] **Task 10: Verify the package and complete module records**
+- [x] **Task 10: Verify the package and complete module records**
   - Acceptance: Required package gates pass and packed Expo/bare consumers typecheck and bundle for iOS/Android using the new API. Declarations match documented root exports. Review the implementation against every spec success criterion; record results and mark the module complete only when verified.
   - Verify: `pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm example:check && pnpm pack:check && pnpm consumer:smoke`; `pnpm exec prettier --check SPEC-react-surface-api.md tasks/react-surface-api-plan.md tasks/react-surface-api-todo.md HANDOFF.md CAPABILITY-MAP.md`; `git diff --check`.
   - Files: `SPEC-react-surface-api.md`, `tasks/react-surface-api-plan.md`, `tasks/react-surface-api-todo.md`, `HANDOFF.md`, `CAPABILITY-MAP.md`.
   - Dependencies: Checkpoint C. Scope: Medium. If verification reveals a code defect, fix it in a focused slice and rerun the affected gates before recording completion.
+  - Evidence: Build, typecheck, lint, formatting, all 169 tests, Expo example checks, and tarball verification pass. The tarball contains 160 files and is 97,743 bytes. Packed Expo and bare consumers typecheck and bundle for iOS/Android with the new hook/direct placement APIs; existing bundle isolation checks pass. Sandbox registry DNS failed on the first smoke attempt; the same required check passed with approved network access. Generated declarations match all three agreed public changes. Final correctness/architecture/security/performance review found no outstanding issue; two fallback/recovery bugs and the presenter stability regression were fixed with passing regression tests. No runtime dependency, protocol, package-version, or license change was introduced by this module.
 
 ### Checkpoint D: Module complete
 
-- [ ] All approved spec success criteria pass; tests and consumer results are recorded.
-- [ ] Packed native bundles use the public API and retain existing dependency isolation checks. Bundle checks are distinguished from device interaction tests.
-- [ ] Final diff and records are reviewed; every verified slice is committed on `codex/native-core`, ready for human review.
+- [x] All approved spec success criteria pass; tests and consumer results are recorded.
+- [x] Packed native bundles use the public API and retain existing dependency isolation checks. Bundle checks are distinguished from device interaction tests.
+- [x] Final diff and records are reviewed; every verified slice is committed on `codex/native-core`, ready for human review.
 
 ## Review decisions
 

@@ -4,7 +4,7 @@
 
 **Specification:** [SPEC-react-surface-api.md](../SPEC-react-surface-api.md)
 
-**Status:** Approved for task breakdown on 2026-10-14 with “next move.”
+**Status:** Implemented on `codex/native-core` on 2026-10-14 after spec, plan, and task-list approval.
 
 Use the established per-module records on `codex/native-core`. The historical `tasks/plan.md` and `tasks/todo.md` remain historical records. The [module task list](react-surface-api-todo.md) contains the separately reviewed task breakdown.
 
@@ -141,4 +141,4 @@ The smoke checks bundle packed Expo and bare React Native consumers for iOS and 
 
 ## Task-list handoff
 
-After plan approval, split delivery into tasks of roughly five files or fewer in `tasks/react-surface-api-todo.md`, with acceptance criteria, exact focused verification commands, dependencies, and checkpoints. Separate internal renaming, hook implementation, integration coverage, direct placement, renderer props, consumer updates, and documentation as needed to keep each commit reviewable. The task list receives its own review before implementation under the requested spec-driven workflow.
+The [completed task list](react-surface-api-todo.md) records focused delivery slices, dependencies, verification commands, and checkpoints. The user approved the spec with “ok continue,” this plan with “next move,” and the task list with “ok start” on 2026-10-14. All implementation slices were verified and committed on the requested branch.

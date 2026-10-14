@@ -2,7 +2,7 @@
 
 **Module id:** `react-surface-api` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Approved for planning on 2026-10-14. Implementation follows plan and task-list review.
+**Status:** Approved and implemented on `codex/native-core` on 2026-10-14. Verification is recorded in [react-surface-api-todo.md](tasks/react-surface-api-todo.md).
 
 ## Assumptions
 

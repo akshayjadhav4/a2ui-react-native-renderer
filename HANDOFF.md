@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first four capability-map modules are complete. The `react-surface-api` spec and plan are approved; its task breakdown awaits review. No implementation is in progress.
+- **State:** The first five capability-map modules are complete. No implementation is in progress.
 
 ## What the user wants
 
@@ -22,7 +22,7 @@ versioning and licensing only when the user requests that work.
 ## Completed work
 
 The [capability map](./CAPABILITY-MAP.md) is the initiative index. Its first
-four modules are implemented, with approved specs, plans, and completed task
+five modules are implemented, with approved specs, plans, and completed task
 lists:
 
 | Module                 | Outcome                                                                                                          | Records                                                                               |
@@ -31,8 +31,20 @@ lists:
 | `binding-semantics`    | Typed resolved values and optional setters for direct writable bindings.                                         | [Spec](./SPEC-binding-semantics.md), [tasks](./tasks/binding-semantics-todo.md)       |
 | `progressive-surfaces` | Pending root and child rendering, safe progressive updates, and structured recovery.                             | [Spec](./SPEC-progressive-surfaces.md), [tasks](./tasks/progressive-surfaces-todo.md) |
 | `catalog-contract`     | One app-owned catalog supplies renderer validation and an exportable agent-facing JSON Schema document.          | [Spec](./SPEC-catalog-contract.md), [tasks](./tasks/catalog-contract-todo.md)         |
+| `react-surface-api`    | Hook-owned engine lifetime, direct one-surface placement, and optional external renderer messages.               | [Spec](./SPEC-react-surface-api.md), [tasks](./tasks/react-surface-api-todo.md)       |
 
-The most recent module added
+The React API module adds `useA2UIEngine(options)` with stable identity, latest
+callbacks, fixed construction settings, and final cleanup through Strict Mode
+effect replay. `A2UISurface` accepts an optional explicit `engine`, supplies
+that engine's context to presenters, and recovers when the source changes.
+External-engine `A2UIRenderer` permits omitted `messages`. Existing context
+hooks still need a provider; the private reader was renamed to
+`useA2UIEngineContext` to distinguish it from the public creation hook.
+Pending/absent surface errors now refresh fallbacks without changing accepted
+snapshots; rejected updates preserve healthy presenter rendering. Usage and
+cleanup examples are in [Streaming And Actions](./docs/streaming-and-actions.md).
+
+The catalog module added
 `exportA2UICatalogSchema(catalog)` through the separate
 `a2ui-react-native-renderer/catalog-schema` package subpath. It exports
 supported Zod property shapes, official A2UI marker references, and
@@ -67,10 +79,13 @@ chooses how to deliver the JSON document to an agent. Usage is in
   exclude exporter code and web renderer modules.
 
 The last full verification passed: `pnpm build`, `pnpm typecheck`, `pnpm lint`,
-`pnpm format:check`, `pnpm test` (149 tests), `pnpm pack:check`, and
+`pnpm format:check`, `pnpm test` (169 tests), `pnpm example:check`, `pnpm pack:check`, and
 `pnpm consumer:smoke` (Expo and bare, iOS and Android). The branch was clean
-before this handoff document. The completed catalog module ends at commit
-`a13076e`.
+before the final module record update. Native consumer checks verify types,
+bundles, and dependency isolation; they are not device interaction tests.
+The initial sandboxed smoke install failed registry DNS; the same check passed
+with approved network access. The catalog module ends at `a13076e`; the React
+API implementation and checked usage fixtures end at `9b42ada`, followed by completion records.
 
 ## Important behavior to preserve
 
@@ -99,21 +114,17 @@ before this handoff document. The completed catalog module ends at commit
 
 ## Suggested next step
 
-`react-surface-api` is the next module in the approved capability map and
-depends on the completed `progressive-surfaces` module. Its
-[approved spec](./SPEC-react-surface-api.md) defines a lifecycle-managed
-`useA2UIEngine` hook, an optional direct `engine` prop on `A2UISurface`, and
-optional `messages` in external-engine `A2UIRenderer` mode. The user approved
-the spec with “ok continue” on 2026-10-14. The
-[approved plan](./tasks/react-surface-api-plan.md) was approved with “next move.”
-The [draft task list](./tasks/react-surface-api-todo.md) needs review before
-implementation under the user's requested `spec-driven-development` workflow.
-No implementation exists for this module yet. `render-reactivity` is also eligible for
-specification; `consumer-tooling` depends on `react-surface-api`.
+`render-reactivity` is the suggested next module. It should measure presenter
+rerenders before changing subscriptions or adding selectors, especially for
+unrelated bound-data updates within one surface. `consumer-tooling` is also
+eligible now that catalog contract and React API work are complete. Neither
+module has a spec, plan, or task list yet.
 
-After task-list approval, start Task 1 and follow dependency order. Use focused tests before
-behavior changes and commit each verified slice on this branch. Do not assume
-a release or publication is approved.
+For the next module, inspect relevant tests and code, then draft its spec
+against the approved capability map using the user's requested
+`spec-driven-development` workflow. Get spec, plan, and task-list reviews before
+implementation. Use focused tests before behavior changes and commit each
+verified slice on this branch. Do not assume a release or publication is approved.
 
 Start a new session by checking `git status --short --branch`, reading this
 handoff and the capability map, and confirming the user's next requested
