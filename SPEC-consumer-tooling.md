@@ -2,7 +2,7 @@
 
 **Module id:** `consumer-tooling` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Draft for review on 2026-10-14. No implementation is approved yet.
+**Status:** Approved on 2026-10-14 by the user's “ok move next” after spec review. Implementation plan is the next review gate.
 
 ## Assumptions
 
@@ -246,4 +246,5 @@ separately; successful bundling does not establish a working on-device socket.
   public endpoint configuration using `EXPO_PUBLIC_` variables.
 
 No unresolved blocker is assumed. The scope, new optional public entry, and
-private server dependency are proposed for human review before planning.
+private server dependency were approved with this spec. The implementation plan
+requires human review before task breakdown and implementation.

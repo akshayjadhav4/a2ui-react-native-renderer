@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first six capability-map modules are complete. The final `consumer-tooling` spec is drafted for review; no implementation is in progress.
+- **State:** The first six capability-map modules are complete. The final `consumer-tooling` spec is approved; its implementation plan awaits review. No implementation is in progress.
 
 ## What the user wants
 
@@ -136,12 +136,16 @@ implementation and review corrections end at `f0ab843`, followed by completion r
 
 `consumer-tooling` is the final module in the approved capability map: a small
 catalog/surface test harness and real streaming example with app-owned
-components. [SPEC-consumer-tooling.md](./SPEC-consumer-tooling.md) is drafted for
-review. It proposes an optional `/testing` harness using the real engine and a
+components. [SPEC-consumer-tooling.md](./SPEC-consumer-tooling.md) was approved
+by the user's “ok move next” on 2026-10-14. It specifies an optional `/testing`
+harness using the real engine and a
 local WebSocket Expo demo with a private producer. The spec also proposes one
 example-only `ws` dependency; no renderer runtime dependency is proposed.
-There is no plan or task list yet. Obtain spec approval before drafting the
-implementation plan, following the requested spec-driven workflow.
+[tasks/consumer-tooling-plan.md](./tasks/consumer-tooling-plan.md) is drafted for
+review, with `ws@8.22.0` verified as the published dependency. It uses the
+established per-module file convention and leaves historical plan/todo files
+untouched. There is no task list yet. Obtain plan approval before preparing
+`tasks/consumer-tooling-todo.md` and implementing, following the requested workflow.
 
 Use the requested `spec-driven-development` workflow and preserve reviewed
 module contracts. The user explicitly authorized reactivity implementation
