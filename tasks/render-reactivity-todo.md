@@ -46,11 +46,12 @@ approval stop. Commit verified slices and preserve historical task records.
 
 - [x] Targets and scope controls pass; existing tests, lint, formatting, and typecheck pass.
 
-- [ ] **Task 5: Template and lifecycle invalidation**
+- [x] **Task 5: Template and lifecycle invalidation**
   - Acceptance: Append/removal/reordering/root replacement, child arrival, component replacement/type/rebind, saved setters/child callbacks, deletion/recreation, engine/ID changes, and subscription cleanup retain current semantics.
   - Files: `test/integration/render-reactivity.test.mjs`, runtime fixes limited to the affected rendering helper.
   - Verify: `pnpm build && node --test test/integration/render-reactivity.test.mjs test/integration/surface-renderer.test.mjs test/integration/surface-subscriptions.test.mjs && node tasks/render-reactivity-baseline.mjs`.
   - Dependencies: Checkpoint B.
+  - Evidence: Template/root replacement, nested setter stability/staleness, child arrival/type changes, saved child services, recreation, and source subscription cleanup pass. A failing batch-recreation case exposed revision reuse retaining an old presenter error; private boundary reset now includes component identity without remounting healthy presenter state. All 42 focused lifecycle/render tests, build/typecheck/lint pass; repeated targets remain unchanged. Shared test fixtures were extracted to keep safety and lifecycle files focused.
 
 - [ ] **Task 6: Measurements and consumer documentation**
   - Acceptance: Seven-case three-run before/after proof and attempt ledger recorded. Existing guides and unreleased changelog explain automatic skips and full-scope limits without device FPS claims.

@@ -205,6 +205,12 @@ export function A2UIComponentNode({
       internals.reportError(resolution.error);
   }, [internals, resolution]);
 
+  // Batched deletion/recreation can repeat a revision with a new component.
+  const resetKey = useMemo(
+    () => ({ revision: surface?.revision, sourceComponent, scopePath }),
+    [surface?.revision, sourceComponent, scopePath],
+  );
+
   const renderChild = useCallback(
     (childId: string, childScopePath = scopePath): ReactNode =>
       createElement(A2UIComponentNode, {
@@ -239,7 +245,7 @@ export function A2UIComponentNode({
   return createElement(
     A2UIErrorBoundary,
     {
-      resetKey: `${String(surface.revision)}:${scopePath}`,
+      resetKey,
       createError: (cause) => createPresenterError(surface, componentId, cause),
       reportError: (error) => {
         internals.reportError(error);

@@ -4,7 +4,7 @@ import type { A2UIRendererError } from "./types.js";
 
 interface A2UIErrorBoundaryProps {
   readonly children?: ReactNode;
-  readonly resetKey: string | number;
+  readonly resetKey: unknown;
   readonly createError: (cause: unknown) => A2UIRendererError;
   readonly reportError: (error: A2UIRendererError) => void;
   readonly renderFallback: (error: A2UIRendererError) => ReactNode;
@@ -13,7 +13,7 @@ interface A2UIErrorBoundaryProps {
 interface A2UIErrorBoundaryState {
   readonly cause: Error | null;
   readonly error: A2UIRendererError | null;
-  readonly resetKey: string | number;
+  readonly resetKey: unknown;
 }
 
 export class A2UIErrorBoundary extends Component<
