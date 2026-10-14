@@ -37,16 +37,17 @@ compiler, test runtime dependency, or assertion API.
 ### One app-owned schema contract
 
 Move the example catalog ID and its four schema definitions into a native-free
-example module, `example/server/contract.mjs`. Export a schema factory receiving
+example module, `example/expo/src/catalog-contract.mjs`. Export a schema factory receiving
 Zod and the existing A2UI common schemas as arguments, rather than importing
 the native package root at runtime. Use checked JSDoc for typed parameters and
 inferred schema results. Expo's existing `allowJs` support can consume this
 module while preserving presenter prop inference.
 
-The packed Expo smoke setup currently copies only `example/expo`. Copy the
-shared `contract.mjs` into the matching sibling `server` directory inside its
-temporary workspace, preserving relative imports. Do not copy the server
-package, socket implementation, or dependencies into that consumer.
+The first packed smoke check exposed type-resolution failure for a sibling
+server file: its JSDoc imports could not resolve the isolated Expo dependencies.
+Keep the shared native-free module in Expo source instead, so the existing
+copy preserves both types and runtime imports. The producer imports its ID
+from that module without loading presenters. No extra consumer copy is needed.
 
 The Expo app supplies Zod/common schemas and attaches its existing native
 presenters. Node integration tests supply the same values from the built
@@ -216,7 +217,7 @@ EXPO_PUBLIC_A2UI_DEMO_URL=ws://localhost:8080 pnpm --filter a2ui-renderer-exampl
 No additional public API or dependency is proposed beyond the approved spec.
 The plan is approved under `spec-driven-development`. Review
 [consumer-tooling-todo.md](consumer-tooling-todo.md) before implementing the
-first slice. Its task split incorporates the isolated Expo shared-file copy
-needed by the existing consumer smoke setup.
+first slice. Its task split incorporates the shared-module location correction verified by
+the packed Expo consumer setup.
 
 Reference: [ws official server examples](https://github.com/websockets/ws#simple-server).

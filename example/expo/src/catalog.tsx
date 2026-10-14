@@ -9,27 +9,15 @@ import {
 import { Pressable, Text, TextInput, View, useColorScheme } from "react-native";
 import { z } from "zod";
 
-export const FIXTURE_CATALOG_ID = "urn:example:a2ui:catalog:v1";
-
-const ColumnSchema = z.object({
-  children: A2UIChildListSchema,
-  appearance: z.enum(["plain", "card"]).optional(),
-});
-
-const TextSchema = z.object({
-  text: A2UIDynamicStringSchema,
-  variant: z.enum(["title", "body", "caption"]).optional(),
-});
-
-const InputSchema = z.object({
-  value: A2UIDynamicStringSchema,
-  placeholder: z.string().optional(),
-});
-
-const ButtonSchema = z.object({
-  label: A2UIDynamicStringSchema,
-  action: A2UIActionSchema,
-});
+import { createDemoSchemas, FIXTURE_CATALOG_ID } from "./catalog-contract.mjs";
+export { FIXTURE_CATALOG_ID };
+const { ColumnSchema, TextSchema, InputSchema, ButtonSchema } =
+  createDemoSchemas({
+    z,
+    A2UIActionSchema,
+    A2UIChildListSchema,
+    A2UIDynamicStringSchema,
+  });
 
 type PresenterProps<Schema extends z.AnyZodObject> = A2UIPresenterProps<
   A2UIResolvedProps<z.output<Schema>>

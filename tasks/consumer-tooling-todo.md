@@ -30,31 +30,34 @@ the presence of implementation files.
   - Dependencies: Task 1. Scope: Small.
   - Evidence: Mounted binding writes and action dispatch preserve latest context, timestamps and ordering; frozen list snapshots remain detached and malformed actions are not recorded. All focused integration tests pass.
 
-- [ ] **Task 3: Prove packed entry availability and bundle isolation**
+- [x] **Task 3: Prove packed entry availability and bundle isolation**
   - Acceptance: Pack checks require the testing entry/declarations/export. The installed tarball's `/testing` constructs an engine and ingests a fixture in plain Node. A harness-only sentinel is absent from normal Expo/bare native bundles; existing exporter/web-runtime exclusions remain intact.
   - Verify: `pnpm pack:check && pnpm consumer:smoke`; inspect changes to pack allowlists and bundle assertions. Do not merely test a source-relative import.
   - Files: `scripts/pack-check.mjs`, `scripts/consumer-smoke.mjs`, `src/testing.ts` if needed for a stable harness-only identifier.
   - Dependencies: Task 2. Scope: Medium.
+  - Evidence: Pack check and packed Node ingestion passed; Expo/bare iOS/Android bundles exclude the harness sentinel (two verified smoke runs).
 
 ### Checkpoint A: Harness Consumer Path
 
-- [ ] Harness behavior/type checks pass; mounted actions use real renderer semantics.
-- [ ] Packed Node import and Expo/bare iOS/Android bundle isolation pass.
-- [ ] Review public entry against the spec; no test runner or runtime dependency was added.
+- [x] Harness behavior/type checks pass; mounted actions use real renderer semantics.
+- [x] Packed Node import and Expo/bare iOS/Android bundle isolation pass.
+- [x] Review public entry against the spec; no test runner or runtime dependency was added.
 
 ## Phase B: Shared Contract and Local Producer
 
-- [ ] **Task 4: Share example schemas without native imports**
-  - Acceptance: The catalog ID and four schema definitions come from a checked native-free factory receiving Zod/common schemas. Expo attaches the existing presenters with retained prop inference. The isolated Expo smoke copy includes only this shared module in the matching sibling directory.
+- [x] **Task 4: Share example schemas without native imports**
+  - Acceptance: The catalog ID and four schema definitions come from a checked native-free factory receiving Zod/common schemas. Expo attaches the existing presenters with retained prop inference. The module lives in Expo source so isolated consumer copies resolve its JSDoc types without a sibling dependency installation.
   - Verify: `pnpm build && pnpm example:check`; a Node import/type fixture verifies the factory without native presenters; `pnpm consumer:smoke` verifies sibling-path resolution through the installed tarball.
-  - Files: `example/server/contract.mjs`, `example/expo/src/catalog.tsx`, `scripts/consumer-smoke.mjs`, `test/unit/demo-contract.test.mjs`; optionally `example/server/contract.d.mts` if inference requires it.
+  - Files: `example/expo/src/catalog-contract.mjs`, `example/expo/src/catalog.tsx`, `scripts/consumer-smoke.mjs`, `test/unit/demo-contract.test.mjs`; optionally `example/expo/src/catalog-contract.d.mts` if inference requires it.
   - Dependencies: Checkpoint A. Scope: Medium.
+  - Evidence: A packed consumer reproduced unresolved sibling JSDoc imports. Moving the native-free factory into Expo source fixed resolution without type suppression; example type/lint, shared-contract test, and packed consumers pass.
 
-- [ ] **Task 5: Validate progressive demo messages against shared schemas**
+- [x] **Task 5: Validate progressive demo messages against shared schemas**
   - Acceptance: Native-free v0.9.1 fixtures cover pending root, pending children, ready interactive form, action response, invalid-update recovery, and deletion. Real-engine tests use the shared schema factory; resolved props and the writable input/action are exercised through test-owned presenters without a second catalog definition.
   - Verify: `pnpm build && node --test test/integration/demo-fixtures.test.mjs test/unit/demo-contract.test.mjs`; assert intermediate snapshots and rendered props, not only final readiness.
   - Files: `example/server/fixtures.mjs`, `test/integration/demo-fixtures.test.mjs`, `test/integration/helpers/demo-catalog.mjs`.
   - Dependencies: Task 4. Scope: Medium.
+  - Evidence: Fixture test first failed for the missing module; progressive pending rendering, writable input/action, response, invalid-update recovery, and deletion now pass against shared schemas.
 
 - [ ] **Task 6: Stream fixtures through an actual socket**
   - Acceptance: Private `a2ui-demo-server` adds only pinned `ws@8.22.0` and updates the workspace lockfile. A server factory supports ephemeral ports, independent sessions, ordered progressive frames and a validated submit-action response. Existing renderer package dependencies remain unchanged.

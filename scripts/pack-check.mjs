@@ -32,6 +32,8 @@ const requiredFiles = [
   "lib/typescript/index.d.ts",
   "lib/module/catalog-schema.js",
   "lib/typescript/catalog-schema.d.ts",
+  "lib/module/testing.js",
+  "lib/typescript/testing.d.ts",
 ];
 const localDependencyPrefixes = ["file:", "link:", "workspace:"];
 
@@ -168,6 +170,14 @@ function assertPackageMetadata(packageJson, packageRoot) {
     catalogSchemaExport?.types !== "./lib/typescript/catalog-schema.d.ts"
   ) {
     throw new Error("Packed package is missing the catalog-schema subpath");
+  }
+
+  const testingExport = packageJson.exports?.["./testing"];
+  if (
+    testingExport?.import !== "./lib/module/testing.js" ||
+    testingExport?.types !== "./lib/typescript/testing.d.ts"
+  ) {
+    throw new Error("Packed package is missing the testing subpath");
   }
 
   for (const dependencyGroup of [

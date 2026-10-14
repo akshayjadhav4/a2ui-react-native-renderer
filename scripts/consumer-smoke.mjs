@@ -126,6 +126,8 @@ function assertIsolatedPackage(consumerRoot) {
     "lib/typescript/index.d.ts",
     "lib/module/catalog-schema.js",
     "lib/typescript/catalog-schema.d.ts",
+    "lib/module/testing.js",
+    "lib/typescript/testing.d.ts",
   ]) {
     if (!existsSync(join(installedRoot, path))) {
       throw new Error(`Installed package is missing ${path}`);
@@ -149,6 +151,28 @@ function assertIsolatedPackage(consumerRoot) {
     consumerRoot,
   );
 
+  run(
+    "node",
+    [
+      "--input-type=module",
+      "-e",
+      `
+    import { createA2UITestHarness } from "a2ui-react-native-renderer/testing";
+    import { z } from "zod";
+    const catalog = { id: "urn:packed:harness", components: { Text: { schema: z.object({ text: z.string() }), presenter: null } }, functions: [] };
+    const harness = createA2UITestHarness({ catalogs: [catalog] });
+    try {
+      harness.engine.applyMessages([
+        { version: "v0.9.1", createSurface: { surfaceId: "form", catalogId: catalog.id } },
+        { version: "v0.9.1", updateComponents: { surfaceId: "form", components: [{ id: "root", component: "Text", text: "Packed" }] } }
+      ]);
+      if (harness.engine.getSurface("form")?.components.root.props.text !== "Packed" || harness.engine.getErrors().length) process.exitCode = 1;
+    } finally { harness.engine.dispose(); }
+  `,
+    ],
+    consumerRoot,
+  );
+
   for (const unpublishedPath of ["src", "test", "example", "scripts"]) {
     if (existsSync(join(installedRoot, unpublishedPath))) {
       throw new Error(`Installed package leaked ${unpublishedPath}/`);
@@ -159,6 +183,7 @@ function assertIsolatedPackage(consumerRoot) {
 function assertBundleIsolation(consumerRoot, outputDirectories) {
   const forbidden = [
     exporterSentinel,
+    "createA2UITestHarness",
     "@a2ui/web_core",
     "basic_catalog",
     "lit-html",
