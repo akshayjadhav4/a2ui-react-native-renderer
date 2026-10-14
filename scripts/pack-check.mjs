@@ -27,6 +27,7 @@ const requiredFiles = [
   "docs/errors-and-security.md",
   "docs/migration.md",
   "docs/streaming-and-actions.md",
+  "docs/testing.md",
   "package.json",
   "lib/module/index.js",
   "lib/typescript/index.d.ts",

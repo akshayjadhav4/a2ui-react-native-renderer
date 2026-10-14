@@ -267,6 +267,7 @@ The complete value and type reference is in [Public API](./docs/api.md).
 - [Streaming And Actions](./docs/streaming-and-actions.md)
 - [Errors And Security](./docs/errors-and-security.md)
 - [Migration Guide](./docs/migration.md)
+- [Testing Your Catalog](./docs/testing.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 - [Release Process](./RELEASING.md)
@@ -275,7 +276,9 @@ The complete value and type reference is in [Public API](./docs/api.md).
 
 [`example/expo`](./example/expo) is an Expo SDK 57 consumer that owns its entire
 catalog. It demonstrates simple rendering, staged streaming, two-way binding,
-actions, surface deletion, development diagnostics, and recovery.
+actions, surface deletion, development diagnostics, and recovery. Its separate
+network screen demonstrates real WebSocket streaming and action replies through
+a private deterministic producer. See the [run instructions](./example/expo/README.md).
 
 ```sh
 pnpm install

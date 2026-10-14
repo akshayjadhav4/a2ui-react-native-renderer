@@ -3,8 +3,11 @@ import {
   createA2UITestHarness,
   type A2UITestHarness,
   type A2UITestHarnessOptions,
-} from "../../src/testing.js";
-import { defineA2UICatalog, type A2UIUserAction } from "../../src/index.js";
+} from "a2ui-react-native-renderer/testing";
+import {
+  defineA2UICatalog,
+  type A2UIUserAction,
+} from "a2ui-react-native-renderer";
 
 const catalog = defineA2UICatalog({
   id: "urn:test:harness",

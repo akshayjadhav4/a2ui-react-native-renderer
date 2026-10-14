@@ -1,7 +1,8 @@
 # Public API
 
 Renderer imports come from `a2ui-react-native-renderer`. Catalog schema export
-has one public subpath, `a2ui-react-native-renderer/catalog-schema`. Other deep
+uses `a2ui-react-native-renderer/catalog-schema`; optional testing tools use
+`a2ui-react-native-renderer/testing`. Other deep
 imports are not public API. Runtime values and TypeScript types are grouped
 below; related symbols share examples in the linked guides.
 
@@ -36,6 +37,17 @@ references are described in [Catalogs](./catalogs.md#export-a-catalog-for-an-age
 Unsupported conversion throws a path-specific `TypeError`. The application
 decides where to store or send the document, and should version its catalog ID
 when its contract changes incompatibly.
+
+## Testing Entry
+
+Import `createA2UITestHarness`, `A2UITestHarnessOptions`, and `A2UITestHarness`
+from `a2ui-react-native-renderer/testing`. Options accept catalogs and optional
+resource limits. The returned harness exposes its real `engine` and
+`getActions(): readonly A2UIUserAction[]`, returning a fresh frozen array of
+successfully dispatched actions in delivery order. It owns the action callback;
+use `engine.getErrors()` for errors and `engine.dispose()` for cleanup.
+No mounting, assertions, mocks, reset, or transport are supplied. See
+[Testing](./testing.md) for headless versus mounted checks.
 
 ## Runtime Values
 
