@@ -6,7 +6,7 @@
 
 **Measurements:** [render-reactivity-measurements.md](render-reactivity-measurements.md)
 
-**Status:** Draft for review on 2026-10-14.
+**Status:** Approved with implementation authorized on 2026-10-14: “ok approve start work.”
 
 Use the established per-module records on `codex/native-core`. After plan
 approval, create `tasks/render-reactivity-todo.md` for the separately reviewed
