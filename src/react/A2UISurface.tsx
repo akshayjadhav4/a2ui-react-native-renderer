@@ -10,7 +10,7 @@ import {
 import type { A2UIDiagnosticsMode } from "../errors/diagnostics.js";
 import { getA2UIEngineInternals } from "../engine/internals.js";
 import { A2UIComponentNode } from "../rendering/presenterAdapter.js";
-import { useA2UIEngine } from "./A2UIProvider.js";
+import { useA2UIEngineContext } from "./A2UIProvider.js";
 import { useA2UISurface } from "./hooks.js";
 
 export interface A2UISurfaceProps {
@@ -30,7 +30,7 @@ export const A2UISurface = memo(function A2UISurface({
   renderFallback,
   renderPending,
 }: A2UISurfaceProps): ReactNode {
-  const engine = useA2UIEngine();
+  const engine = useA2UIEngineContext();
   const internals = getA2UIEngineInternals(engine);
   const surface = useA2UISurface(surfaceId);
   const recovery = useMemo<A2UIRecoveryConfig>(

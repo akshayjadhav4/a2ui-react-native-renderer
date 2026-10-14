@@ -21,7 +21,7 @@ export function A2UIProvider({
   return createElement(A2UIEngineContext.Provider, { value: engine }, children);
 }
 
-export function useA2UIEngine(): A2UIEngine {
+export function useA2UIEngineContext(): A2UIEngine {
   const engine = useContext(A2UIEngineContext);
   if (engine === null) {
     throw new Error("A2UISurface must be rendered inside A2UIProvider");

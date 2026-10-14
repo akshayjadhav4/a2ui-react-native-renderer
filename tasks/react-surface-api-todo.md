@@ -6,17 +6,18 @@
 
 **Plan:** [react-surface-api-plan.md](react-surface-api-plan.md)
 
-**Status:** Draft for review on 2026-10-14. Implementation begins after task-list approval.
+**Status:** Approved with “ok start” on 2026-10-14. Implementation in progress.
 
 Follow dependency order on `codex/native-core` and commit each verified slice. Add meaningful failing tests before behavior changes, then implement and record evidence below. Preserve the historical initial-release `tasks/plan.md` and `tasks/todo.md`. Each task's file scope excludes its small evidence update in this tracker.
 
 ## Phase A: Engine ownership
 
-- [ ] **Task 1: Rename the private context reader**
+- [x] **Task 1: Rename the private context reader**
   - Acceptance: The private context reader becomes `useA2UIEngineContext`; internal imports follow it. Existing public context hooks and provider-backed rendering retain their contracts. No new root export is introduced in this refactor.
   - Verify: `pnpm build && pnpm typecheck && node --test test/integration/convenience-renderer.test.mjs test/integration/surface-renderer.test.mjs test/integration/surface-subscriptions.test.mjs`; `git diff --check`.
   - Files: `src/react/A2UIProvider.tsx`, `src/react/hooks.ts`, `src/react/A2UISurface.tsx`.
   - Dependencies: Approved task list. Scope: Medium.
+  - Evidence: Private reader renamed across provider, hooks, and surface. Build, typecheck, and all 19 focused integration tests pass; public contracts are unchanged.
 
 - [ ] **Task 2: Add the public engine hook**
   - Acceptance: Root-exported `useA2UIEngine` accepts `A2UIEngineOptions` and returns a stable owned engine through the shared lifecycle helper. Separate mounted instances have independent state. Latest action/error callbacks are used without resetting state; initial limits are passed to the engine.
@@ -101,4 +102,4 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
 
 ## Review decisions
 
-The user approved the spec with “ok continue” and the plan with “next move” on 2026-10-14. Task-list review is the remaining gate before implementation. The scope adds only the three agreed public conveniences; components, source subscriptions, and transcript placement remain app-owned.
+The user approved the spec with “ok continue,” the plan with “next move,” and the task list with “ok start” on 2026-10-14. The scope adds only the three agreed public conveniences; components, source subscriptions, and transcript placement remain app-owned.
