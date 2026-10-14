@@ -53,15 +53,16 @@ approval stop. Commit verified slices and preserve historical task records.
   - Dependencies: Checkpoint B.
   - Evidence: Template/root replacement, nested setter stability/staleness, child arrival/type changes, saved child services, recreation, and source subscription cleanup pass. A failing batch-recreation case exposed revision reuse retaining an old presenter error; private boundary reset now includes component identity without remounting healthy presenter state. All 42 focused lifecycle/render tests, build/typecheck/lint pass; repeated targets remain unchanged. Shared test fixtures were extracted to keep safety and lifecycle files focused.
 
-- [ ] **Task 6: Measurements and consumer documentation**
+- [x] **Task 6: Measurements and consumer documentation**
   - Acceptance: Seven-case three-run before/after proof and attempt ledger recorded. Existing guides and unreleased changelog explain automatic skips and full-scope limits without device FPS claims.
   - Files: `tasks/render-reactivity-measurements.md`, `README.md`, `docs/catalogs.md`, `docs/architecture.md`, `CHANGELOG.md`.
   - Verify: Same measurement harness, documentation assertions, targeted Prettier, `git diff --check`.
   - Dependencies: Task 5.
+  - Evidence: Seven-case three-run results remain stable after the lifecycle fix; all six targets pass. README, catalog/architecture guides, and unreleased changelog explain automatic preservation, full-scope input, current functions, and measurement limits. Existing documentation assertions, formatting, and diff checks pass.
 
 ### Checkpoint C
 
-- [ ] Repeated targets pass; correctness and measurement limits are documented.
+- [x] Repeated targets pass; correctness and measurement limits are documented.
 
 - [ ] **Task 7: Package verification and completion records**
   - Acceptance: All required gates and packed Expo/bare iOS/Android checks pass; public exports unchanged; module records and handoff updated after review.

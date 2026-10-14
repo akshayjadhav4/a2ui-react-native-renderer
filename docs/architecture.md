@@ -56,6 +56,31 @@ template scope, invokes the presenter, and recursively renders explicit child
 references. Component and surface error boundaries prevent consumer presenter
 failures from escaping into the host application.
 
+## Presenter Reactivity
+
+Each mounted component node subscribes to its engine's immutable surface
+snapshot. A stable `renderChild` passes identifiers and scope paths rather than
+capturing a surface snapshot, allowing descendants to observe updates even
+when an ancestor presenter is preserved.
+
+Resolution runs against each new accepted snapshot, including consumer function
+evaluation. A private memoized host then compares complete healthy presenter
+inputs. Full scope values use identity; ordinary resolved records/arrays use
+conservative value comparison that includes function identity and own keys.
+Unsupported objects, cycles, or excessive comparison work cause a render.
+Setter callbacks are reused within their component/scope ownership and retain
+live value/binding/stale-write checks.
+
+Error recovery stays outside healthy presenter memoization. Its reset identity
+includes the component and accepted revision, so batched deletion/recreation
+can recover even if a revision number repeats. Actual presenters remain React
+components whose local state and context subscriptions continue to work.
+
+This reduces presenter calls, especially for unaffected template item scopes.
+Surface notifications and resolution can still visit every mounted node; this
+is not a path-specific subscription store, virtualization system, or native
+frame-time guarantee. Public APIs and protocol notifications remain unchanged.
+
 ## Invariants
 
 - Engine state is instance-scoped.

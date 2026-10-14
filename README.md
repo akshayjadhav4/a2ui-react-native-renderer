@@ -233,6 +233,19 @@ error codes, limits, and trust boundaries.
 
 ## Public API
 
+Accepted updates preserve healthy presenter instances whose component, resolved
+props, full scope value, and services are unchanged. This is automatic with
+existing catalogs. A single edit in a repeated template can update its root and
+changed item while preserving other item presenters. A measured 499-item fixture
+reduced calls from 500 to two for one item edit.
+
+`scope.value` remains observable input: children at `/` see the full data model
+and may rerender when any root field changes. Consumer functions still resolve
+on accepted surface updates, and presenter state/context changes remain live.
+Internal subscriptions and resolution may visit every mounted node; the call
+counts are not a device frame-rate guarantee. See
+[Catalogs](./docs/catalogs.md#presenter-contract) for the input contract.
+
 | Area               | Main exports                                                                             |
 | ------------------ | ---------------------------------------------------------------------------------------- |
 | Catalogs           | `defineA2UICatalog`, `defineA2UIComponent`, `defineA2UIFunction`                         |

@@ -21,6 +21,13 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Healthy presenters are now preserved when their observable inputs are
+  unchanged. Component nodes observe current state independently, so unaffected
+  template peers can skip calls while updated or late children still render.
+  Setters remain stable while their ownership/binding is unchanged. Full scope
+  values, current consumer function results, React state, and app context remain
+  observable. A measured 499-item fixture moved from 500 calls to two after one
+  item edit; this is a presenter-work measurement, not a device FPS guarantee.
 - External-engine `A2UIRenderer` now permits omitted `messages`; it observes
   imperative engine updates without requiring an empty array. Owned-engine
   mode still requires messages and retains existing collection replay rules.
@@ -44,6 +51,8 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Presenter errors now recover after batched surface deletion/recreation even
+  when the new surface repeats the old revision number.
 - Pending and absent surfaces now update error fallback UI when a rejected
   operation leaves their accepted snapshot unchanged. Rendered content stays
   stable after rejected updates.

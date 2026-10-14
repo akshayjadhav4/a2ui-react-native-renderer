@@ -90,6 +90,20 @@ Presenters are ordinary React components. They may use React Native, Expo UI, a
 design system, or application-specific native modules. Keep them deterministic
 during render and perform effects through native callbacks.
 
+### Reactive Updates
+
+- The renderer automatically preserves healthy presenters when their component,
+  resolved props, identifiers, full scope value, and services are unchanged.
+  Template siblings with unchanged item scopes can remain mounted without
+  another protocol-driven presenter call. A root scope `/` exposes the whole
+  model, so any changed root data remains observable even when one bound prop
+  is unchanged.
+- Generated setters and `renderChild` stay stable while their ownership and
+  capabilities are unchanged. Children subscribe to current surface state, so
+  child updates and progressive arrival work when the parent is preserved.
+  Component replacement/rebind still invalidates old setters; app context and
+  local presenter state still update through normal React behavior.
+
 ## Dynamic Values And Bindings
 
 Use `A2UIDynamicStringSchema`, `A2UIDynamicNumberSchema`,

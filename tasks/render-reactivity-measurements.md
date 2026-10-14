@@ -77,3 +77,12 @@ All six targets are met. The large fixture reduces presenter calls by 99.6%.
 The root-scoped control still observes the full changed scope. Internal
 subscription and resolution work remains proportional to mounted nodes; these
 counts do not establish device FPS or a constant-time update path.
+
+### Safety verification after lifecycle correction
+
+The same seven fixtures were repeated after adding component identity to
+private error-boundary resets. Counts remained identical to Attempt 1 in all
+three runs. The lifecycle correction addresses batched recreation with repeated
+revision numbers; it does not remount healthy presenter state. Scope/binding,
+function/error, action, React state/context, saved service, and subscription
+cleanup assertions pass alongside the measured targets.
