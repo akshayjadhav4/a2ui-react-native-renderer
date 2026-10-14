@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { useEffect } from "react";
 
 import {
   createA2UIEngine,
@@ -63,7 +64,9 @@ export function EngineHookTypeFixture(): null {
       void error.code;
     },
   });
-  hookEngine.applyMessage(message);
+  useEffect(() => {
+    hookEngine.applyMessage(message);
+  }, [hookEngine]);
   // @ts-expect-error A hook-owned engine requires catalog configuration.
   useA2UIEngine({});
   return null;
