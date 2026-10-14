@@ -126,7 +126,10 @@ function useA2UISurfaceError(
     [engine, surfaceId],
   );
   const getSnapshot = useCallback(
-    () => getA2UIEngineInternals(engine).getSurfaceError(surfaceId),
+    () =>
+      engine.getSurface(surfaceId)?.rootId != null
+        ? undefined
+        : getA2UIEngineInternals(engine).getSurfaceError(surfaceId),
     [engine, surfaceId],
   );
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
