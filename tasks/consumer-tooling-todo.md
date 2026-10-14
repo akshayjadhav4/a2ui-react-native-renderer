@@ -59,23 +59,25 @@ the presence of implementation files.
   - Dependencies: Task 4. Scope: Medium.
   - Evidence: Fixture test first failed for the missing module; progressive pending rendering, writable input/action, response, invalid-update recovery, and deletion now pass against shared schemas.
 
-- [ ] **Task 6: Stream fixtures through an actual socket**
+- [x] **Task 6: Stream fixtures through an actual socket**
   - Acceptance: Private `a2ui-demo-server` adds only pinned `ws@8.22.0` and updates the workspace lockfile. A server factory supports ephemeral ports, independent sessions, ordered progressive frames and a validated submit-action response. Existing renderer package dependencies remain unchanged.
   - Verify: Install through `pnpm install`; `pnpm build && node --test test/integration/demo-server.test.mjs`; use real sockets and the harness/shared-schema test catalog for a mounted action round trip, with bounded awaits and unconditional cleanup.
   - Files: `example/server/package.json`, `pnpm-lock.yaml`, `example/server/server.mjs`, `test/integration/demo-server.test.mjs`.
   - Dependencies: Task 5. Scope: Medium.
+  - Evidence: Real localhost socket tests pass with ephemeral ports and a mounted writable input/action round trip. Lockfile retains pre-existing transitive versions; only the private server adds ws@8.22.0.
 
-- [ ] **Task 7: Complete producer recovery, input handling, and shutdown**
+- [x] **Task 7: Complete producer recovery, input handling, and shutdown**
   - Acceptance: Recovery sends a rejected A2UI update followed by a valid update; deletion cancels scheduled sends. Malformed JSON, binary/oversized frames, invalid commands/actions, and duplicate start cannot crash the process. Disconnect/shutdown cancel timers and close sockets, with two-client isolation. CLI startup supports documented host/port settings and signal cleanup.
   - Verify: Add failing lifecycle/input cases before implementation; `pnpm build && node --test test/integration/demo-server.test.mjs`; launch `pnpm --filter a2ui-demo-server start`, verify readiness, then terminate and confirm exit.
   - Files: `example/server/server.mjs`, `example/server/start.mjs`, `example/server/package.json`, `test/integration/demo-server.test.mjs`.
   - Dependencies: Task 6. Scope: Medium.
+  - Evidence: All four socket tests pass, covering invalid JSON/binary/oversized frames, duplicate start, bad actions, two clients, recovery, deletion, timer cancellation and shutdown. The documented pnpm start command and SIGTERM cleanup were exercised. Localhost listening requires sandbox escalation; no tests were skipped.
 
 ### Checkpoint B: Real Network Producer
 
-- [ ] Shared schemas retain Expo types and packed sibling-path resolution.
-- [ ] Actual socket tests prove progressive frames, mounted action/response, recovery, deletion, client isolation, and cleanup.
-- [ ] Review dependency and transport ownership; server modules/dependencies stay outside renderer consumers.
+- [x] Shared schemas retain Expo types and packed sibling-path resolution.
+- [x] Actual socket tests prove progressive frames, mounted action/response, recovery, deletion, client isolation, and cleanup.
+- [x] Review dependency and transport ownership; server modules/dependencies stay outside renderer consumers.
 
 ## Phase C: Expo Network Consumer
 
