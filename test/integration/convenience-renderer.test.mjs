@@ -14,6 +14,31 @@ import {
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+test("unmounting an external renderer does not dispose its engine", async () => {
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UIRenderer, { engine, messages: [] }),
+    );
+  });
+  await act(() => {
+    renderer.unmount();
+  });
+  engine.applyMessages(
+    createSurfaceMessages({
+      id: "root",
+      component: "Text",
+      text: "Still usable",
+    }),
+  );
+  assert.equal(
+    engine.getSurface("main").components.root.props.text,
+    "Still usable",
+  );
+  engine.dispose();
+});
+
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
   components: {

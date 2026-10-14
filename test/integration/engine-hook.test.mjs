@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   A2UIProvider,
   A2UISurface,
+  DEFAULT_A2UI_RESOURCE_LIMITS,
   defineA2UICatalog,
   useA2UIEngine,
 } from "../../lib/module/index.js";
@@ -197,4 +198,149 @@ test("hook applies initial resource limit overrides", async () => {
   await act(() => {
     renderer.unmount();
   });
+});
+
+test("hook accepts equivalent inline settings and explicit default limits", async () => {
+  let engine;
+  let renderer;
+  const capture = (value) => {
+    engine = value;
+  };
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(Probe, {
+        options: { catalogs: [catalog] },
+        capture,
+      }),
+    );
+  });
+  const initial = engine;
+  await act(() => {
+    renderer.update(
+      React.createElement(Probe, {
+        options: {
+          catalogs: [catalog],
+          limits: { ...DEFAULT_A2UI_RESOURCE_LIMITS },
+        },
+        capture,
+      }),
+    );
+  });
+  assert.strictEqual(engine, initial);
+  await act(() => {
+    renderer.unmount();
+  });
+});
+
+const otherCatalog = defineA2UICatalog({
+  id: "urn:example:hook:v2",
+  components: catalog.components,
+});
+const changedSettings = [
+  [
+    "catalog identity",
+    { catalogs: [catalog] },
+    () => ({ catalogs: [otherCatalog] }),
+  ],
+  [
+    "catalog count",
+    { catalogs: [catalog] },
+    () => ({ catalogs: [catalog, otherCatalog] }),
+  ],
+  [
+    "catalog order",
+    { catalogs: [catalog, otherCatalog] },
+    () => ({ catalogs: [otherCatalog, catalog] }),
+  ],
+  [
+    "mutated catalog array",
+    { catalogs: [catalog] },
+    (options) => {
+      options.catalogs[0] = otherCatalog;
+      return options;
+    },
+  ],
+  [
+    "effective limit",
+    { catalogs: [catalog], limits: { maxMessagesPerBatch: 2 } },
+    () => ({
+      catalogs: [catalog],
+      limits: { maxMessagesPerBatch: 3 },
+    }),
+  ],
+  [
+    "mutated limits object",
+    { catalogs: [catalog], limits: { maxMessagesPerBatch: 2 } },
+    (options) => {
+      options.limits.maxMessagesPerBatch = 3;
+      return options;
+    },
+  ],
+];
+
+for (const [name, options, change] of changedSettings) {
+  test(`hook rejects changed ${name} with an actionable error`, async () => {
+    let renderer;
+    await act(() => {
+      renderer = TestRenderer.create(
+        React.createElement(Probe, { options, capture: () => {} }),
+      );
+    });
+    await assert.rejects(async () => {
+      await act(() => {
+        renderer.update(
+          React.createElement(Probe, {
+            options: change(options),
+            capture: () => {},
+          }),
+        );
+      });
+    }, /useA2UIEngine.*(?:catalogs|limits).*remain stable/);
+    await act(() => {
+      renderer.unmount();
+    });
+  });
+}
+
+test("Strict Mode replay keeps the hook engine usable and final unmount releases state", async () => {
+  let engine;
+  let effectRuns = 0;
+  function StrictOwner() {
+    engine = useA2UIEngine({ catalogs: [catalog] });
+    const initialized = React.useRef(false);
+    React.useEffect(() => {
+      effectRuns += 1;
+      if (!initialized.current) {
+        initialized.current = true;
+        engine.applyMessages(messages());
+      }
+    }, []);
+    return React.createElement(
+      A2UIProvider,
+      { engine },
+      React.createElement(A2UISurface, { surfaceId: "main" }),
+    );
+  }
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(
+        React.StrictMode,
+        null,
+        React.createElement(StrictOwner),
+      ),
+    );
+  });
+  assert.equal(effectRuns, 2);
+  assert.deepEqual(engine.getErrors(), []);
+  await act(() => {
+    engine.applyMessage(messages("After replay")[1]);
+  });
+  assert.deepEqual(renderer.toJSON().children, ["After replay"]);
+  await act(() => {
+    renderer.unmount();
+  });
+  assert.equal(engine.getSurface("main"), undefined);
+  engine.applyMessages(messages());
+  assert.equal(engine.getSurface("main"), undefined);
 });

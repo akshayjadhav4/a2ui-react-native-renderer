@@ -26,16 +26,17 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
   - Dependencies: Task 1. Scope: Medium.
   - Evidence: Missing root export failed first. The public hook now shares engine ownership with the renderer. All 10 focused hook/convenience tests, build, typecheck, and lint pass; declarations expose `useA2UIEngine(options: A2UIEngineOptions): A2UIEngine`.
 
-- [ ] **Task 3: Verify construction settings and final cleanup**
+- [x] **Task 3: Verify construction settings and final cleanup**
   - Acceptance: Equivalent inline catalog/limit containers pass, while changed catalog identities/order/count or effective limits throw clear configuration errors. Initial settings are copied so container mutation cannot conceal changes. Strict Mode replay preserves usable state; final unmount releases state/subscriptions and disposes once. External renderer engines remain usable after unmount.
   - Verify: Add failing cases first; `pnpm build && pnpm typecheck && node --test test/integration/engine-hook.test.mjs test/integration/convenience-renderer.test.mjs`; `pnpm lint`; `git diff --check`.
   - Files: `src/react/useStableEngine.ts`, `test/integration/engine-hook.test.mjs`, `test/integration/convenience-renderer.test.mjs`.
   - Dependencies: Task 2. Scope: Medium.
+  - Evidence: Six configuration cases failed before the fix. Initial catalogs are copied and effective limits are compared; errors name the public hook. All 19 hook/convenience tests pass, including actual Strict Mode effect replay, usable retained state, final released state, and external-engine survival. A guard prevents duplicate deferred disposal. Engine freezing prevents a disposal-method spy, so lifecycle tests assert public state rather than changing engine immutability. Build, typecheck, and lint pass.
 
 ### Checkpoint A: Ownership ready
 
-- [ ] Hook and existing convenience tests pass; callbacks, configuration, and ownership match the spec.
-- [ ] `pnpm typecheck`, `pnpm lint`, and `git diff --check` pass; generated root declarations expose the hook.
+- [x] Hook and existing convenience tests pass; callbacks, configuration, and ownership match the spec.
+- [x] `pnpm typecheck`, `pnpm lint`, and `git diff --check` pass; generated root declarations expose the hook.
 
 ## Phase B: Placement and renderer props
 
