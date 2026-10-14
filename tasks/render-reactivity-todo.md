@@ -17,15 +17,16 @@ approval stop. Commit verified slices and preserve historical task records.
   - Dependencies: Approved plan/start authorization.
   - Evidence: Four unit cases failed before the helper existed, then passed. Comparison preserves callbacks, symbols, key order, missing fields, signed zero, and sparse arrays; it avoids getters and conservatively rejects cycles/aliases, unusual objects, or excessive traversal. Build/typecheck pass.
 
-- [ ] **Task 2: Private setter factory support**
+- [x] **Task 2: Private setter factory support**
   - Acceptance: Resolver supports a private optional factory with complete binding descriptors, including nested properties. Default setter behavior and all existing bindings remain unchanged.
   - Files: `src/protocol/v0_9/resolveProps.ts`, `test/unit/setter-factory.test.mjs`.
   - Verify: Failing unit cases first; `pnpm build && node --test test/unit/setter-factory.test.mjs test/unit/bindings.test.mjs && pnpm typecheck`.
   - Dependencies: Task 1.
+  - Evidence: Factory identity assertion failed before implementation. All 11 factory/binding tests, build, and typecheck pass; nested/relative descriptors and default writes retain their contracts.
 
 ### Checkpoint A
 
-- [ ] Tested foundations preserve existing resolution; no public export changes.
+- [x] Tested foundations preserve existing resolution; no public export changes.
 
 - [ ] **Task 3: Complete presenter preservation path**
   - Acceptance: Nodes independently read current surface state; child callbacks remain current; owner-scoped setters are stable and still reject stale writes. Actual presenters remain React components inside a conservative memoized host and outside accepted-revision error recovery. Six measured targets pass with correct output.

@@ -29,6 +29,9 @@ export interface A2UIDataWrite {
 }
 
 export type A2UIDataSetter = (write: A2UIDataWrite) => void;
+export type A2UISetterFactory = (
+  binding: Omit<A2UIDataWrite, "value">,
+) => (value: unknown) => void;
 
 export function resolvePresenterProps(
   schema: z.AnyZodObject,
@@ -37,6 +40,7 @@ export function resolvePresenterProps(
   scopePath: string,
   setData: A2UIDataSetter,
   functions: readonly A2UIFunctionDefinition[],
+  setterFactory?: A2UISetterFactory,
 ): Readonly<Record<string, unknown>> {
   const behavior = inspectA2UISchemaBehavior(schema);
   if (behavior.type !== "OBJECT") {
@@ -49,7 +53,10 @@ export function resolvePresenterProps(
       behavior,
       dataModel,
       scopePath,
-      setData,
+      setterFactory ??
+        ((binding) => (value) => {
+          setData({ ...binding, value });
+        }),
       functions,
       [],
     ),
@@ -61,7 +68,7 @@ function resolveValue(
   behavior: A2UISchemaBehavior,
   dataModel: unknown,
   scopePath: string,
-  setData: A2UIDataSetter,
+  createSetter: A2UISetterFactory,
   functions: readonly A2UIFunctionDefinition[],
   propertyPath: readonly (string | number)[],
 ): unknown {
@@ -85,7 +92,7 @@ function resolveValue(
                 behavior.element,
                 dataModel,
                 scopePath,
-                setData,
+                createSetter,
                 functions,
                 [...propertyPath, index],
               ),
@@ -100,7 +107,7 @@ function resolveValue(
               behavior,
               dataModel,
               scopePath,
-              setData,
+              createSetter,
               functions,
               propertyPath,
             ),
@@ -119,7 +126,7 @@ function resolveObject(
   behavior: Extract<A2UISchemaBehavior, { type: "OBJECT" }>,
   dataModel: unknown,
   scopePath: string,
-  setData: A2UIDataSetter,
+  createSetter: A2UISetterFactory,
   functions: readonly A2UIFunctionDefinition[],
   propertyPath: readonly (string | number)[],
 ): Record<string, unknown> {
@@ -131,7 +138,7 @@ function resolveObject(
       behavior.shape[key] ?? { type: "STATIC" },
       dataModel,
       scopePath,
-      setData,
+      createSetter,
       functions,
       [...propertyPath, key],
     );
@@ -144,17 +151,14 @@ function resolveObject(
 
     const rawValue = value[key];
     const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
-    result[setterName] = (nextValue: unknown): void => {
-      if (isDataBinding(rawValue)) {
-        setData({
-          path: resolveBindingPath(scopePath, rawValue.path),
-          value: nextValue,
-          bindingPath: rawValue.path,
-          propertyPath: [...propertyPath, key],
-          behavior: childBehavior,
-        });
-      }
-    };
+    if (isDataBinding(rawValue)) {
+      result[setterName] = createSetter({
+        path: resolveBindingPath(scopePath, rawValue.path),
+        bindingPath: rawValue.path,
+        propertyPath: [...propertyPath, key],
+        behavior: childBehavior,
+      });
+    }
   }
 
   return result;
