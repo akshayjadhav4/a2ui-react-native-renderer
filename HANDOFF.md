@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first five capability-map modules are complete. No implementation is in progress.
+- **State:** The first five capability-map modules are complete. `render-reactivity` has measured baseline fixtures and a draft spec awaiting review; no runtime implementation is in progress.
 
 ## What the user wants
 
@@ -114,17 +114,20 @@ API implementation and checked usage fixtures end at `9b42ada`, followed by comp
 
 ## Suggested next step
 
-`render-reactivity` is the suggested next module. It should measure presenter
-rerenders before changing subscriptions or adding selectors, especially for
-unrelated bound-data updates within one surface. `consumer-tooling` is also
-eligible now that catalog contract and React API work are complete. Neither
-module has a spec, plan, or task list yet.
+`render-reactivity` has a [draft spec](./SPEC-render-reactivity.md), a
+[measurement record](./tasks/render-reactivity-measurements.md), and a
+[reproducible harness](./tasks/render-reactivity-baseline.mjs). Seven fixtures
+ran three times with identical counts. Editing one of 499 template items calls
+all 500 presenters; the proposed target is two. Full `scope.value` is observable
+presenter input, so root-scoped siblings cannot safely be skipped just because
+their individual bound strings are unchanged. The draft proposes conservative
+internal optimization with no new public API or function purity assumption.
 
-For the next module, inspect relevant tests and code, then draft its spec
-against the approved capability map using the user's requested
-`spec-driven-development` workflow. Get spec, plan, and task-list reviews before
-implementation. Use focused tests before behavior changes and commit each
-verified slice on this branch. Do not assume a release or publication is approved.
+Get the spec reviewed before creating its plan and task list under the user's
+requested `spec-driven-development` workflow, followed by their reviews before
+runtime implementation. Use focused tests before behavior changes and commit
+each verified slice on this branch. `consumer-tooling` is also eligible; it has
+no spec, plan, or task list yet. Do not assume a release or publication is approved.
 
 Start a new session by checking `git status --short --branch`, reading this
 handoff and the capability map, and confirming the user's next requested
