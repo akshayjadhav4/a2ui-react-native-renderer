@@ -4,12 +4,12 @@
 
 **Spec:** [SPEC-consumer-tooling.md](../SPEC-consumer-tooling.md)
 
-**Status:** Draft for review on 2026-10-14, following spec approval.
+**Status:** Approved on 2026-10-14 by the user's “next” after plan review. Task breakdown awaits review before implementation.
 
 Use the established per-module records. Historical `tasks/plan.md` and
 `tasks/todo.md` contain unrelated unchecked work and remain untouched. After
-plan approval, the module task list will be `tasks/consumer-tooling-todo.md`.
-This document defines delivery order; it does not authorize implementation.
+plan approval, the module task list is [consumer-tooling-todo.md](consumer-tooling-todo.md).
+Implementation awaits task-list approval.
 
 ## Outcome
 
@@ -42,6 +42,11 @@ Zod and the existing A2UI common schemas as arguments, rather than importing
 the native package root at runtime. Use checked JSDoc for typed parameters and
 inferred schema results. Expo's existing `allowJs` support can consume this
 module while preserving presenter prop inference.
+
+The packed Expo smoke setup currently copies only `example/expo`. Copy the
+shared `contract.mjs` into the matching sibling `server` directory inside its
+temporary workspace, preserving relative imports. Do not copy the server
+package, socket implementation, or dependencies into that consumer.
 
 The Expo app supplies Zod/common schemas and attaches its existing native
 presenters. Node integration tests supply the same values from the built
@@ -209,8 +214,9 @@ EXPO_PUBLIC_A2UI_DEMO_URL=ws://localhost:8080 pnpm --filter a2ui-renderer-exampl
 ## Review Gate and Open Questions
 
 No additional public API or dependency is proposed beyond the approved spec.
-The plan requires human review under `spec-driven-development`. After approval,
-prepare `tasks/consumer-tooling-todo.md` with explicit acceptance criteria,
-dependencies, and commands before implementing the first slice.
+The plan is approved under `spec-driven-development`. Review
+[consumer-tooling-todo.md](consumer-tooling-todo.md) before implementing the
+first slice. Its task split incorporates the isolated Expo shared-file copy
+needed by the existing consumer smoke setup.
 
 Reference: [ws official server examples](https://github.com/websockets/ws#simple-server).
