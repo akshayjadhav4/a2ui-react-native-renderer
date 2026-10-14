@@ -4,6 +4,7 @@ import { createA2UIEngine } from "../engine/engine.js";
 import type { A2UIEngine, A2UIRegisteredCatalog } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
 import type { A2UIUserAction } from "../types/messages.js";
+import type { A2UIResourceLimits } from "../validation/limits.js";
 
 export interface A2UIEngineCallbacks {
   readonly onAction?: (action: A2UIUserAction) => void | Promise<void>;
@@ -20,6 +21,7 @@ type StableEngineInput =
       readonly engine?: undefined;
       readonly catalogs: readonly A2UIRegisteredCatalog[];
       readonly callbacks: A2UIEngineCallbacks;
+      readonly limits?: Partial<A2UIResourceLimits>;
     };
 
 interface StableEngineState {
@@ -72,6 +74,7 @@ function createStableEngineState(
 
   const engine = createA2UIEngine({
     catalogs: input.catalogs,
+    ...(input.limits === undefined ? {} : { limits: input.limits }),
     onAction: (action) => callbacksRef.current.onAction?.(action),
     onError: (error) => callbacksRef.current.onError?.(error),
   });

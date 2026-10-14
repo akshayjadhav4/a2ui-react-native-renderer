@@ -2,6 +2,7 @@ export { defineA2UICatalog } from "./catalog/defineCatalog.js";
 export { defineA2UIComponent } from "./catalog/defineComponent.js";
 export { defineA2UIFunction } from "./catalog/defineFunction.js";
 export { createA2UIEngine } from "./engine/engine.js";
+export { useA2UIEngine } from "./react/useA2UIEngine.js";
 export { A2UIProvider } from "./react/A2UIProvider.js";
 export { A2UIRenderer } from "./react/A2UIRenderer.js";
 export { A2UISurface } from "./react/A2UISurface.js";

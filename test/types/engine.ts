@@ -4,6 +4,8 @@ import {
   createA2UIEngine,
   DEFAULT_A2UI_RESOURCE_LIMITS,
   defineA2UICatalog,
+  useA2UIEngine,
+  type A2UIEngine,
   type A2UIMessage,
   type A2UIResourceLimits,
   type A2UISurfaceSnapshot,
@@ -49,3 +51,20 @@ void failedSurfaceIds;
 // @ts-expect-error Only official v0.9/v0.9.1 messages satisfy A2UIMessage.
 const futureMessage: A2UIMessage = { version: "v1.0" };
 void futureMessage;
+
+export function EngineHookTypeFixture(): null {
+  const hookEngine: A2UIEngine = useA2UIEngine({
+    catalogs: [catalog],
+    limits: { maxMessagesPerBatch: 5 },
+    onAction: (action) => {
+      void action.name;
+    },
+    onError: (error) => {
+      void error.code;
+    },
+  });
+  hookEngine.applyMessage(message);
+  // @ts-expect-error A hook-owned engine requires catalog configuration.
+  useA2UIEngine({});
+  return null;
+}

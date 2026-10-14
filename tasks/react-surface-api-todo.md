@@ -19,11 +19,12 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
   - Dependencies: Approved task list. Scope: Medium.
   - Evidence: Private reader renamed across provider, hooks, and surface. Build, typecheck, and all 19 focused integration tests pass; public contracts are unchanged.
 
-- [ ] **Task 2: Add the public engine hook**
+- [x] **Task 2: Add the public engine hook**
   - Acceptance: Root-exported `useA2UIEngine` accepts `A2UIEngineOptions` and returns a stable owned engine through the shared lifecycle helper. Separate mounted instances have independent state. Latest action/error callbacks are used without resetting state; initial limits are passed to the engine.
   - Verify: Add failing hook/type cases first; `pnpm build && pnpm typecheck && node --test test/integration/engine-hook.test.mjs test/integration/convenience-renderer.test.mjs`; inspect emitted hook declarations.
   - Files: `src/react/useA2UIEngine.ts`, `src/react/useStableEngine.ts`, `src/index.ts`, `test/integration/engine-hook.test.mjs`, `test/types/engine.ts`.
   - Dependencies: Task 1. Scope: Medium.
+  - Evidence: Missing root export failed first. The public hook now shares engine ownership with the renderer. All 10 focused hook/convenience tests, build, typecheck, and lint pass; declarations expose `useA2UIEngine(options: A2UIEngineOptions): A2UIEngine`.
 
 - [ ] **Task 3: Verify construction settings and final cleanup**
   - Acceptance: Equivalent inline catalog/limit containers pass, while changed catalog identities/order/count or effective limits throw clear configuration errors. Initial settings are copied so container mutation cannot conceal changes. Strict Mode replay preserves usable state; final unmount releases state/subscriptions and disposes once. External renderer engines remain usable after unmount.
