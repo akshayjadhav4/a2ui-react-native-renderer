@@ -10,11 +10,12 @@ The user approved the plan and explicitly directed implementation. This task
 breakdown implements that authorization on `codex/native-core`, without another
 approval stop. Commit verified slices and preserve historical task records.
 
-- [ ] **Task 1: Conservative presenter-value comparison**
+- [x] **Task 1: Conservative presenter-value comparison**
   - Acceptance: Ordinary records/arrays compare values and complete own keys; primitives/functions use identity. Unusual objects, cycles, accessors, excessive depth/work fail conservatively. No JSON serialization or function execution.
   - Files: `src/rendering/equalPresenterValues.ts`, `test/unit/presenter-equality.test.mjs`.
   - Verify: Failing unit cases first; `pnpm build && node --test test/unit/presenter-equality.test.mjs && pnpm typecheck`.
   - Dependencies: Approved plan/start authorization.
+  - Evidence: Four unit cases failed before the helper existed, then passed. Comparison preserves callbacks, symbols, key order, missing fields, signed zero, and sparse arrays; it avoids getters and conservatively rejects cycles/aliases, unusual objects, or excessive traversal. Build/typecheck pass.
 
 - [ ] **Task 2: Private setter factory support**
   - Acceptance: Resolver supports a private optional factory with complete binding descriptors, including nested properties. Default setter behavior and all existing bindings remain unchanged.
