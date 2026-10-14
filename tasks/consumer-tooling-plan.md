@@ -4,12 +4,12 @@
 
 **Spec:** [SPEC-consumer-tooling.md](../SPEC-consumer-tooling.md)
 
-**Status:** Approved on 2026-10-14 by the user's “next” after plan review. Task breakdown awaits review before implementation.
+**Status:** Approved and implemented on 2026-10-14. See [verification](consumer-tooling-verification.md) and [completed tasks](consumer-tooling-todo.md).
 
 Use the established per-module records. Historical `tasks/plan.md` and
 `tasks/todo.md` contain unrelated unchecked work and remain untouched. After
 plan approval, the module task list is [consumer-tooling-todo.md](consumer-tooling-todo.md).
-Implementation awaits task-list approval.
+The user approved the task list with “approve move”; implementation is complete.
 
 ## Outcome
 
@@ -215,9 +215,8 @@ EXPO_PUBLIC_A2UI_DEMO_URL=ws://localhost:8080 pnpm --filter a2ui-renderer-exampl
 ## Review Gate and Open Questions
 
 No additional public API or dependency is proposed beyond the approved spec.
-The plan is approved under `spec-driven-development`. Review
-[consumer-tooling-todo.md](consumer-tooling-todo.md) before implementing the
-first slice. Its task split incorporates the shared-module location correction verified by
+The plan is approved under `spec-driven-development`. The user subsequently approved
+[consumer-tooling-todo.md](consumer-tooling-todo.md) and its slices are complete. Its task split incorporates the shared-module location correction verified by
 the packed Expo consumer setup.
 
 Reference: [ws official server examples](https://github.com/websockets/ws#simple-server).

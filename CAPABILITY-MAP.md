@@ -1,6 +1,6 @@
 # Capability Map: Headless A2UI Renderer Improvements
 
-**Status:** Reviewed on 2026-10-04; updated on 2026-10-14. `wire-compatibility`, `binding-semantics`, `progressive-surfaces`, `catalog-contract`, `react-surface-api`, and `render-reactivity` are implemented. Only `consumer-tooling` remains planned.
+**Status:** Reviewed on 2026-10-04; updated on 2026-10-14. `wire-compatibility`, `binding-semantics`, `progressive-surfaces`, `catalog-contract`, `react-surface-api`, `render-reactivity`, and `consumer-tooling` are implemented. All seven modules are complete.
 
 ## Assumptions
 

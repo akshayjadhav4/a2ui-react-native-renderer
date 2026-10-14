@@ -7,6 +7,15 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Added `createA2UITestHarness` from `a2ui-react-native-renderer/testing` for
+  app-owned catalog/surface checks through the real engine, with recorded
+  user actions and detached frozen action-list snapshots. Bring your own
+  assertions and mounting tools; normal native bundles exclude this helper.
+- Added an Expo network demo with progressive WebSocket delivery, writable
+  input/action replies, recovery, deletion and session cleanup. The deterministic
+  producer and its dependency remain private example code; shared catalog
+  schemas and native presenters remain app-owned.
+
 - Added `useA2UIEngine(options)` to manage a mounted feature's engine lifetime,
   preserve state across rerenders, and use current action/error callbacks.
   Catalogs and effective resource limits remain construction settings.

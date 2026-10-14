@@ -6,7 +6,7 @@
 
 **Plan:** [consumer-tooling-plan.md](consumer-tooling-plan.md)
 
-**Status:** Approved on 2026-10-14 by the user’s “approve move”. Implementation is in progress.
+**Status:** Approved and implemented on 2026-10-14 following the user’s “approve move”. All thirteen tasks and four checkpoints are complete; see [verification](consumer-tooling-verification.md).
 
 Use the existing `codex/native-core` branch, with verified incremental commits.
 Historical `tasks/plan.md` and `tasks/todo.md` remain untouched. Each task lists
@@ -117,27 +117,30 @@ the presence of implementation files.
   - Dependencies: Task 10. Scope: Medium.
   - Evidence: Network setup, host/emulator/device endpoints, transport envelopes, backend substitution and cleanup documented with official sources. Producer startup/signal cleanup passed; simulator inventory has no booted devices and adb lists none. Expo startup verification is recorded at final checkpoint.
 
-- [ ] **Task 12: Review and verify the complete package**
+- [x] **Task 12: Review and verify the complete package**
   - Acceptance: All spec success criteria have recorded evidence. Existing test gates, example exports, pack checks, and packed Expo/bare iOS/Android consumers pass; no public API expansion, dependency leak, lowered test bar, version/license change, or publication occurs. Record any unavailable device verification without claiming it passed.
   - Verify: `pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm example:check && pnpm example:export && pnpm pack:check && pnpm consumer:smoke`; explicit Prettier check of example `.mjs` modules, server files, and module records; `git diff --check`. Review the accumulated diff before marking complete; repair any finding in its own focused slice with concrete verification.
   - Files: `tasks/consumer-tooling-verification.md` (evidence); any demonstrated fix must be separately scoped before editing.
   - Dependencies: Task 11. Scope: Small for evidence; fixes scoped independently.
+  - Evidence: All 212 tests pass with no skips; build/type/lint/format, example iOS/Android exports, pack and final isolated consumer checks pass. Author review found no remaining blocking issue. No device interaction was claimed.
 
-- [ ] **Task 13: Complete migration records**
+- [x] **Task 13: Complete migration records**
   - Acceptance: The capability map marks all seven modules implemented; handoff, approved spec/plan status, and unreleased changelog accurately describe the tooling and network example. This task list records results and verified commits; release/version/license decisions remain deferred.
   - Verify: `pnpm exec prettier --check CAPABILITY-MAP.md HANDOFF.md SPEC-consumer-tooling.md tasks/consumer-tooling-plan.md tasks/consumer-tooling-todo.md tasks/consumer-tooling-verification.md CHANGELOG.md`; `git diff --check`; confirm a clean branch after committing.
   - Files: `CAPABILITY-MAP.md`, `HANDOFF.md`, `SPEC-consumer-tooling.md`, `tasks/consumer-tooling-plan.md`, `CHANGELOG.md`; task-list evidence is updated throughout the module.
   - Dependencies: Task 12. Scope: Medium.
+  - Evidence: Capability map, handoff, spec/plan/task records and unreleased changelog updated. Module record formatting and diff checks pass; version/license and local branch ownership remain unchanged.
 
 ### Checkpoint D: Module Complete
 
-- [ ] Every task and spec success criterion has evidence; accumulated diff reviewed.
-- [ ] All required package, example, and consumer checks pass.
-- [ ] Migration records are current; branch remains `codex/native-core`, with no release or licensing action.
+- [x] Every task and spec success criterion has evidence; accumulated diff reviewed.
+- [x] All required package, example, and consumer checks pass.
+- [x] Migration records are current; branch remains `codex/native-core`, with no release or licensing action.
 
-## Implementation Gate
+## Implementation Authorization
 
-The requested `spec-driven-development` workflow requires human validation of
-this task list before implementation. Start Task 1 after approval, follow the
-test-driven and incremental implementation skills, and retain each checkpoint's
-evidence. No runtime changes have been made while preparing this breakdown.
+The user approved the task list with “approve move” on 2026-10-14.
+Implementation proceeded in verified slices using the existing branch. The
+[verification record](consumer-tooling-verification.md) covers test results,
+corrections, author review, and practical limitations. Human review of the
+completed work remains available; no merge or release is implied.

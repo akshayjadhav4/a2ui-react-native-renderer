@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first six capability-map modules are complete. The final `consumer-tooling` spec and plan are approved; its task list is approved and implementation is in progress.
+- **State:** All seven capability-map modules are implemented and verified. No implementation is in progress.
 
 ## What the user wants
 
@@ -21,8 +21,8 @@ versioning and licensing only when the user requests that work.
 
 ## Completed work
 
-The [capability map](./CAPABILITY-MAP.md) is the initiative index. Its first
-six modules are implemented, with approved specs, plans, and completed task
+The [capability map](./CAPABILITY-MAP.md) is the initiative index. All seven
+modules are implemented, with approved specs, plans, and completed task
 lists:
 
 | Module                 | Outcome                                                                                                                                 | Records                                                                               |
@@ -33,6 +33,7 @@ lists:
 | `catalog-contract`     | One app-owned catalog supplies renderer validation and an exportable agent-facing JSON Schema document.                                 | [Spec](./SPEC-catalog-contract.md), [tasks](./tasks/catalog-contract-todo.md)         |
 | `react-surface-api`    | Hook-owned engine lifetime, direct one-surface placement, and optional external renderer messages.                                      | [Spec](./SPEC-react-surface-api.md), [tasks](./tasks/react-surface-api-todo.md)       |
 | `render-reactivity`    | Independently subscribed nodes preserve healthy presenters with unchanged observable inputs; stable setters/children and safe recovery. | [Spec](./SPEC-render-reactivity.md), [tasks](./tasks/render-reactivity-todo.md)       |
+| `consumer-tooling`     | Optional real-engine testing harness and actual WebSocket Expo demo with app-owned schemas, presenters and transport.                   | [Spec](./SPEC-consumer-tooling.md), [tasks](./tasks/consumer-tooling-todo.md)         |
 
 The reactivity module keeps functions resolving against accepted snapshots and
 preserves full scope inputs, React state/context, current actions, stale setter
@@ -89,7 +90,8 @@ chooses how to deliver the JSON document to an agent. Usage is in
   exclude exporter code and web renderer modules.
 
 The last full verification passed: `pnpm build`, `pnpm typecheck`, `pnpm lint`,
-`pnpm format:check`, `pnpm test` (199 tests), `pnpm example:check`, `pnpm pack:check`, and
+`pnpm format:check`, `pnpm test` (212 tests), `pnpm example:check`,
+`pnpm example:export`, `pnpm pack:check`, and
 `pnpm consumer:smoke` (Expo and bare, iOS and Android). The branch was clean
 before the final module record update. Native consumer checks verify types,
 bundles, and dependency isolation; they are not device interaction tests.
@@ -134,25 +136,33 @@ implementation and review corrections end at `f0ab843`, followed by completion r
 
 ## Suggested next step
 
-`consumer-tooling` is the final module in the approved capability map: a small
-catalog/surface test harness and real streaming example with app-owned
-components. [SPEC-consumer-tooling.md](./SPEC-consumer-tooling.md) was approved
-by the user's “ok move next” on 2026-10-14. It specifies an optional `/testing`
-harness using the real engine and a
-local WebSocket Expo demo with a private producer. The spec also proposes one
-example-only `ws` dependency; no renderer runtime dependency is proposed.
-[tasks/consumer-tooling-plan.md](./tasks/consumer-tooling-plan.md) was approved
-by the user's “next” on 2026-10-14, with `ws@8.22.0` verified as the published dependency. It uses the
-established per-module file convention and leaves historical plan/todo files
-untouched. [tasks/consumer-tooling-todo.md](./tasks/consumer-tooling-todo.md)
-was approved by the user’s “approve move” on 2026-10-14, with thirteen small tasks and four checkpoints. It also
-accounts for copying the shared schema module into the isolated Expo consumer
-smoke workspace without copying the server. Task 1 is implemented and verified; continue Task 2 on the same branch.
+All seven migration modules are complete. The final module's
+[verification record](./tasks/consumer-tooling-verification.md) covers the 212-test
+suite, packed Expo/bare iOS/Android checks, startup commands and author review.
+No simulator was booted and adb listed no devices; device interaction remains
+unverified. `consumer-tooling` implementation and adoption records end at
+`f263703`, followed by module completion records.
 
-Use the requested `spec-driven-development` workflow and preserve reviewed
-module contracts. The user explicitly authorized reactivity implementation
-with “ok approve start work” after approving its spec; its task breakdown
-executed that direction. Do not assume a release or publication is approved.
+The optional [testing entry](./src/testing.ts) creates a real engine and records
+user actions. It does not import the native root and is excluded from normal
+native bundles. [docs/testing.md](./docs/testing.md) distinguishes headless
+checks from mounted binding/function/presenter checks.
+
+The Expo network screen uses an app-owned WebSocket client and a private
+`example/server` producer (`ws@8.22.0`, example-only). Catalog schemas are
+shared through the native-free `example/expo/src/catalog-contract.mjs`; the
+producer imports only its ID. Keep that module in Expo source: a sibling file's
+JSDoc type imports failed in isolated packed consumers. Run instructions are in
+[example/expo/README.md](./example/expo/README.md).
+
+Run build/pack operations sequentially: Bob cleans `lib`, and concurrent builds
+can cause missing artifacts during packing. Local socket tests require
+localhost-listen permission in the sandbox and must not be silently skipped.
+
+Next work should follow the user's requested direction: review the completed
+migration or decide release/version/licensing separately. The user has not
+approved a push, merge, publication, major version, or MIT license change.
+Historical plan/todo files remain untouched; no runtime migration task remains.
 
 Start a new session by checking `git status --short --branch`, reading this
 handoff and the capability map, and confirming the user's next requested
