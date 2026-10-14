@@ -19,6 +19,7 @@ test("compares nested values and preserves callback identity", () => {
   assert.equal(equalPresenterValues([, "A"], [undefined, "A"]), false);
   assert.equal(equalPresenterValues(NaN, NaN), true);
   assert.equal(equalPresenterValues(0, -0), false);
+  assert.equal(equalPresenterValues(Object.freeze({ a: 1 }), { a: 1 }), false);
 });
 
 test("includes symbol keys and observable property order", () => {
@@ -39,6 +40,9 @@ test("does not evaluate accessors or equate unusual objects", () => {
   assert.equal(reads, 0);
   assert.equal(equalPresenterValues(new Date(0), new Date(0)), false);
   assert.equal(equalPresenterValues(new Map(), new Map()), false);
+  const date = new Date(0);
+  assert.equal(equalPresenterValues(date, date), false);
+  assert.equal(equalPresenterValues(value, value), false);
 });
 
 test("cycles, alias changes, and large traversals fall back to rerendering", () => {
@@ -53,6 +57,11 @@ test("cycles, alias changes, and large traversals fall back to rerendering", () 
       { x: shared, y: shared },
       { x: { a: 1 }, y: { a: 1 } },
     ),
+    false,
+  );
+  const frozen = Object.freeze({ a: 1 });
+  assert.equal(
+    equalPresenterValues({ x: frozen, y: frozen }, { x: frozen, y: { a: 1 } }),
     false,
   );
   assert.equal(

@@ -5,14 +5,13 @@ export function equalPresenterValues(left: unknown, right: unknown): boolean {
 
   function compare(a: unknown, b: unknown, depth: number): boolean {
     if (--remaining < 0 || depth > 64) return false;
-    if (Object.is(a, b)) return true;
     if (
       typeof a !== "object" ||
       a === null ||
       typeof b !== "object" ||
       b === null
     )
-      return false;
+      return Object.is(a, b);
     const prototype: unknown = Object.getPrototypeOf(a);
     if (
       prototype !== Object.getPrototypeOf(b) ||
@@ -21,6 +20,8 @@ export function equalPresenterValues(left: unknown, right: unknown): boolean {
         prototype !== null)
     )
       return false;
+    // A mutable shared object cannot provide an immutable previous value.
+    if (a === b && !Object.isFrozen(a)) return false;
     if (visitedLeft.has(a) || visitedRight.has(b)) return false;
     visitedLeft.add(a);
     visitedRight.add(b);
@@ -38,6 +39,8 @@ export function equalPresenterValues(left: unknown, right: unknown): boolean {
         "value" in first &&
         "value" in second &&
         first.enumerable === second.enumerable &&
+        first.configurable === second.configurable &&
+        first.writable === second.writable &&
         compare(first.value, second.value, depth + 1)
       );
     });
