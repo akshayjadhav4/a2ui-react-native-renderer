@@ -81,11 +81,12 @@ the presence of implementation files.
 
 ## Phase C: Expo Network Consumer
 
-- [ ] **Task 8: Add an app-owned socket lifecycle adapter**
+- [x] **Task 8: Add an app-owned socket lifecycle adapter**
   - Acceptance: The example adapter uses the built-in WebSocket via an injectable factory, forwards raw A2UI objects, distinguishes demo/parse/transport errors, and guards sends. Retirement marks the connection inactive before detaching handlers and closing; retained queued callbacks cannot deliver to a retired session. No adapter API is exported by the renderer.
   - Verify: `node --test test/unit/demo-connection.test.mjs`; cover constructor/send failures, malformed/binary frames, open/error/close transitions, cleanup, and retained callbacks with a minimal fake socket. Run `pnpm example:check` for adapter typing.
   - Files: `example/expo/src/demo-connection.mjs`, `test/unit/demo-connection.test.mjs`; optionally an example-only declaration if required for checked types.
   - Dependencies: Checkpoint B. Scope: Medium.
+  - Evidence: Missing-module test failed first. Three adapter tests now pass for message/error handling, send failures, constructor/close failures, and retained callback isolation; Expo type/lint checks pass.
 
 - [ ] **Task 9: Add the interactive network screen**
   - Acceptance: The Expo app offers an explicit fixture/network choice. Configured endpoint, connection state, transport/renderer errors, last action, app-owned pending UI, and connect/disconnect/recover/delete controls are visible. Each connection has a fresh keyed hook-owned engine; effects retire sockets on unmount and actions use the current open connection.
