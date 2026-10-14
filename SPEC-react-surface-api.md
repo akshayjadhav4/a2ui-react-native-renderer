@@ -2,7 +2,7 @@
 
 **Module id:** `react-surface-api` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Draft for review on 2026-10-05. No implementation is authorized by this draft.
+**Status:** Approved for planning on 2026-10-14. Implementation follows plan and task-list review.
 
 ## Assumptions
 
@@ -163,7 +163,9 @@ Avoid a second runtime store or a transport-specific wrapper. Preserve typed inv
 4. Docs give one complete stream-to-surface example with app-owned subscription cleanup, placement, native UI, and action/error handling guidance.
 5. Build, typecheck, lint, formatting, tests, Expo example checks, package checks, and packed native consumer smoke checks pass.
 
-## Open questions for review
+## Review decisions
 
-1. Is the proposed three-part public change (`useA2UIEngine`, optional `A2UISurface.engine`, and optional external renderer `messages`) the right level of convenience for this module?
-2. Should direct `A2UISurface.engine` take precedence over a surrounding provider, as proposed?
+The user approved this spec for planning with “ok continue” on 2026-10-14 after receiving the migration status and proposed API summary.
+
+1. Add `useA2UIEngine`, optional `A2UISurface.engine`, and optional external renderer `messages`.
+2. An explicit `A2UISurface.engine` takes precedence over a surrounding provider.

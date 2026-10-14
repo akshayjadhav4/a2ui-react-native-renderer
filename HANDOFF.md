@@ -1,9 +1,9 @@
 # Handoff: React Native A2UI Renderer
 
-- **As of:** 2026-10-05
+- **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first four capability-map modules are complete. `react-surface-api` has a draft spec awaiting review; no implementation is in progress.
+- **State:** The first four capability-map modules are complete. The `react-surface-api` spec is approved and its implementation plan awaits review; no implementation is in progress.
 
 ## What the user wants
 
@@ -101,16 +101,17 @@ before this handoff document. The completed catalog module ends at commit
 
 `react-surface-api` is the next module in the approved capability map and
 depends on the completed `progressive-surfaces` module. Its
-[draft spec](./SPEC-react-surface-api.md) proposes a lifecycle-managed
+[approved spec](./SPEC-react-surface-api.md) defines a lifecycle-managed
 `useA2UIEngine` hook, an optional direct `engine` prop on `A2UISurface`, and
-optional `messages` in external-engine `A2UIRenderer` mode. The spec needs
-human review before planning under the user's requested
-`spec-driven-development` workflow. No plan, task list, or implementation
-exists for this module yet. `render-reactivity` is also eligible for
+optional `messages` in external-engine `A2UIRenderer` mode. The user approved
+the spec with “ok continue” on 2026-10-14. The
+[draft plan](./tasks/react-surface-api-plan.md) needs review before task breakdown
+under the user's requested `spec-driven-development` workflow. No task list or
+implementation exists for this module yet. `render-reactivity` is also eligible for
 specification; `consumer-tooling` depends on `react-surface-api`.
 
-After approval, create the per-module plan and task list under `tasks/`, with
-their separate reviews before implementation. Use focused tests before
+After plan approval, create the per-module task list under `tasks/`, with
+its review before implementation. Use focused tests before
 behavior changes and commit each verified slice on this branch. Do not assume
 a release or publication is approved.
 
