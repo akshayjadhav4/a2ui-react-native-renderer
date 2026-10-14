@@ -75,11 +75,12 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
   - Dependencies: Checkpoint B. Scope: Small.
   - Evidence: Expo showcase uses the public hook and omitted external messages; initial fixtures apply in a guarded effect and source cancellation stays app-owned. Bare fixture uses the public hook/direct surface flow with guarded fixture ingestion. Build and Expo typecheck/lint pass; packed fixture checks run at Checkpoint D.
 
-- [ ] **Task 8: Document the complete React stream flow**
+- [x] **Task 8: Document the complete React stream flow**
   - Acceptance: README, public API, and streaming guide show hook-owned lifetime and direct one-surface placement with an app-owned subscription returning unsubscribe. Examples cover latest callbacks, stable construction settings, keyed remounts, placement ownership, and provider-based inspection. Type fixtures compile the documented API usage.
   - Verify: `pnpm typecheck && pnpm exec prettier --check README.md docs/api.md docs/streaming-and-actions.md test/types/guides.tsx`; inspect examples against emitted declarations.
   - Files: `README.md`, `docs/api.md`, `docs/streaming-and-actions.md`, `test/types/guides.tsx`.
   - Dependencies: Task 7. Scope: Medium.
+  - Evidence: README and streaming guide show hook-owned lifetime, direct placement, unsubscribe cleanup, shared transcript ownership, stable settings, latest callbacks, and explicit-engine alternatives. The API reference was completed during Task 6. Guide type fixtures compile the complete source-to-transcript flow. Typecheck and existing documentation assertions pass; targeted formatting is clean.
 
 - [ ] **Task 9: Record adoption and migration guidance**
   - Acceptance: Migration docs and unreleased changelog explain the additive APIs and retained provider/collection entry points. Documentation assertions match the public API. Package version/license remain unchanged.

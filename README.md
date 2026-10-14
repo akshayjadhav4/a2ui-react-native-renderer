@@ -83,46 +83,73 @@ is mounted.
 ## Streaming And Custom Placement
 
 Chat applications often need each A2UI surface to remain beside the assistant
-turn that created it. In that case, let the application own the engine and
-render individual surfaces where they belong.
+turn that created it. Use `useA2UIEngine` for a mounted feature and render
+individual surfaces where they belong. The hook handles engine disposal;
+your app handles the message source and its cleanup.
 
 ```tsx
 import { Text } from "react-native";
+import { useEffect } from "react";
 import {
-  A2UIProvider,
   A2UISurface,
-  createA2UIEngine,
+  useA2UIEngine,
   type A2UIMessage,
   type A2UIUserAction,
 } from "a2ui-react-native-renderer";
 
-const engine = createA2UIEngine({
-  catalogs: [catalog],
-  onAction: (action: A2UIUserAction) => sendActionToAgent(action),
-  onError: (error) => reportRendererError(error),
-});
+type MessageSource = {
+  onA2UIMessage(handler: (message: A2UIMessage) => void): () => void;
+};
 
-export function acceptA2UIMessage(message: A2UIMessage) {
-  engine.applyMessage(message);
-}
+export function ChatSurface({
+  source,
+  surfaceId,
+}: {
+  source: MessageSource;
+  surfaceId: string;
+}) {
+  const engine = useA2UIEngine({
+    catalogs: [catalog],
+    onAction: (action: A2UIUserAction) => sendActionToAgent(action),
+    onError: (error) => reportRendererError(error),
+  });
+  useEffect(
+    () =>
+      source.onA2UIMessage((message) => {
+        engine.applyMessage(message);
+      }),
+    [source, engine],
+  );
 
-export function ChatSurface({ surfaceId }: { surfaceId: string }) {
   return (
-    <A2UIProvider engine={engine}>
-      <A2UISurface
-        surfaceId={surfaceId}
-        renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
-      />
-    </A2UIProvider>
+    <A2UISurface
+      engine={engine}
+      surfaceId={surfaceId}
+      renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
+    />
   );
 }
 ```
 
-The callback receives `surfaceId`, `componentId`, and
+`source.onA2UIMessage` is an app-owned subscription that returns an unsubscribe
+function; React runs it during cleanup. The catalog and action/error handlers
+also come from your app. For a transcript with several surfaces, create one
+hook-owned engine in the transcript owner and pass it to each surface. See the
+complete example in [Streaming And Actions](./docs/streaming-and-actions.md).
+
+The pending callback receives `surfaceId`, `componentId`, and
 `kind: "root" | "component"`. Without
 it, missing positions render nothing while available components keep rendering.
 An absent bound data path reaches the presenter as `undefined`, so the presenter
 chooses its own loading or empty state.
+
+Keep catalog objects/order and effective limits stable while mounted; equivalent
+inline arrays and objects are accepted. Action/error callbacks can change on
+rerender. Remount the owning feature with a new key to change construction
+settings. Use `createA2UIEngine` for an engine that outlives a React feature, and
+`A2UIProvider` when descendant components need the snapshot/error/ID hooks.
+To render all surfaces from an existing engine, use
+`<A2UIRenderer engine={engine} />` without an empty message array.
 
 The host application decides how messages arrive, where surfaces appear, how
 long they remain, and how `A2UIUserAction` values return to the agent. The
@@ -211,6 +238,7 @@ error codes, limits, and trust boundaries.
 | Catalogs           | `defineA2UICatalog`, `defineA2UIComponent`, `defineA2UIFunction`                         |
 | Schema export      | `exportA2UICatalogSchema` from `a2ui-react-native-renderer/catalog-schema`               |
 | Simple rendering   | `A2UIRenderer`                                                                           |
+| React engine       | `useA2UIEngine`                                                                          |
 | Advanced rendering | `createA2UIEngine`, `A2UIProvider`, `A2UISurface`                                        |
 | React state        | `useA2UISurface`, `useA2UISurfaceIds`, `useA2UIErrors`                                   |
 | Protocol schemas   | `A2UIActionSchema`, `A2UIChildListSchema`, `A2UIComponentIdSchema`, `A2UIDynamic*Schema` |
@@ -256,8 +284,9 @@ pnpm example:export
 - No Basic Catalog or other visual catalog is bundled.
 - No transport, agent, model, chat UI, persistence, or server integration is
   included.
-- Catalogs cannot be changed on an internally owned engine after
-  `A2UIRenderer` mounts; recreate the renderer to replace them.
+- Catalog objects/order and effective resource limits are construction settings
+  for `useA2UIEngine`; catalogs are construction settings for owned
+  `A2UIRenderer`. Remount the owner to change them.
 - Resource limits protect correctness and memory boundaries, but the package
   does not promise a frame-time SLA for consumer presenters.
 - The package currently provides ESM and TypeScript declaration output.

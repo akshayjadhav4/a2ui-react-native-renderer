@@ -32,40 +32,90 @@ the appended suffix is applied. Reusing the same array applies nothing. Replacin
 or reordering earlier objects causes the current collection to be replayed, so
 prefer immutable append semantics.
 
-## Application-Owned Stream
+## React-Owned Engine With An App-Owned Stream
 
-Use an engine when placement and lifecycle are application concerns:
-
-```tsx
-const engine = createA2UIEngine({ catalogs: [catalog] });
-
-transport.onA2UIMessage((message) => {
-  engine.applyMessage(message);
-});
-```
-
-Mount one provider around the region that renders surfaces:
+Create one engine in the mounted transcript owner. The hook keeps it stable and
+disposes it after final unmount. Register your source in an effect so its
+unsubscribe runs on cleanup. The source should deliver parsed A2UI message
+objects; transport envelopes and transcript placement belong to the app.
 
 ```tsx
-<A2UIProvider engine={engine}>
-  {items.map((item) =>
+import { useEffect } from "react";
+import { Text } from "react-native";
+import {
+  A2UISurface,
+  useA2UIEngine,
+  type A2UIMessage,
+  type A2UIRendererError,
+  type A2UIUserAction,
+} from "a2ui-react-native-renderer";
+
+type DisplayItem =
+  | { kind: "surface"; id: string; surfaceId: string }
+  | { kind: "message"; id: string; text: string };
+
+type MessageSource = {
+  onA2UIMessage(handler: (message: A2UIMessage) => void): () => void;
+};
+
+type Props = {
+  source: MessageSource;
+  items: readonly DisplayItem[];
+  onAction: (action: A2UIUserAction) => void | Promise<void>;
+  onError: (error: A2UIRendererError) => void;
+};
+
+// catalog is your app-owned component catalog.
+export function Transcript({ source, items, onAction, onError }: Props) {
+  const engine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
+
+  useEffect(
+    () =>
+      source.onA2UIMessage((message) => {
+        engine.applyMessage(message);
+      }),
+    [source, engine],
+  );
+
+  return items.map((item) =>
     item.kind === "surface" ? (
       <A2UISurface
         key={item.id}
+        engine={engine}
         surfaceId={item.surfaceId}
         renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
+        renderFallback={(error) => <Text>Unable to display: {error.code}</Text>}
       />
     ) : (
-      <ChatMessage key={item.id} item={item} />
+      <Text key={item.id}>{item.text}</Text>
     ),
-  )}
-</A2UIProvider>
+  );
+}
 ```
 
 The transport-to-transcript bridge should record surface placement when it
 observes `createSurface` and remove placement when it observes `deleteSurface`.
 The engine owns surface content; the transcript owns where it appears.
 The `Text` above is an app-owned React Native component.
+
+Keep the catalog objects, their order, and effective resource limits unchanged
+while mounted. New inline containers with equivalent values are accepted.
+`onAction` and `onError` may change; future events use the latest callbacks.
+Changing construction settings throws a configuration error. Remount the
+transcript owner with a different key to create a fresh engine.
+
+### Shared Context Or Longer Lifetime
+
+For descendant components that call `useA2UISurface`, `useA2UIErrors`, or
+`useA2UISurfaceIds`, mount `A2UIProvider` around them. Existing context hooks
+continue to require a provider. An explicit surface engine takes precedence
+over an outer provider and supplies its own context to app presenters.
+
+Use `createA2UIEngine` when the engine's lifetime extends beyond a mounted React
+feature; store it at that app-owned scope and dispose it when retired. A
+provider or surface never disposes an external engine. An all-surface region
+can simply render `<A2UIRenderer engine={engine} />`; omitted messages apply no
+operations. Passing messages still uses the collection rules above.
 
 ## Progressive Components And Data
 
@@ -134,6 +184,10 @@ choice. Action-only turns can remain protocol events while the server responds
 with text, data updates, component updates, or surface deletion.
 
 ## Lifetime
+
+`useA2UIEngine` handles final engine cleanup, including Strict Mode effect
+replay. Clean up your own source subscriptions in their effects. One surface
+unmounting does not retire an engine owned by a still-mounted ancestor.
 
 Call `engine.dispose()` when an application-owned engine will never be used
 again. Disposal releases protocol state and package subscriptions.

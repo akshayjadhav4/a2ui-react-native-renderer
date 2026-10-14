@@ -1,4 +1,5 @@
 import { Pressable, Text, TextInput, View } from "react-native";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import {
@@ -12,7 +13,10 @@ import {
   defineA2UICatalog,
   defineA2UIComponent,
   defineA2UIFunction,
+  useA2UIEngine,
   type A2UIMessage,
+  type A2UIRendererError,
+  type A2UIUserAction,
 } from "../../src/index.js";
 
 const Label = defineA2UIComponent({
@@ -134,3 +138,41 @@ export function Transcript({ items }: { items: readonly DisplayItem[] }) {
 
 engine.applyMessages([]);
 engine.dispose();
+
+type MessageSource = {
+  onA2UIMessage(handler: (message: A2UIMessage) => void): () => void;
+};
+
+export function LiveTranscript({
+  source,
+  items,
+  onAction,
+  onError,
+}: {
+  source: MessageSource;
+  items: readonly DisplayItem[];
+  onAction: (action: A2UIUserAction) => void | Promise<void>;
+  onError: (error: A2UIRendererError) => void;
+}) {
+  const liveEngine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
+  useEffect(
+    () =>
+      source.onA2UIMessage((message) => {
+        liveEngine.applyMessage(message);
+      }),
+    [source, liveEngine],
+  );
+  return items.map((item) =>
+    item.kind === "surface" ? (
+      <A2UISurface
+        key={item.id}
+        engine={liveEngine}
+        surfaceId={item.surfaceId}
+        renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
+        renderFallback={(error) => <Text>Unable to display: {error.code}</Text>}
+      />
+    ) : (
+      <ChatMessage key={item.id} item={item} />
+    ),
+  );
+}
