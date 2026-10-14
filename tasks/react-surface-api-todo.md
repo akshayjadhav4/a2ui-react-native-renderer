@@ -54,16 +54,17 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
   - Dependencies: Task 4. Scope: Medium.
   - Evidence: Equal-revision engine and surface-ID changes reproduced stale presenter fallbacks before the fix. A local boundary generation remounts failed presenter state on source identity changes. Explicit context precedence and subscription cleanup/old-source isolation pass. All 26 surface/subscription/diagnostics tests, build, typecheck, and lint pass.
 
-- [ ] **Task 6: Make external renderer messages optional**
+- [x] **Task 6: Make external renderer messages optional**
   - Acceptance: External-engine renderer props may omit `messages` and observe imperative engine updates without ingestion or replay on unrelated rerenders. Owned mode still requires messages; external mode still rejects catalog/callback props. Existing append/replay behavior, including empty/omitted collection transitions, is preserved.
   - Verify: Add failing integration/type cases first; `pnpm build && pnpm typecheck && node --test test/integration/convenience-renderer.test.mjs`; `git diff --check`.
   - Files: `src/react/A2UIRenderer.tsx`, `test/integration/convenience-renderer.test.mjs`, `test/types/renderer.tsx`.
   - Dependencies: Task 5. Scope: Medium.
+  - Evidence: Omitted-message tests failed before normalization to a stable empty collection. Imperative updates, unrelated rerenders, and empty transitions now pass; types still require owned messages and reject mixed configuration. API reference updated early to satisfy the existing root-export documentation gate. The full checkpoint also caught and corrected an extra render on rejected updates without weakening its assertion. All 169 tests, typecheck, lint, and formatting pass.
 
 ### Checkpoint B: Public React flow ready
 
-- [ ] Provider and direct-engine surface paths behave consistently; source switching and error recovery pass.
-- [ ] `pnpm test`, `pnpm typecheck`, `pnpm lint`, and `pnpm format:check` pass with retained collection behavior and public type constraints.
+- [x] Provider and direct-engine surface paths behave consistently; source switching and error recovery pass.
+- [x] `pnpm test`, `pnpm typecheck`, `pnpm lint`, and `pnpm format:check` pass with retained collection behavior and public type constraints.
 
 ## Phase C: Consumer adoption
 

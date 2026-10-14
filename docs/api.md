@@ -46,13 +46,27 @@ owns surface state and data models, dispatches actions, reports errors, and
 publishes external-store subscriptions. Call `dispose()` when an
 application-owned engine is permanently retired.
 
+### `useA2UIEngine`
+
+Creates one React-owned engine from `A2UIEngineOptions` and disposes it after
+final unmount. The engine stays stable across rerenders and React Strict Mode
+effect replay. Apply incoming messages through its existing `applyMessage` or
+`applyMessages` methods; the hook does not register a source or ingest data.
+`onAction` and `onError` use the latest callbacks. Catalog objects/order and
+effective resource limits must remain stable while mounted; equivalent inline
+arrays and limit objects are accepted. Remount the owning subtree with a new
+key to change construction settings. See [Streaming And Actions](./streaming-and-actions.md).
+
 ### `A2UIRenderer`
 
 Convenience React component that creates a stable internal engine or accepts an
-external engine, applies `messages`, and renders all active surfaces. Owned
+external engine, applies supplied `messages`, and renders all active surfaces. Owned
 engine mode accepts `catalogs`, `onAction`, and `onError`; external engine mode
 does not, because those belong to the supplied engine. Both modes accept
 `renderPending` for app-owned root and child loading UI.
+`messages` is required in owned-engine mode and optional with an external
+engine. Omission applies no messages, so `<A2UIRenderer engine={engine} />`
+observes imperative updates without a dummy empty collection.
 
 ### `A2UIProvider`
 
@@ -61,7 +75,11 @@ engine, apply messages, or render surfaces.
 
 ### `A2UISurface`
 
-Subscribes to and renders one `surfaceId` from the nearest `A2UIProvider`.
+Subscribes to and renders one `surfaceId`. Supply an optional `engine` prop for
+direct placement, or omit it to use the nearest `A2UIProvider`. An explicit
+engine takes precedence over a surrounding provider and supplies context to
+the app's presenters. The surface never disposes an engine. Changing engine
+or surface ID switches subscriptions and clears old presenter failures.
 Supports diagnostic mode selection, a consumer error fallback, and an optional
 `renderPending({ surfaceId, componentId, kind })` callback. `kind` is `"root"`
 before the root definition arrives or `"component"` at an unresolved child
@@ -162,16 +180,16 @@ stale calls through the engine's structured error channel.
 
 ## Error And React Types
 
-| Export                      | Contract                                                      |
-| --------------------------- | ------------------------------------------------------------- |
-| `A2UIRendererError`         | Structured, identifier-rich runtime failure                   |
-| `A2UIRendererErrorCode`     | Stable union of public error codes                            |
-| `A2UIRendererErrorSeverity` | `"warning"` or `"error"`                                      |
-| `A2UIFallbackRenderer`      | Consumer callback from structured error to `ReactNode`        |
-| `A2UIDiagnosticsMode`       | `"auto"`, `"development"`, or `"production"`                  |
-| `A2UIProviderProps`         | Props accepted by `A2UIProvider`                              |
-| `A2UIRendererProps`         | Discriminated owned-engine or external-engine renderer props  |
-| `A2UISurfaceProps`          | Surface ID, diagnostics, fallback, and pending renderer props |
+| Export                      | Contract                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| `A2UIRendererError`         | Structured, identifier-rich runtime failure                                    |
+| `A2UIRendererErrorCode`     | Stable union of public error codes                                             |
+| `A2UIRendererErrorSeverity` | `"warning"` or `"error"`                                                       |
+| `A2UIFallbackRenderer`      | Consumer callback from structured error to `ReactNode`                         |
+| `A2UIDiagnosticsMode`       | `"auto"`, `"development"`, or `"production"`                                   |
+| `A2UIProviderProps`         | Props accepted by `A2UIProvider`                                               |
+| `A2UIRendererProps`         | Discriminated owned-engine or external-engine renderer props                   |
+| `A2UISurfaceProps`          | Optional engine, surface ID, diagnostics, fallback, and pending renderer props |
 
 ## Compatibility Notes
 

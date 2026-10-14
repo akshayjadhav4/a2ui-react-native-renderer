@@ -14,6 +14,103 @@ import {
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+test("external renderer observes imperative messages with no messages prop", async () => {
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  let ingestionCount = 0;
+  const trackedEngine = {
+    ...engine,
+    applyMessages: (batch) => {
+      ingestionCount += 1;
+      engine.applyMessages(batch);
+    },
+  };
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UIRenderer, { engine: trackedEngine }),
+    );
+  });
+  assert.equal(renderer.toJSON(), null);
+  await act(() => {
+    engine.applyMessages(
+      createSurfaceMessages({
+        id: "root",
+        component: "Text",
+        text: "Imperative",
+      }),
+    );
+  });
+  assert.deepEqual(renderer.toJSON().children, ["Imperative"]);
+  const count = ingestionCount;
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UIRenderer, {
+        engine: trackedEngine,
+        diagnostics: "production",
+      }),
+    );
+  });
+  assert.equal(ingestionCount, count);
+  assert.deepEqual(engine.getErrors(), []);
+  await act(() => {
+    renderer.unmount();
+  });
+  engine.dispose();
+});
+
+test("omitted messages retain the existing empty-collection transition semantics", async () => {
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  const batches = [];
+  const trackedEngine = {
+    ...engine,
+    applyMessages: (batch) => {
+      batches.push(batch);
+      engine.applyMessages(batch);
+    },
+  };
+  const initial = createSurfaceMessages({
+    id: "root",
+    component: "Text",
+    text: "Initial",
+  });
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UIRenderer, {
+        engine: trackedEngine,
+        messages: initial,
+      }),
+    );
+  });
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UIRenderer, { engine: trackedEngine }),
+    );
+  });
+  assert.deepEqual(batches[1], []);
+  const update = {
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "main",
+      components: [{ id: "root", component: "Text", text: "After empty" }],
+    },
+  };
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UIRenderer, {
+        engine: trackedEngine,
+        messages: [update],
+      }),
+    );
+  });
+  assert.deepEqual(batches[2], [update]);
+  assert.deepEqual(renderer.toJSON().children, ["After empty"]);
+  await act(() => {
+    renderer.unmount();
+  });
+  engine.dispose();
+});
+
 test("unmounting an external renderer does not dispose its engine", async () => {
   const engine = createA2UIEngine({ catalogs: [catalog] });
   let renderer;

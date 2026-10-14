@@ -24,6 +24,9 @@ const engine = createA2UIEngine({ catalogs: [catalog] });
 
 void (<A2UIRenderer catalogs={[catalog]} messages={messages} />);
 void (<A2UIRenderer engine={engine} messages={messages} />);
+void (<A2UIRenderer engine={engine} />);
+// @ts-expect-error Owned-engine rendering requires a message collection.
+void (<A2UIRenderer catalogs={[catalog]} />);
 void (<A2UISurface engine={engine} surfaceId="main" />);
 
 const renderFallback: A2UIFallbackRenderer = (error) => <>{error.code}</>;

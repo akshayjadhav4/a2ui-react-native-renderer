@@ -17,14 +17,16 @@ import { A2UISurface, type A2UISurfaceProps } from "./A2UISurface.js";
 import { useA2UIFailedSurfaceIds, useA2UISurfaceIds } from "./hooks.js";
 import { useStableEngine } from "./useStableEngine.js";
 
+const EMPTY_MESSAGES: readonly A2UIMessage[] = Object.freeze([]);
+
 interface A2UIRendererBaseProps {
-  readonly messages: readonly A2UIMessage[];
   readonly diagnostics?: A2UIDiagnosticsMode;
   readonly renderFallback?: A2UIFallbackRenderer;
   readonly renderPending?: NonNullable<A2UISurfaceProps["renderPending"]>;
 }
 
 interface A2UIRendererOwnedEngineProps extends A2UIRendererBaseProps {
+  readonly messages: readonly A2UIMessage[];
   readonly engine?: undefined;
   readonly catalogs: readonly A2UIRegisteredCatalog[];
   readonly onAction?: (action: A2UIUserAction) => void | Promise<void>;
@@ -32,6 +34,7 @@ interface A2UIRendererOwnedEngineProps extends A2UIRendererBaseProps {
 }
 
 interface A2UIRendererExternalEngineProps extends A2UIRendererBaseProps {
+  readonly messages?: readonly A2UIMessage[];
   readonly engine: A2UIEngine;
   readonly catalogs?: never;
   readonly onAction?: never;
@@ -56,7 +59,7 @@ export function A2UIRenderer(props: A2UIRendererProps): ReactNode {
       : { engine: props.engine },
   );
 
-  useA2UIMessages(engine, props.messages);
+  useA2UIMessages(engine, props.messages ?? EMPTY_MESSAGES);
 
   return createElement(
     A2UIProvider,
