@@ -43,6 +43,11 @@
       "import": "./lib/module/catalog-schema.js",
       "default": "./lib/module/catalog-schema.js"
     },
+    "./testing": {
+      "types": "./lib/typescript/testing.d.ts",
+      "import": "./lib/module/testing.js",
+      "default": "./lib/module/testing.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

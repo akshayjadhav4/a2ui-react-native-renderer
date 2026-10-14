@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first six capability-map modules are complete. The final `consumer-tooling` spec and plan are approved; its task list awaits review. No implementation is in progress.
+- **State:** The first six capability-map modules are complete. The final `consumer-tooling` spec and plan are approved; its task list is approved and implementation is in progress.
 
 ## What the user wants
 
@@ -145,10 +145,9 @@ example-only `ws` dependency; no renderer runtime dependency is proposed.
 by the user's “next” on 2026-10-14, with `ws@8.22.0` verified as the published dependency. It uses the
 established per-module file convention and leaves historical plan/todo files
 untouched. [tasks/consumer-tooling-todo.md](./tasks/consumer-tooling-todo.md)
-is drafted for review with thirteen small tasks and four checkpoints. It also
+was approved by the user’s “approve move” on 2026-10-14, with thirteen small tasks and four checkpoints. It also
 accounts for copying the shared schema module into the isolated Expo consumer
-smoke workspace without copying the server. Obtain task-list approval before
-implementing Task 1, following the requested workflow.
+smoke workspace without copying the server. Task 1 is implemented and verified; continue Task 2 on the same branch.
 
 Use the requested `spec-driven-development` workflow and preserve reviewed
 module contracts. The user explicitly authorized reactivity implementation

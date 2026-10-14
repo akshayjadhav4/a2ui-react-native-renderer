@@ -6,8 +6,7 @@
 
 **Plan:** [consumer-tooling-plan.md](consumer-tooling-plan.md)
 
-**Status:** Draft for review on 2026-10-14. Spec and plan are approved;
-implementation awaits task-list approval.
+**Status:** Approved on 2026-10-14 by the user’s “approve move”. Implementation is in progress.
 
 Use the existing `codex/native-core` branch, with verified incremental commits.
 Historical `tasks/plan.md` and `tasks/todo.md` remain untouched. Each task lists
@@ -17,11 +16,12 @@ the presence of implementation files.
 
 ## Phase A: Optional Test Harness
 
-- [ ] **Task 1: Add the native-free testing entry**
+- [x] **Task 1: Add the native-free testing entry**
   - Acceptance: `createA2UITestHarness` constructs the real engine from catalogs/limits; its public contract exposes only `engine` and `getActions`. Headless ingestion, invalid messages, limits, independent instances, subscriptions, and disposal retain engine semantics. `/testing` builds and imports in plain Node, with no runtime import from the native root.
   - Verify: Add failing behavior/type cases first; `pnpm build && pnpm typecheck && pnpm lint && node --test test/unit/testing-harness.test.mjs`; inspect emitted imports and declarations.
   - Files: `src/testing.ts`, `package.json`, `test/unit/testing-harness.test.mjs`, `test/types/testing.ts`.
   - Dependencies: Approved task list. Scope: Medium.
+  - Evidence: Missing-entry test failed before implementation. All three headless tests, build, typecheck, and lint pass; the built entry imports in plain Node.
 
 - [ ] **Task 2: Exercise mounted bindings and action recording**
   - Acceptance: App-owned test presenters mounted through `A2UISurface` update a writable binding and dispatch a real action. The harness records ordered action payloads; returned arrays are frozen and remain unchanged after later dispatches. Unmount/dispose cleanup runs even on assertion failure.
