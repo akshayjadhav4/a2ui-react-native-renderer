@@ -40,11 +40,12 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
 
 ## Phase B: Placement and renderer props
 
-- [ ] **Task 4: Support direct-engine surface placement**
+- [x] **Task 4: Support direct-engine surface placement**
   - Acceptance: `A2UISurface.engine` is optional; explicit-engine surfaces work without an outer provider and give their presenters the selected engine's context. Provider-only surfaces retain behavior. Pending root/child, resolved content, structured fallback, absent surface, and deletion agree in both paths; no external engine is disposed.
   - Verify: Add failing direct placement/context/type cases first; `pnpm build && pnpm typecheck && node --test test/integration/surface-renderer.test.mjs test/integration/surface-subscriptions.test.mjs`.
   - Files: `src/react/A2UISurface.tsx`, `test/integration/surface-renderer.test.mjs`, `test/types/renderer.tsx`.
   - Dependencies: Checkpoint A. Scope: Medium.
+  - Evidence: Direct placement failed without a provider before implementation. A wrapper now supplies explicit engine context to all presenters. Lifecycle parity tests cover both wire versions, pending roots/children, fallback/recovery, deletion, and external-engine survival. Tests also reproduced an existing pending-error rerender gap; a private per-surface error subscription now updates fallback even when the accepted snapshot is unchanged. All 15 focused tests, build, typecheck, and lint pass.
 
 - [ ] **Task 5: Verify source changes and recovery**
   - Acceptance: Switching the direct engine or surface ID observes the new snapshot and releases the old subscription. An explicit engine takes precedence over a different outer provider. Old presenter failures clear when source identity changes, including equal surface revisions; later updates from the old source cannot replace new content.

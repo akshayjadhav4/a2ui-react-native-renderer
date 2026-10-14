@@ -12,9 +12,132 @@ import {
   A2UISurface,
   createA2UIEngine,
   defineA2UICatalog,
+  useA2UISurfaceIds,
 } from "../../lib/module/index.js";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`direct-engine surface matches provider lifecycle for ${version}`, async () => {
+    const catalog = createProgressiveCatalog();
+    const engine = createA2UIEngine({ catalogs: [catalog] });
+    const props = {
+      surfaceId: "main",
+      diagnostics: "production",
+      renderPending: ({ kind, componentId }) =>
+        React.createElement("NativeLoading", null, `${kind}:${componentId}`),
+      renderFallback: (error) =>
+        React.createElement("NativeError", null, error.code),
+    };
+    let direct;
+    let contextual;
+    await act(() => {
+      direct = TestRenderer.create(
+        React.createElement(A2UISurface, { engine, ...props }),
+      );
+      contextual = TestRenderer.create(
+        React.createElement(
+          A2UIProvider,
+          { engine },
+          React.createElement(A2UISurface, props),
+        ),
+      );
+    });
+    assert.equal(direct.toJSON(), null);
+    const check = async (message, type) => {
+      await act(() => {
+        engine.applyMessage(message);
+      });
+      assert.deepEqual(direct.toJSON(), contextual.toJSON());
+      assert.equal(direct.toJSON()?.type ?? null, type);
+    };
+    await check(
+      { version, createSurface: { surfaceId: "main", catalogId: catalog.id } },
+      "NativeLoading",
+    );
+    await check(
+      {
+        version,
+        updateComponents: {
+          surfaceId: "main",
+          components: [{ id: "root", component: "Unknown" }],
+        },
+      },
+      "NativeError",
+    );
+    await check(
+      {
+        version,
+        updateComponents: {
+          surfaceId: "main",
+          components: [{ id: "root", component: "Row", children: ["later"] }],
+        },
+      },
+      "NativeRow",
+    );
+    assert.equal(direct.toJSON().children[0].type, "NativeLoading");
+    await check(
+      {
+        version,
+        updateComponents: {
+          surfaceId: "main",
+          components: [{ id: "later", component: "Text", text: "Ready" }],
+        },
+      },
+      "NativeRow",
+    );
+    assert.deepEqual(direct.toJSON().children[0].children, ["Ready"]);
+    await check({ version, deleteSurface: { surfaceId: "main" } }, null);
+    await act(() => {
+      direct.unmount();
+      contextual.unmount();
+    });
+    engine.applyMessage({
+      version,
+      createSurface: { surfaceId: "main", catalogId: catalog.id },
+    });
+    assert.notEqual(engine.getSurface("main"), undefined);
+    engine.dispose();
+  });
+}
+
+test("explicit surface engine supplies context to app presenters", async () => {
+  const catalog = defineA2UICatalog({
+    id: "urn:example:context:v1",
+    components: {
+      Inspect: {
+        schema: z.object({}),
+        presenter: () =>
+          React.createElement("NativeIds", null, useA2UISurfaceIds().join(",")),
+      },
+    },
+  });
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  engine.applyMessages([
+    {
+      version: "v0.9.1",
+      createSurface: { surfaceId: "main", catalogId: catalog.id },
+    },
+    {
+      version: "v0.9.1",
+      updateComponents: {
+        surfaceId: "main",
+        components: [{ id: "root", component: "Inspect" }],
+      },
+    },
+  ]);
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UISurface, { engine, surfaceId: "main" }),
+    );
+  });
+  assert.deepEqual(renderer.toJSON().children, ["main"]);
+  await act(() => {
+    renderer.unmount();
+  });
+  engine.dispose();
+});
 
 function createTextCatalog(onRender = () => undefined) {
   return defineA2UICatalog({
