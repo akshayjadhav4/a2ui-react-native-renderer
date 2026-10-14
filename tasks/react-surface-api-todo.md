@@ -47,11 +47,12 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
   - Dependencies: Checkpoint A. Scope: Medium.
   - Evidence: Direct placement failed without a provider before implementation. A wrapper now supplies explicit engine context to all presenters. Lifecycle parity tests cover both wire versions, pending roots/children, fallback/recovery, deletion, and external-engine survival. Tests also reproduced an existing pending-error rerender gap; a private per-surface error subscription now updates fallback even when the accepted snapshot is unchanged. All 15 focused tests, build, typecheck, and lint pass.
 
-- [ ] **Task 5: Verify source changes and recovery**
+- [x] **Task 5: Verify source changes and recovery**
   - Acceptance: Switching the direct engine or surface ID observes the new snapshot and releases the old subscription. An explicit engine takes precedence over a different outer provider. Old presenter failures clear when source identity changes, including equal surface revisions; later updates from the old source cannot replace new content.
   - Verify: Add failing source-switch cases first; `pnpm build && pnpm typecheck && node --test test/integration/surface-renderer.test.mjs test/integration/surface-subscriptions.test.mjs test/integration/diagnostics.test.mjs`; `git diff --check`.
   - Files: `src/react/A2UISurface.tsx`, `test/integration/surface-renderer.test.mjs`, `test/integration/surface-subscriptions.test.mjs`.
   - Dependencies: Task 4. Scope: Medium.
+  - Evidence: Equal-revision engine and surface-ID changes reproduced stale presenter fallbacks before the fix. A local boundary generation remounts failed presenter state on source identity changes. Explicit context precedence and subscription cleanup/old-source isolation pass. All 26 surface/subscription/diagnostics tests, build, typecheck, and lint pass.
 
 - [ ] **Task 6: Make external renderer messages optional**
   - Acceptance: External-engine renderer props may omit `messages` and observe imperative engine updates without ingestion or replay on unrelated rerenders. Owned mode still requires messages; external mode still rejects catalog/callback props. Existing append/replay behavior, including empty/omitted collection transitions, is preserved.

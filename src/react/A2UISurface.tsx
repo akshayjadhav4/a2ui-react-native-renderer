@@ -3,6 +3,7 @@ import {
   memo,
   useCallback,
   useMemo,
+  useRef,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -50,6 +51,17 @@ const A2UISurfaceContent = memo(function A2UISurfaceContent({
   renderPending,
 }: A2UISurfaceProps): ReactNode {
   const engine = useA2UIEngineContext();
+  const source = useRef({ engine, surfaceId, generation: 0 });
+  if (
+    source.current.engine !== engine ||
+    source.current.surfaceId !== surfaceId
+  ) {
+    source.current = {
+      engine,
+      surfaceId,
+      generation: source.current.generation + 1,
+    };
+  }
   const internals = getA2UIEngineInternals(engine);
   const surface = useA2UISurface(surfaceId);
   const surfaceError = useA2UISurfaceError(engine, surfaceId);
@@ -84,6 +96,7 @@ const A2UISurfaceContent = memo(function A2UISurfaceContent({
   return createElement(
     A2UIErrorBoundary,
     {
+      key: source.current.generation,
       resetKey: surface.revision,
       createError: (cause) =>
         createSurfaceError(surfaceId, surface.catalogId, cause),

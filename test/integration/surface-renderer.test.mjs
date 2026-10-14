@@ -126,10 +126,19 @@ test("explicit surface engine supplies context to app presenters", async () => {
       },
     },
   ]);
+  const outerEngine = createA2UIEngine({ catalogs: [catalog] });
+  outerEngine.applyMessage({
+    version: "v0.9.1",
+    createSurface: { surfaceId: "outer", catalogId: catalog.id },
+  });
   let renderer;
   await act(() => {
     renderer = TestRenderer.create(
-      React.createElement(A2UISurface, { engine, surfaceId: "main" }),
+      React.createElement(
+        A2UIProvider,
+        { engine: outerEngine },
+        React.createElement(A2UISurface, { engine, surfaceId: "main" }),
+      ),
     );
   });
   assert.deepEqual(renderer.toJSON().children, ["main"]);
@@ -137,7 +146,71 @@ test("explicit surface engine supplies context to app presenters", async () => {
     renderer.unmount();
   });
   engine.dispose();
+  outerEngine.dispose();
 });
+
+for (const switchKind of ["engine", "surface ID"]) {
+  test(`switching ${switchKind} clears an old presenter error at the same revision`, async () => {
+    const catalog = createTextCatalog(({ text }) => {
+      if (text === "Fail") throw new Error("Old source failed");
+    });
+    const first = createA2UIEngine({ catalogs: [catalog] });
+    const second =
+      switchKind === "engine"
+        ? createA2UIEngine({ catalogs: [catalog] })
+        : first;
+    const nextId = switchKind === "engine" ? "main" : "next";
+    first.applyMessages(
+      createSurfaceMessages({ id: "root", component: "Text", text: "Fail" }),
+    );
+    second.applyMessages([
+      {
+        version: "v0.9",
+        createSurface: { surfaceId: nextId, catalogId: catalog.id },
+      },
+      {
+        version: "v0.9",
+        updateComponents: {
+          surfaceId: nextId,
+          components: [{ id: "root", component: "Text", text: "New source" }],
+        },
+      },
+    ]);
+    assert.equal(
+      first.getSurface("main").revision,
+      second.getSurface(nextId).revision,
+    );
+    const renderFallback = (error) =>
+      React.createElement("NativeError", null, error.code);
+    let renderer;
+    await act(() => {
+      renderer = TestRenderer.create(
+        React.createElement(A2UISurface, {
+          engine: first,
+          surfaceId: "main",
+          renderFallback,
+        }),
+      );
+    });
+    assert.equal(renderer.toJSON().type, "NativeError");
+    await act(() => {
+      renderer.update(
+        React.createElement(A2UISurface, {
+          engine: second,
+          surfaceId: nextId,
+          renderFallback,
+        }),
+      );
+    });
+    assert.equal(renderer.toJSON().type, "NativeText");
+    assert.deepEqual(renderer.toJSON().children, ["New source"]);
+    await act(() => {
+      renderer.unmount();
+    });
+    first.dispose();
+    second.dispose();
+  });
+}
 
 function createTextCatalog(onRender = () => undefined) {
   return defineA2UICatalog({

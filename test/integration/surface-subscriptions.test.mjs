@@ -15,6 +15,82 @@ import {
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+test("direct surface switches subscriptions and ignores updates from old sources", async () => {
+  const renderCounts = {};
+  const catalog = createCatalog(renderCounts);
+  const first = createA2UIEngine({ catalogs: [catalog] });
+  const second = createA2UIEngine({ catalogs: [catalog] });
+  first.applyMessages(createSurfaceMessages(catalog.id, "first", "First"));
+  second.applyMessages([
+    ...createSurfaceMessages(catalog.id, "second", "Second"),
+    ...createSurfaceMessages(catalog.id, "third", "Third"),
+  ]);
+  const subscriptions = new Map();
+  const track = (engine) =>
+    new Proxy(engine, {
+      get(target, name) {
+        if (name !== "subscribeSurface") return Reflect.get(target, name);
+        return (id, listener) => {
+          subscriptions.set(id, (subscriptions.get(id) ?? 0) + 1);
+          const unsubscribe = target.subscribeSurface(id, listener);
+          return () => {
+            subscriptions.set(id, subscriptions.get(id) - 1);
+            unsubscribe();
+          };
+        };
+      },
+    });
+  // Delegate from a separate object because engines are frozen.
+  const trackedFirst = track({ ...first });
+  const trackedSecond = track({ ...second });
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UISurface, {
+        engine: trackedFirst,
+        surfaceId: "first",
+      }),
+    );
+  });
+  assert.ok(subscriptions.get("first") > 0);
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UISurface, {
+        engine: trackedSecond,
+        surfaceId: "second",
+      }),
+    );
+  });
+  assert.equal(subscriptions.get("first"), 0);
+  assert.ok(subscriptions.get("second") > 0);
+  const counts = { ...renderCounts };
+  await act(() => {
+    first.applyMessage(updateText("first", "Old engine updated"));
+  });
+  assert.deepEqual(renderCounts, counts);
+  assert.deepEqual(renderer.toJSON().children, ["Second"]);
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UISurface, {
+        engine: trackedSecond,
+        surfaceId: "third",
+      }),
+    );
+  });
+  assert.equal(subscriptions.get("second"), 0);
+  assert.ok(subscriptions.get("third") > 0);
+  await act(() => {
+    second.applyMessage(updateText("third", "Third updated"));
+  });
+  assert.deepEqual(renderer.toJSON().children, ["Third updated"]);
+  await act(() => {
+    renderer.unmount();
+  });
+  assert.equal(subscriptions.get("third"), 0);
+  first.dispose();
+  second.dispose();
+});
+
 function createCatalog(renderCounts) {
   return defineA2UICatalog({
     id: "urn:example:a2ui:catalog:v1",
