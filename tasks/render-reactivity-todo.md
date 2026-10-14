@@ -4,7 +4,7 @@
 
 **Plan:** [render-reactivity-plan.md](render-reactivity-plan.md)
 
-**Status:** Implementation authorized on 2026-10-14 with “ok approve start work.”
+**Status:** Complete on `codex/native-core` on 2026-10-14, following “ok approve start work.”
 
 The user approved the plan and explicitly directed implementation. This task
 breakdown implements that authorization on `codex/native-core`, without another
@@ -64,12 +64,13 @@ approval stop. Commit verified slices and preserve historical task records.
 
 - [x] Repeated targets pass; correctness and measurement limits are documented.
 
-- [ ] **Task 7: Package verification and completion records**
+- [x] **Task 7: Package verification and completion records**
   - Acceptance: All required gates and packed Expo/bare iOS/Android checks pass; public exports unchanged; module records and handoff updated after review.
   - Files: `SPEC-render-reactivity.md`, `tasks/render-reactivity-plan.md`, this tracker, `CAPABILITY-MAP.md`, `HANDOFF.md`.
   - Verify: `pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm example:check && pnpm pack:check && pnpm consumer:smoke`; module-document Prettier and links; `git diff --check`.
   - Dependencies: Checkpoint C. Fix failures in focused slices before completion.
+  - Evidence: Build, typecheck, lint, formatting, all 199 tests, Expo example checks, tarball verification (164 files, 101,758 bytes), and packed Expo/bare iOS/Android checks pass. Public root exports, catalog/engine types, dependencies, version, and license are unchanged. Three repeated runs retain all seven before/after results. Final review reproduced and corrected shared-reference equality bypasses for aliases/accessors/unusual objects, then reverified the targets. No outstanding correctness, architecture, security, or presenter-reactivity issue remains; device FPS is not inferred from these checks.
 
 ### Checkpoint D
 
-- [ ] All spec criteria and package gates pass; verified slices committed for review.
+- [x] All spec criteria and package gates pass; verified slices committed for review.

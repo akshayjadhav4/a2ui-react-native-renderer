@@ -6,11 +6,12 @@
 
 **Measurements:** [render-reactivity-measurements.md](render-reactivity-measurements.md)
 
-**Status:** Approved with implementation authorized on 2026-10-14: “ok approve start work.”
+**Status:** Implemented on `codex/native-core` on 2026-10-14 after spec approval and explicit plan/implementation authorization.
 
-Use the established per-module records on `codex/native-core`. After plan
-approval, create `tasks/render-reactivity-todo.md` for the separately reviewed
-task breakdown. Preserve historical `tasks/plan.md` and `tasks/todo.md`.
+The [completed module tasks](render-reactivity-todo.md) record verified slices
+on `codex/native-core`. The user approved the plan and directed implementation
+with “ok approve start work”; the task breakdown implemented that authorization.
+Historical `tasks/plan.md` and `tasks/todo.md` remain untouched.
 
 ## Outcome
 
@@ -247,11 +248,7 @@ bundling in Expo/bare consumers, not device frame rates.
 
 ## Task-list handoff
 
-After plan approval, create `tasks/render-reactivity-todo.md` with slices of
-roughly five files or fewer, ordered dependencies, acceptance criteria,
-failing-test steps, measurement commands, and checkpoints. Separate subscription
-work and presenter preservation in a complete measurable slice after tested
-private helper preparation. Split safety matrices and docs separately as
-needed. Keep incomplete count tests within their corresponding active
-implementation slice; never commit a failing suite or disable assertions to
-land preparatory work. Obtain task-list review before runtime implementation.
+The [completed task list](render-reactivity-todo.md) records helper preparation,
+the measured rendering path, scope/function/React safety, lifecycle recovery,
+documentation, and packed verification. All measured targets and required
+gates passed before module completion. No public API was added.

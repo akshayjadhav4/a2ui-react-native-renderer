@@ -2,7 +2,7 @@
 
 **Module id:** `render-reactivity` in [CAPABILITY-MAP.md](CAPABILITY-MAP.md)
 
-**Status:** Approved for planning on 2026-10-14 with “ok goahead.” Runtime implementation follows plan and task-list review.
+**Status:** Approved and implemented on `codex/native-core` on 2026-10-14. Results are recorded in [measurements](tasks/render-reactivity-measurements.md) and [completed tasks](tasks/render-reactivity-todo.md).
 
 ## Assumptions
 
@@ -213,4 +213,6 @@ function-valued services and their invalidation rules in comparisons.
 The user approved the conservative scope-based targets and internal-only API
 scope with “ok goahead” on 2026-10-14. Narrower root-field rendering would
 require a separate explicit dependency contract rather than silently ignoring
-scope. The plan and task list require review before runtime implementation.
+scope. The user then approved the plan and explicitly directed implementation
+with “ok approve start work.” The task breakdown was prepared and executed
+under that authorization.

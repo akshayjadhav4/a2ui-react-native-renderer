@@ -86,3 +86,10 @@ three runs. The lifecycle correction addresses batched recreation with repeated
 revision numbers; it does not remount healthy presenter state. Scope/binding,
 function/error, action, React state/context, saved service, and subscription
 cleanup assertions pass alongside the measured targets.
+
+Final review also removed an object-identity shortcut that bypassed conservative
+accessor, unusual-object, and alias checks. Reproductions failed before that
+correction, then passed. Repeating the unchanged harness after the correction
+retained every count in three identical runs. Final verification passed 199
+tests and packed Expo/bare iOS/Android checks with no public API or dependency
+change.

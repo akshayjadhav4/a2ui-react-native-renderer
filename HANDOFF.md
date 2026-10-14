@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first five capability-map modules are complete. The `render-reactivity` spec is approved and its draft implementation plan awaits review; no runtime implementation is in progress.
+- **State:** The first six capability-map modules are complete. Only `consumer-tooling` remains; no implementation is in progress.
 
 ## What the user wants
 
@@ -22,16 +22,26 @@ versioning and licensing only when the user requests that work.
 ## Completed work
 
 The [capability map](./CAPABILITY-MAP.md) is the initiative index. Its first
-five modules are implemented, with approved specs, plans, and completed task
+six modules are implemented, with approved specs, plans, and completed task
 lists:
 
-| Module                 | Outcome                                                                                                          | Records                                                                               |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `wire-compatibility`   | Package-owned A2UI v0.9/v0.9.1 protocol core; `@a2ui/web_core` and Lit removed from the native dependency graph. | [Spec](./SPEC-wire-compatibility.md), [tasks](./tasks/wire-compatibility-todo.md)     |
-| `binding-semantics`    | Typed resolved values and optional setters for direct writable bindings.                                         | [Spec](./SPEC-binding-semantics.md), [tasks](./tasks/binding-semantics-todo.md)       |
-| `progressive-surfaces` | Pending root and child rendering, safe progressive updates, and structured recovery.                             | [Spec](./SPEC-progressive-surfaces.md), [tasks](./tasks/progressive-surfaces-todo.md) |
-| `catalog-contract`     | One app-owned catalog supplies renderer validation and an exportable agent-facing JSON Schema document.          | [Spec](./SPEC-catalog-contract.md), [tasks](./tasks/catalog-contract-todo.md)         |
-| `react-surface-api`    | Hook-owned engine lifetime, direct one-surface placement, and optional external renderer messages.               | [Spec](./SPEC-react-surface-api.md), [tasks](./tasks/react-surface-api-todo.md)       |
+| Module                 | Outcome                                                                                                                                 | Records                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `wire-compatibility`   | Package-owned A2UI v0.9/v0.9.1 protocol core; `@a2ui/web_core` and Lit removed from the native dependency graph.                        | [Spec](./SPEC-wire-compatibility.md), [tasks](./tasks/wire-compatibility-todo.md)     |
+| `binding-semantics`    | Typed resolved values and optional setters for direct writable bindings.                                                                | [Spec](./SPEC-binding-semantics.md), [tasks](./tasks/binding-semantics-todo.md)       |
+| `progressive-surfaces` | Pending root and child rendering, safe progressive updates, and structured recovery.                                                    | [Spec](./SPEC-progressive-surfaces.md), [tasks](./tasks/progressive-surfaces-todo.md) |
+| `catalog-contract`     | One app-owned catalog supplies renderer validation and an exportable agent-facing JSON Schema document.                                 | [Spec](./SPEC-catalog-contract.md), [tasks](./tasks/catalog-contract-todo.md)         |
+| `react-surface-api`    | Hook-owned engine lifetime, direct one-surface placement, and optional external renderer messages.                                      | [Spec](./SPEC-react-surface-api.md), [tasks](./tasks/react-surface-api-todo.md)       |
+| `render-reactivity`    | Independently subscribed nodes preserve healthy presenters with unchanged observable inputs; stable setters/children and safe recovery. | [Spec](./SPEC-render-reactivity.md), [tasks](./tasks/render-reactivity-todo.md)       |
+
+The reactivity module keeps functions resolving against accepted snapshots and
+preserves full scope inputs, React state/context, current actions, stale setter
+checks, and progressive child rendering. Its seven-fixture measurement harness
+ran three times with identical results: a 499-item edit moved from 500 calls to
+two, and an outside-scope update moved from four calls to one. All six target
+cases pass. Notifications and resolution still visit mounted nodes; these
+results do not establish device FPS. See the
+[measurement record](./tasks/render-reactivity-measurements.md).
 
 The React API module adds `useA2UIEngine(options)` with stable identity, latest
 callbacks, fixed construction settings, and final cleanup through Strict Mode
@@ -79,16 +89,26 @@ chooses how to deliver the JSON document to an agent. Usage is in
   exclude exporter code and web renderer modules.
 
 The last full verification passed: `pnpm build`, `pnpm typecheck`, `pnpm lint`,
-`pnpm format:check`, `pnpm test` (169 tests), `pnpm example:check`, `pnpm pack:check`, and
+`pnpm format:check`, `pnpm test` (199 tests), `pnpm example:check`, `pnpm pack:check`, and
 `pnpm consumer:smoke` (Expo and bare, iOS and Android). The branch was clean
 before the final module record update. Native consumer checks verify types,
 bundles, and dependency isolation; they are not device interaction tests.
 The initial sandboxed smoke install failed registry DNS; the same check passed
 with approved network access. The catalog module ends at `a13076e`; the React
-API implementation and checked usage fixtures end at `9b42ada`, followed by completion records.
+API implementation and checked usage fixtures end at `9b42ada`. Reactivity
+implementation and review corrections end at `f0ab843`, followed by completion records.
 
 ## Important behavior to preserve
 
+- Presenter skips must compare the full scope value as well as resolved props
+  and services. A root scope exposes the entire model. Consumer functions
+  reevaluate on accepted snapshots; do not introduce an unreviewed purity or
+  cache contract. Mutable/shared or unusual objects and unsafe comparisons
+  must fall back to rendering.
+- Component-node boundary reset includes component identity to recover after
+  batched deletion/recreation when a revision repeats. Healthy state is retained.
+  The private setter factory is not a public API. Setter caches remain owned by
+  their engine/component/scope and must retain current-binding/stale-write checks.
 - App-owned components remain the only renderable component catalog. A plain
   `z.string()` is literal text; structural children use
   `A2UIComponentIdSchema` or `A2UIChildListSchema`.
@@ -114,23 +134,16 @@ API implementation and checked usage fixtures end at `9b42ada`, followed by comp
 
 ## Suggested next step
 
-`render-reactivity` has an [approved spec](./SPEC-render-reactivity.md), a
-[measurement record](./tasks/render-reactivity-measurements.md), and a
-[reproducible harness](./tasks/render-reactivity-baseline.mjs). Seven fixtures
-ran three times with identical counts. Editing one of 499 template items calls
-all 500 presenters; the proposed target is two. Full `scope.value` is observable
-presenter input, so root-scoped siblings cannot safely be skipped just because
-their individual bound strings are unchanged. The user approved conservative
-internal optimization with no new public API or function purity assumption
-with “ok goahead” on 2026-10-14. The
-[draft plan](./tasks/render-reactivity-plan.md) proposes independently subscribed
-nodes, stable child/setter services, and a conservative memoized presenter host.
+`consumer-tooling` is the final module in the approved capability map: a small
+catalog/surface test harness and real streaming example with app-owned
+components. It has no spec, plan, or task list yet. Start by inspecting the
+existing guide type fixtures, Expo showcase, catalog exporter, and consumer
+smoke fixtures, then draft its spec against the map.
 
-Get the plan reviewed before creating its task list under the user's requested
-`spec-driven-development` workflow, followed by task-list review before runtime
-implementation. Use focused tests before behavior changes and commit
-each verified slice on this branch. `consumer-tooling` is also eligible; it has
-no spec, plan, or task list yet. Do not assume a release or publication is approved.
+Use the requested `spec-driven-development` workflow and preserve reviewed
+module contracts. The user explicitly authorized reactivity implementation
+with “ok approve start work” after approving its spec; its task breakdown
+executed that direction. Do not assume a release or publication is approved.
 
 Start a new session by checking `git status --short --branch`, reading this
 handoff and the capability map, and confirming the user's next requested
