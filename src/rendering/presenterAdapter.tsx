@@ -1,14 +1,21 @@
 import {
   createElement,
+  memo,
   useCallback,
   useEffect,
   useMemo,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
-import type { A2UIComponentAction, A2UIPresenter } from "../catalog/types.js";
+import type {
+  A2UIComponentAction,
+  A2UIPresenter,
+  A2UIPresenterProps,
+} from "../catalog/types.js";
 import { getA2UIEngineInternals } from "../engine/internals.js";
 import type {
+  A2UIComponentSnapshot,
   A2UIEngine,
   A2UIRegisteredCatalog,
   A2UISurfaceSnapshot,
@@ -26,11 +33,14 @@ import { isA2UIFunctionInvocationError } from "../protocol/v0_9/functions.js";
 import {
   resolvePresenterProps,
   type A2UIDataSetter,
+  type A2UISetterFactory,
 } from "../protocol/v0_9/resolveProps.js";
+
+import { equalPresenterValues } from "./equalPresenterValues.js";
 
 export interface A2UIComponentNodeProps {
   readonly engine: A2UIEngine;
-  readonly surface: A2UISurfaceSnapshot;
+  readonly surfaceId: string;
   readonly componentId: string;
   readonly scopePath: string;
   readonly recovery: A2UIRecoveryConfig;
@@ -46,97 +56,153 @@ type PresenterResolution =
   | { readonly success: true; readonly value: ResolvedPresenter }
   | { readonly success: false; readonly error: A2UIRendererError };
 
+interface PresenterHostProps {
+  readonly presenter: A2UIPresenter<Record<string, unknown>>;
+  readonly sourceComponent: A2UIComponentSnapshot | undefined;
+  readonly input: A2UIPresenterProps<Record<string, unknown>>;
+}
+
+const PresenterHost = memo(
+  function PresenterHost({ presenter, input }: PresenterHostProps): ReactNode {
+    return createElement(presenter, input);
+  },
+  (previous, next) => {
+    const a = previous.input;
+    const b = next.input;
+    return (
+      previous.presenter === next.presenter &&
+      previous.sourceComponent === next.sourceComponent &&
+      a.surfaceId === b.surfaceId &&
+      a.componentId === b.componentId &&
+      a.scope.path === b.scope.path &&
+      Object.is(a.scope.value, b.scope.value) &&
+      a.renderChild === b.renderChild &&
+      a.dispatch === b.dispatch &&
+      equalPresenterValues(a.props, b.props)
+    );
+  },
+);
+
 export function A2UIComponentNode({
   engine,
-  surface,
+  surfaceId,
   componentId,
   scopePath,
   recovery,
   renderPending,
 }: A2UIComponentNodeProps): ReactNode {
+  const subscribe = useCallback(
+    (listener: () => void) => engine.subscribeSurface(surfaceId, listener),
+    [engine, surfaceId],
+  );
+  const getSnapshot = useCallback(
+    () => engine.getSurface(surfaceId),
+    [engine, surfaceId],
+  );
+  const surface = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const internals = getA2UIEngineInternals(engine);
-  const sourceComponent = Object.prototype.hasOwnProperty.call(
-    surface.components,
-    componentId,
-  )
-    ? surface.components[componentId]
-    : undefined;
+  const sourceComponent =
+    surface !== undefined &&
+    Object.prototype.hasOwnProperty.call(surface.components, componentId)
+      ? surface.components[componentId]
+      : undefined;
+  const catalogId = surface?.catalogId;
   const isPending =
     sourceComponent === undefined &&
-    surface.pendingComponentIds.includes(componentId);
+    (surface?.pendingComponentIds.includes(componentId) ?? false);
+  const setData = useCallback<A2UIDataSetter>(
+    (write) => {
+      const currentSurface = engine.getSurface(surfaceId);
+      const currentComponent =
+        currentSurface !== undefined &&
+        Object.prototype.hasOwnProperty.call(
+          currentSurface.components,
+          componentId,
+        )
+          ? currentSurface.components[componentId]
+          : undefined;
+      const currentBinding = readNestedProperty(
+        currentComponent?.props,
+        write.propertyPath,
+      );
+      if (!matchesA2UIDynamicKind(write.value, write.behavior)) {
+        internals.reportError({
+          code: "BINDING_ERROR",
+          message: `A2UI component "${componentId}" setter received an invalid ${write.behavior.kind} value`,
+          severity: "error",
+          surfaceId,
+          ...(catalogId === undefined ? {} : { catalogId }),
+          componentId,
+          path: write.path,
+        });
+        return;
+      }
+      if (
+        currentComponent !== sourceComponent ||
+        !isDataBinding(currentBinding) ||
+        currentBinding.path !== write.bindingPath
+      ) {
+        internals.reportError({
+          code: "BINDING_ERROR",
+          message: `A2UI component "${componentId}" setter is stale`,
+          severity: "error",
+          surfaceId,
+          ...(catalogId === undefined ? {} : { catalogId }),
+          componentId,
+          path: write.path,
+        });
+        return;
+      }
+      internals.setDataValue(surfaceId, write.path, write.value);
+    },
+    [engine, surfaceId, componentId, catalogId, internals, sourceComponent],
+  );
+
+  const createSetter = useMemo<A2UISetterFactory>(() => {
+    const setters = new Map<string, (value: unknown) => void>();
+    return (binding) => {
+      const key = JSON.stringify([
+        binding.propertyPath,
+        binding.path,
+        binding.bindingPath,
+        binding.behavior.kind,
+      ]);
+      let setter = setters.get(key);
+      if (setter === undefined) {
+        setter = (value) => {
+          setData({ ...binding, value });
+        };
+        setters.set(key, setter);
+      }
+      return setter;
+    };
+  }, [setData, scopePath]);
+
   const resolution = useMemo(
     () =>
-      isPending
+      surface === undefined || isPending
         ? null
         : resolvePresenter(
             internals.getCatalog(surface.catalogId),
             surface,
             componentId,
             scopePath,
-            (write) => {
-              const currentSurface = engine.getSurface(surface.surfaceId);
-              const currentComponent =
-                currentSurface !== undefined &&
-                Object.prototype.hasOwnProperty.call(
-                  currentSurface.components,
-                  componentId,
-                )
-                  ? currentSurface.components[componentId]
-                  : undefined;
-              const currentBinding = readNestedProperty(
-                currentComponent?.props,
-                write.propertyPath,
-              );
-              if (!matchesA2UIDynamicKind(write.value, write.behavior)) {
-                internals.reportError({
-                  code: "BINDING_ERROR",
-                  message: `A2UI component "${componentId}" setter received an invalid ${write.behavior.kind} value`,
-                  severity: "error",
-                  surfaceId: surface.surfaceId,
-                  catalogId: surface.catalogId,
-                  componentId,
-                  path: write.path,
-                });
-                return;
-              }
-              if (
-                currentComponent !== sourceComponent ||
-                !isDataBinding(currentBinding) ||
-                currentBinding.path !== write.bindingPath
-              ) {
-                internals.reportError({
-                  code: "BINDING_ERROR",
-                  message: `A2UI component "${componentId}" setter is stale`,
-                  severity: "error",
-                  surfaceId: surface.surfaceId,
-                  catalogId: surface.catalogId,
-                  componentId,
-                  path: write.path,
-                });
-                return;
-              }
-              internals.setDataValue(
-                surface.surfaceId,
-                write.path,
-                write.value,
-              );
-            },
+            setData,
+            createSetter,
           ),
     [
-      componentId,
-      engine,
-      internals,
-      isPending,
-      scopePath,
-      sourceComponent,
       surface,
+      isPending,
+      internals,
+      componentId,
+      scopePath,
+      setData,
+      createSetter,
     ],
   );
-
   useEffect(() => {
-    if (resolution !== null && !resolution.success) {
+    if (resolution !== null && !resolution.success)
       internals.reportError(resolution.error);
-    }
   }, [internals, resolution]);
 
   const renderChild = useCallback(
@@ -144,43 +210,31 @@ export function A2UIComponentNode({
       createElement(A2UIComponentNode, {
         key: `${childId}:${childScopePath}`,
         engine,
-        surface,
+        surfaceId,
         componentId: childId,
         scopePath: childScopePath,
         recovery,
         ...(renderPending === undefined ? {} : { renderPending }),
       }),
-    [engine, recovery, renderPending, scopePath, surface],
+    [engine, surfaceId, scopePath, recovery, renderPending],
   );
-
   const dispatch = useCallback(
     (action: A2UIComponentAction): void => {
-      internals.dispatchAction(
-        surface.surfaceId,
-        componentId,
-        scopePath,
-        action,
-      );
+      internals.dispatchAction(surfaceId, componentId, scopePath, action);
     },
-    [componentId, internals, scopePath, surface.surfaceId],
+    [internals, surfaceId, componentId, scopePath],
   );
 
-  if (resolution === null) {
+  if (surface === undefined) return null;
+  if (resolution === null)
     return (
-      renderPending?.({
-        surfaceId: surface.surfaceId,
-        componentId,
-        kind: "component",
-      }) ?? null
+      renderPending?.({ surfaceId, componentId, kind: "component" }) ?? null
     );
-  }
-
-  if (!resolution.success) {
+  if (!resolution.success)
     return createElement(A2UIRecoveryFallback, {
       ...recovery,
       error: resolution.error,
     });
-  }
 
   return createElement(
     A2UIErrorBoundary,
@@ -193,16 +247,20 @@ export function A2UIComponentNode({
       renderFallback: (error) =>
         createElement(A2UIRecoveryFallback, { ...recovery, error }),
     },
-    createElement(resolution.value.presenter, {
-      props: resolution.value.props,
-      surfaceId: surface.surfaceId,
-      componentId,
-      scope: {
-        path: scopePath,
-        value: readDataPointer(surface.dataModel, scopePath),
+    createElement(PresenterHost, {
+      presenter: resolution.value.presenter,
+      sourceComponent,
+      input: {
+        props: resolution.value.props,
+        surfaceId,
+        componentId,
+        scope: {
+          path: scopePath,
+          value: readDataPointer(surface.dataModel, scopePath),
+        },
+        renderChild,
+        dispatch,
       },
-      renderChild,
-      dispatch,
     }),
   );
 }
@@ -229,6 +287,7 @@ function resolvePresenter(
   componentId: string,
   scopePath: string,
   setData: A2UIDataSetter,
+  createSetter: A2UISetterFactory,
 ): PresenterResolution {
   if (catalog === undefined) {
     return failure({
@@ -313,6 +372,7 @@ function resolvePresenter(
           scopePath,
           setData,
           catalog.functions,
+          createSetter,
         ),
       },
     };

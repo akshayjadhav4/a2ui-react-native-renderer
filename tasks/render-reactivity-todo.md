@@ -28,11 +28,12 @@ approval stop. Commit verified slices and preserve historical task records.
 
 - [x] Tested foundations preserve existing resolution; no public export changes.
 
-- [ ] **Task 3: Complete presenter preservation path**
+- [x] **Task 3: Complete presenter preservation path**
   - Acceptance: Nodes independently read current surface state; child callbacks remain current; owner-scoped setters are stable and still reject stale writes. Actual presenters remain React components inside a conservative memoized host and outside accepted-revision error recovery. Six measured targets pass with correct output.
   - Files: `src/rendering/presenterAdapter.tsx`, `src/react/A2UISurface.tsx`, `test/integration/render-reactivity.test.mjs`, `tasks/render-reactivity-measurements.md`.
   - Verify: Failing counts first; `pnpm build && node --test test/integration/render-reactivity.test.mjs test/integration/bound-presenter.test.mjs test/integration/surface-subscriptions.test.mjs && node tasks/render-reactivity-baseline.mjs && pnpm typecheck`.
   - Dependencies: Checkpoint A.
+  - Evidence: All ten new target/entry-path tests failed first, then passed. All six measured targets pass in three identical runs; 500 calls become two for one large-template edit. Independent node snapshots, stable owner-scoped setters and child callbacks, and the memoized real React presenter preserve correct output. All 25 focused tests and build/typecheck pass; the full suite, lint, and formatting also pass.
 
 - [ ] **Task 4: Scope, functions, errors, and React behavior**
   - Acceptance: Both wire versions and three entry modes pass; scope-only and external absolute bindings update; functions reevaluate; error recovery works; presenter state/context and current action context remain live. Generated callbacks stay stable only while valid.

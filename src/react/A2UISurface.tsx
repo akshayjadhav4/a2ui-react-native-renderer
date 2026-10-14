@@ -108,7 +108,7 @@ const A2UISurfaceContent = memo(function A2UISurfaceContent({
     },
     createElement(A2UIComponentNode, {
       engine,
-      surface,
+      surfaceId,
       componentId: rootId,
       scopePath: "/",
       recovery,

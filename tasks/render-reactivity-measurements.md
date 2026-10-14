@@ -52,7 +52,28 @@ confirms that even unchanged template scopes reach their presenters again.
 
 ## Optimization ledger
 
-No runtime optimization has been attempted yet. Record each attempted change,
-before/after counts from this same command, retained or reverted result, and
-correctness checks here during implementation. Extend the harness for any new
-claim before using it to justify an optimization.
+### Attempt 1: Independent nodes and stable presenter inputs — retained
+
+On 2026-10-14, mounted nodes subscribed directly to existing surface snapshots,
+child callbacks stopped capturing snapshots, setters were cached by component
+and scope ownership, and a conservative memoized host preserved healthy
+presenters. Functions still resolve on each new accepted snapshot before the
+presenter comparison. No public API or protocol notification changed.
+
+The unchanged harness command ran each fixture three times with identical
+counts and correct final output/data:
+
+| Scenario                         | Before | After |
+| -------------------------------- | -----: | ----: |
+| Root-scoped absolute siblings    |      3 |     3 |
+| One relative template item       |      4 |     2 |
+| Outside template scope           |      4 |     1 |
+| Local template input write       |      4 |     2 |
+| Unbound scope field changes      |      4 |     2 |
+| One child definition replacement |      3 |     1 |
+| 499 template items, one edit     |    500 |     2 |
+
+All six targets are met. The large fixture reduces presenter calls by 99.6%.
+The root-scoped control still observes the full changed scope. Internal
+subscription and resolution work remains proportional to mounted nodes; these
+counts do not establish device FPS or a constant-time update path.
