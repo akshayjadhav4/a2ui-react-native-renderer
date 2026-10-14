@@ -4,9 +4,9 @@
 
 **Specification:** [SPEC-react-surface-api.md](../SPEC-react-surface-api.md)
 
-**Status:** Draft for review on 2026-10-14.
+**Status:** Approved for task breakdown on 2026-10-14 with “next move.”
 
-Use the established per-module records on `codex/native-core`. The historical `tasks/plan.md` and `tasks/todo.md` remain historical records. After plan approval, create `tasks/react-surface-api-todo.md` for the separately reviewed task breakdown.
+Use the established per-module records on `codex/native-core`. The historical `tasks/plan.md` and `tasks/todo.md` remain historical records. The [module task list](react-surface-api-todo.md) contains the separately reviewed task breakdown.
 
 ## Outcome
 

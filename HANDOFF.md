@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first four capability-map modules are complete. The `react-surface-api` spec is approved and its implementation plan awaits review; no implementation is in progress.
+- **State:** The first four capability-map modules are complete. The `react-surface-api` spec and plan are approved; its task breakdown awaits review. No implementation is in progress.
 
 ## What the user wants
 
@@ -105,13 +105,13 @@ depends on the completed `progressive-surfaces` module. Its
 `useA2UIEngine` hook, an optional direct `engine` prop on `A2UISurface`, and
 optional `messages` in external-engine `A2UIRenderer` mode. The user approved
 the spec with “ok continue” on 2026-10-14. The
-[draft plan](./tasks/react-surface-api-plan.md) needs review before task breakdown
-under the user's requested `spec-driven-development` workflow. No task list or
-implementation exists for this module yet. `render-reactivity` is also eligible for
+[approved plan](./tasks/react-surface-api-plan.md) was approved with “next move.”
+The [draft task list](./tasks/react-surface-api-todo.md) needs review before
+implementation under the user's requested `spec-driven-development` workflow.
+No implementation exists for this module yet. `render-reactivity` is also eligible for
 specification; `consumer-tooling` depends on `react-surface-api`.
 
-After plan approval, create the per-module task list under `tasks/`, with
-its review before implementation. Use focused tests before
+After task-list approval, start Task 1 and follow dependency order. Use focused tests before
 behavior changes and commit each verified slice on this branch. Do not assume
 a release or publication is approved.
 
