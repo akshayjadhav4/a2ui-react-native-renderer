@@ -3,7 +3,7 @@
 - **As of:** 2026-10-14
 - **Checkout:** `/Users/akshayjadhav/Documents/Development/Mobile/GenUI/a2ui-react-native-renderer`
 - **Branch:** `codex/native-core` (local branch, based on `main`; no upstream branch or PR)
-- **State:** The first six capability-map modules are complete. Only `consumer-tooling` remains; no implementation is in progress.
+- **State:** The first six capability-map modules are complete. The final `consumer-tooling` spec is drafted for review; no implementation is in progress.
 
 ## What the user wants
 
@@ -136,9 +136,12 @@ implementation and review corrections end at `f0ab843`, followed by completion r
 
 `consumer-tooling` is the final module in the approved capability map: a small
 catalog/surface test harness and real streaming example with app-owned
-components. It has no spec, plan, or task list yet. Start by inspecting the
-existing guide type fixtures, Expo showcase, catalog exporter, and consumer
-smoke fixtures, then draft its spec against the map.
+components. [SPEC-consumer-tooling.md](./SPEC-consumer-tooling.md) is drafted for
+review. It proposes an optional `/testing` harness using the real engine and a
+local WebSocket Expo demo with a private producer. The spec also proposes one
+example-only `ws` dependency; no renderer runtime dependency is proposed.
+There is no plan or task list yet. Obtain spec approval before drafting the
+implementation plan, following the requested spec-driven workflow.
 
 Use the requested `spec-driven-development` workflow and preserve reviewed
 module contracts. The user explicitly authorized reactivity implementation
