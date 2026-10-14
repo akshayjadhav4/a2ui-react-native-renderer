@@ -35,15 +35,16 @@ approval stop. Commit verified slices and preserve historical task records.
   - Dependencies: Checkpoint A.
   - Evidence: All ten new target/entry-path tests failed first, then passed. All six measured targets pass in three identical runs; 500 calls become two for one large-template edit. Independent node snapshots, stable owner-scoped setters and child callbacks, and the memoized real React presenter preserve correct output. All 25 focused tests and build/typecheck pass; the full suite, lint, and formatting also pass.
 
-- [ ] **Task 4: Scope, functions, errors, and React behavior**
+- [x] **Task 4: Scope, functions, errors, and React behavior**
   - Acceptance: Both wire versions and three entry modes pass; scope-only and external absolute bindings update; functions reevaluate; error recovery works; presenter state/context and current action context remain live. Generated callbacks stay stable only while valid.
   - Files: `test/integration/render-reactivity.test.mjs`, runtime fixes limited to the affected rendering helper.
   - Verify: Failing/reproduction cases before fixes; `pnpm build && node --test test/integration/render-reactivity.test.mjs test/integration/consumer-functions.test.mjs test/integration/diagnostics.test.mjs && pnpm typecheck`.
   - Dependencies: Task 3.
+  - Evidence: Root-scope, external/escaped binding, current function result/evaluation, binding/function/presenter recovery, saved action context, and React state/context cases pass. All 30 focused tests and the full 192-test suite pass; typecheck and formatting pass. Existing lint remains clean.
 
 ### Checkpoint B
 
-- [ ] Targets and scope controls pass; existing tests, lint, formatting, and typecheck pass.
+- [x] Targets and scope controls pass; existing tests, lint, formatting, and typecheck pass.
 
 - [ ] **Task 5: Template and lifecycle invalidation**
   - Acceptance: Append/removal/reordering/root replacement, child arrival, component replacement/type/rebind, saved setters/child callbacks, deletion/recreation, engine/ID changes, and subscription cleanup retain current semantics.
