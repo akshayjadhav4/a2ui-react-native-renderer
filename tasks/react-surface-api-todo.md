@@ -68,11 +68,12 @@ Follow dependency order on `codex/native-core` and commit each verified slice. A
 
 ## Phase C: Consumer adoption
 
-- [ ] **Task 7: Adopt the API in native consumers**
+- [x] **Task 7: Adopt the API in native consumers**
   - Acceptance: Expo showcase uses the hook, ingests initial fixtures in an effect guarded against Strict Mode replay, retains app-owned simulated-source cancellation, and omits dummy messages. The packed bare fixture imports and exercises the hook/direct-engine surface flow. Consumer setup introduces no dependency or transport.
   - Verify: `pnpm build && pnpm example:check`; typecheck the bare fixture through `pnpm consumer:smoke` at the final checkpoint; inspect initialization and cancellation effects.
   - Files: `example/expo/src/components/renderer-showcase.tsx`, `test/fixtures/bare-consumer/index.tsx`.
   - Dependencies: Checkpoint B. Scope: Small.
+  - Evidence: Expo showcase uses the public hook and omitted external messages; initial fixtures apply in a guarded effect and source cancellation stays app-owned. Bare fixture uses the public hook/direct surface flow with guarded fixture ingestion. Build and Expo typecheck/lint pass; packed fixture checks run at Checkpoint D.
 
 - [ ] **Task 8: Document the complete React stream flow**
   - Acceptance: README, public API, and streaming guide show hook-owned lifetime and direct one-surface placement with an app-owned subscription returning unsubscribe. Examples cover latest callbacks, stable construction settings, keyed remounts, placement ownership, and provider-based inspection. Type fixtures compile the documented API usage.
