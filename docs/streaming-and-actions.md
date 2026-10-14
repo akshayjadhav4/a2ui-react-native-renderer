@@ -4,6 +4,39 @@ The renderer processes A2UI messages; it does not own the stream carrying them.
 AG-UI, HTTP, WebSocket, SSE, local fixtures, and on-device inference can all feed
 the same engine.
 
+## Runnable Local Network Example
+
+The repository's Expo example has a **Network demo** screen and a private
+local fixture producer. From the repository root, run `pnpm install && pnpm build`,
+then use two terminals:
+
+```sh
+pnpm --filter a2ui-demo-server start
+```
+
+```sh
+EXPO_PUBLIC_A2UI_DEMO_URL=ws://localhost:8080 pnpm --filter a2ui-renderer-example start
+```
+
+For Android emulators use `ws://10.0.2.2:8080`; Android documents the
+[host-loopback alias](https://developer.android.com/studio/run/emulator-networking-address).
+For a phone, run the server with `A2UI_DEMO_HOST=0.0.0.0` and enter the computer's
+reachable LAN IP instead of localhost. The editable endpoint is public
+configuration. Custom native builds may need app-specific local network
+permissions or a trusted `wss://` endpoint; see
+[React Native networking](https://reactnative.dev/docs/0.86/network).
+
+Connect to observe pending root/children and the streamed form. Edit its input
+and send an action to see the reply. Controls demonstrate invalid-update
+recovery, deletion, disconnect and fresh-session reconnection. Cleanup retires
+old socket callbacks; transport errors and renderer errors appear separately.
+
+This is an actual socket connection to a deterministic producer. Replace it
+with your application backend using the same engine ingestion and action
+callback; the renderer supplies neither client transport nor server. Use the
+optional [testing harness](./testing.md) to verify the same catalog and messages.
+The repository example README contains complete setup and demo-envelope details.
+
 ## Message Lifecycle
 
 For v0.9 and v0.9.1, the runtime accepts:

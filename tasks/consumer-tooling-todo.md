@@ -103,17 +103,19 @@ the presence of implementation files.
 
 ## Phase D: Adoption and Completion
 
-- [ ] **Task 10: Document consumer testing**
+- [x] **Task 10: Document consumer testing**
   - Acceptance: Testing guide includes headless ingestion and a mounted presenter binding/action example, own-runner assertions, cleanup, frozen action-array semantics, and explicit render-time validation limits. API/README link the optional entry; compiled fixtures use published import paths.
   - Verify: `pnpm typecheck && node --test test/unit/documentation.test.mjs`; targeted Prettier check for changed files and inspection against emitted declarations.
   - Files: `docs/testing.md`, `docs/api.md`, `README.md`, `test/types/testing.ts`, `test/unit/documentation.test.mjs` only if an existing documentation assertion needs extending.
   - Dependencies: Checkpoint C. Scope: Medium.
+  - Evidence: Headless and mounted guide examples documented; actual mounted snippet compiles through public package imports. API/README links and existing documentation assertions pass. A separate type fixture was added to compile the complete snippet.
 
-- [ ] **Task 11: Document runnable streaming and backend substitution**
+- [x] **Task 11: Document runnable streaming and backend substitution**
   - Acceptance: Example README and streaming guide contain exact producer/Expo commands, public endpoint configuration, host/emulator/device address guidance, and any development network configuration actually required. Explain demo envelopes and replacing the deterministic producer with an app backend. Compile relevant renderer examples; record manual verification limitations honestly.
   - Verify: `pnpm typecheck && pnpm example:check`; targeted Prettier check. Exercise the documented server start command and check Expo startup configuration. Verify platform-specific networking claims against official sources before documenting them.
   - Files: `example/expo/README.md`, `docs/streaming-and-actions.md`, `test/types/guides.tsx`, `example/server/README.md` if separate server instructions improve clarity.
   - Dependencies: Task 10. Scope: Medium.
+  - Evidence: Network setup, host/emulator/device endpoints, transport envelopes, backend substitution and cleanup documented with official sources. Producer startup/signal cleanup passed; simulator inventory has no booted devices and adb lists none. Expo startup verification is recorded at final checkpoint.
 
 - [ ] **Task 12: Review and verify the complete package**
   - Acceptance: All spec success criteria have recorded evidence. Existing test gates, example exports, pack checks, and packed Expo/bare iOS/Android consumers pass; no public API expansion, dependency leak, lowered test bar, version/license change, or publication occurs. Record any unavailable device verification without claiming it passed.
