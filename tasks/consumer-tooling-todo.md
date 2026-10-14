@@ -23,11 +23,12 @@ the presence of implementation files.
   - Dependencies: Approved task list. Scope: Medium.
   - Evidence: Missing-entry test failed before implementation. All three headless tests, build, typecheck, and lint pass; the built entry imports in plain Node.
 
-- [ ] **Task 2: Exercise mounted bindings and action recording**
+- [x] **Task 2: Exercise mounted bindings and action recording**
   - Acceptance: App-owned test presenters mounted through `A2UISurface` update a writable binding and dispatch a real action. The harness records ordered action payloads; returned arrays are frozen and remain unchanged after later dispatches. Unmount/dispose cleanup runs even on assertion failure.
   - Verify: `pnpm build && node --test test/integration/testing-harness.test.mjs test/integration/presenter-action.test.mjs test/integration/bound-presenter.test.mjs`; write action/snapshot assertions before adjusting the harness.
   - Files: `test/integration/testing-harness.test.mjs`, `src/testing.ts` if a demonstrated behavior failure needs correction.
   - Dependencies: Task 1. Scope: Small.
+  - Evidence: Mounted binding writes and action dispatch preserve latest context, timestamps and ordering; frozen list snapshots remain detached and malformed actions are not recorded. All focused integration tests pass.
 
 - [ ] **Task 3: Prove packed entry availability and bundle isolation**
   - Acceptance: Pack checks require the testing entry/declarations/export. The installed tarball's `/testing` constructs an engine and ingests a fixture in plain Node. A harness-only sentinel is absent from normal Expo/bare native bundles; existing exporter/web-runtime exclusions remain intact.
