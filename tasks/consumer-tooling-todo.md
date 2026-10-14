@@ -88,17 +88,18 @@ the presence of implementation files.
   - Dependencies: Checkpoint B. Scope: Medium.
   - Evidence: Missing-module test failed first. Three adapter tests now pass for message/error handling, send failures, constructor/close failures, and retained callback isolation; Expo type/lint checks pass.
 
-- [ ] **Task 9: Add the interactive network screen**
+- [x] **Task 9: Add the interactive network screen**
   - Acceptance: The Expo app offers an explicit fixture/network choice. Configured endpoint, connection state, transport/renderer errors, last action, app-owned pending UI, and connect/disconnect/recover/delete controls are visible. Each connection has a fresh keyed hook-owned engine; effects retire sockets on unmount and actions use the current open connection.
   - Verify: `pnpm build && pnpm example:check && pnpm example:export`; inspect hook/effect ownership and disabled control states. Run manual network interaction if a simulator/device is available and record exactly what was performed.
   - Files: `example/expo/src/components/network-demo.tsx`, `example/expo/src/app/index.tsx`, `example/expo/src/demo-connection.mjs` if integration reveals a demonstrated issue.
   - Dependencies: Task 8. Scope: Medium.
+  - Evidence: Native stack navigation exposes a separate network screen. Example type/lint and iOS/Android exports pass; keyed session and effect/socket cleanup reviewed. Physical-device interaction has not been performed.
 
 ### Checkpoint C: Complete Example Flow
 
-- [ ] Example type/lint and iOS/Android exports pass, with fixture showcase retained.
-- [ ] Connection lifecycle regression tests pass; manual device evidence is separated from bundle evidence.
-- [ ] Review copyable integration: component catalog, socket lifetime, placement and errors are app-owned.
+- [x] Example type/lint and iOS/Android exports pass, with fixture showcase retained.
+- [x] Connection lifecycle regression tests pass; manual device evidence is separated from bundle evidence.
+- [x] Review copyable integration: component catalog, socket lifetime, placement and errors are app-owned.
 
 ## Phase D: Adoption and Completion
 
