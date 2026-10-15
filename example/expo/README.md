@@ -60,18 +60,36 @@ public variables; see its [environment variable guide](https://docs.expo.dev/gui
 
 ### Try the Flow
 
-1. Connect. Separate v0.9.1 messages expose pending root and children before
-   the form becomes ready.
-2. Edit the rendered input and press **Send action**. The binding updates
-   `/draft`; the producer receives the real action and replies with a data update.
-3. After the form appears, press **Recover invalid update**. A rejected message
-   produces a renderer error; the next valid update restores the surface.
-4. **Delete surface** removes the form and cancels remaining producer sends.
-5. Disconnect and connect again for a fresh engine and producer session.
+Choose `v0.9` or `v0.9.1` before connecting. Repeat this checklist with both
+versions (disconnect before changing versions):
+
+| Step                        | Expected result                                                                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connect                     | Progressive root/children appear, then a teal-bordered form. Model sharing is on.                                                                              |
+| Edit the rendered input     | The input edits `/record/` (the empty-name field); **Preserved sibling** stays visible.                                                                        |
+| Send action                 | The server reply contains `model: YOUR EDIT` and `sibling: Preserved sibling`. Last sent payload contains the full model under `metadata.a2uiClientDataModel`. |
+| Send chat with current form | The same edited model arrives without a button action. The reply starts with `chat`.                                                                           |
+| Invalid list path           | The input reports `BINDING_ERROR` for `/items/length`. Other healthy children remain.                                                                          |
+| Restore input               | The input returns with your previous edit and the sibling intact.                                                                                              |
+| Invalid theme               | The form is deleted; a creation with a numeric color is rejected with `INVALID_MESSAGE`.                                                                       |
+| Recreate form               | A fresh teal form appears, current error recovers and model sharing turns on. Input values reset.                                                              |
+| No theme                    | The form is recreated without theme values; app default colors replace teal. Model sharing is on.                                                              |
+| Opt out of model sharing    | A fresh form appears with sharing off. Action/chat replies say **metadata omitted**; last sent payload has no model metadata.                                  |
+| Delete surface (try twice)  | First click removes the form; second click reports `INVALID_MESSAGE`. Recreate form restores it.                                                               |
+| Recover invalid update      | A malformed update is rejected, then a valid reply displays **Recovered after invalid message**.                                                               |
+| Disconnect/reconnect        | A fresh engine and producer session start.                                                                                                                     |
+
+“Last renderer error” is historical and intentionally stays visible after a
+successful recovery. Invalid-theme, invalid-list-path, malformed-update and
+second-deletion controls intentionally generate errors. Use **Recreate form**
+to reset the fixture; it also turns sharing back on. Recreating a form does
+not preserve edits. Use **Restore input** when you want to retain the edit.
 
 The app reports connection, transport and renderer errors separately. It has
 manual reconnection; leaving the screen retires socket callbacks and releases
 the hook-owned engine. The producer cancels timers on disconnect/shutdown.
+Automated tests cover these scenarios over real local sockets and mounted
+presenters; native device interaction remains a manual check.
 
 ### Ownership and Backend Substitution
 
@@ -81,19 +99,35 @@ built-in WebSocket, and the renderer has no transport dependency.
 
 `src/catalog-contract.mjs` defines the schema shapes once, receiving Zod/common
 schemas as arguments. `src/catalog.tsx` attaches native presenters; the producer
-imports only the catalog ID and tests use these same schemas with test presenters.
+imports only the catalog ID and tests use these same component/theme schemas
+with test presenters.
 
 Replace the producer with your backend while keeping app-owned ingestion:
-parse incoming A2UI messages, call `engine.applyMessage`, and send `onAction`
-payloads through your transport. Your backend selects the app catalog ID and
+parse incoming A2UI messages, call `engine.applyMessage`, and route actions and
+chat messages through one sending function. That function calls
+`engine.getClientDataModel(["network-demo"])`; the library checks opt-in without
+the app tracking flags. Your backend selects the app catalog ID and
 can use its exported schema document to guide a model.
 
 The demo's text frames contain raw incoming A2UI JSON or a separate producer
-error envelope, `{ "type": "demoError", "message": "..." }`. Outgoing controls
-are `{ "type": "command", "command": "start" }`, with `recover` and `delete`
-as the other supported commands. Actions use
-`{ "type": "action", "action": A2UIUserAction }` with the unmodified action.
-These envelopes are private demo conventions, not additions to A2UI.
+error envelope, `{ "type": "demoError", "message": "..." }`. These are private
+demo conventions, not additions to A2UI:
+
+- Start: `{ type: "command", command: "start", version, sendDataModel: true }`.
+  Defaults are `v0.9.1` and true. Other commands are `recover`, `delete`,
+  `recreate`, `without-theme`, `opt-out`, `invalid-path` and `restore-path`,
+  plus `invalid-theme`.
+- Action: `{ type: "action", version, action, metadata? }`.
+- Chat: `{ type: "chat", version, text, metadata? }`.
+- When opted in, metadata is `{ a2uiClientDataModel: { version, surfaces } }`.
+  The server requires only its own surface, matching version, edited field and
+  intact sibling. Missing/mismatched metadata produces a separate transport
+  error instead of a success reply. Opted-out sends must omit model metadata.
+
+The actual A2UI action envelope is `{ version, action }`; `type` and the outer
+transport metadata are demo-specific. Command controls are fixture instructions,
+not outgoing A2A conversation messages. User actions and chat share the model
+metadata path. The producer remains deterministic and has no LLM or credentials.
 
 ## Fixture Showcase
 

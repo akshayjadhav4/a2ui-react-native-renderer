@@ -31,3 +31,24 @@ test("shared example factory keeps marked schemas and validates component props"
     false,
   );
 });
+
+test("demo theme contract accepts only the app-owned color format", () => {
+  const schemas = createDemoSchemas({
+    z,
+    A2UIActionSchema: ActionSchema,
+    A2UIChildListSchema: ChildListSchema,
+    A2UIDynamicStringSchema: DynamicStringSchema,
+  });
+  assert.equal(
+    schemas.ThemeSchema.safeParse({ primaryColor: "#0f766e" }).success,
+    true,
+  );
+  assert.equal(
+    schemas.ThemeSchema.safeParse({ primaryColor: 42 }).success,
+    false,
+  );
+  assert.equal(
+    schemas.ThemeSchema.safeParse({ primaryColor: "not-a-color" }).success,
+    false,
+  );
+});

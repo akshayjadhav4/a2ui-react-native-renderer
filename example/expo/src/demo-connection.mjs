@@ -4,6 +4,8 @@
  * onMessage: (message: unknown) => void,
  * onState: (state: "connecting" | "open" | "closed") => void,
  * onError: (message: string) => void,
+ * version?: "v0.9" | "v0.9.1",
+ * sendDataModel?: boolean,
  * createSocket?: (url: string) => WebSocket }} options
  */
 export function createDemoConnection({
@@ -11,6 +13,8 @@ export function createDemoConnection({
   onMessage,
   onState,
   onError,
+  version = "v0.9.1",
+  sendDataModel = true,
   createSocket = (endpoint) => new WebSocket(endpoint),
 }) {
   let retired = false;
@@ -42,7 +46,7 @@ export function createDemoConnection({
     socket.onopen = () => {
       if (!retired) {
         onState("open");
-        send({ type: "command", command: "start" });
+        send({ type: "command", command: "start", version, sendDataModel });
       }
     };
     socket.onmessage = (event) => {

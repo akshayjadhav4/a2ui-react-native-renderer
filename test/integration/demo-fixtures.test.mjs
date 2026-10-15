@@ -23,7 +23,7 @@ test("demo fixtures use shared schemas for progressive rendering and interaction
     harness.engine.applyMessages(initialMessages.slice(1, 3));
     assert.deepEqual(
       harness.engine.getSurface(SURFACE_ID).pendingComponentIds,
-      ["title", "input", "button", "response"],
+      ["title", "input", "sibling", "button", "response"],
     );
     await act(() => {
       renderer = TestRenderer.create(
@@ -35,12 +35,24 @@ test("demo fixtures use shared schemas for progressive rendering and interaction
         }),
       );
     });
-    assert.equal(renderer.root.findAllByType("Pending").length, 4);
+    assert.equal(renderer.root.findAllByType("Pending").length, 5);
     await act(() => harness.engine.applyMessages(initialMessages.slice(3)));
     assert.equal(renderer.root.findAllByType("Pending").length, 0);
     await act(() => renderer.root.findByType("Input").props.onChange("Edited"));
     await act(() => renderer.root.findByType("Button").props.onPress());
     assert.equal(harness.getActions()[0].context.value, "Edited");
+    assert.equal(
+      harness.engine.getSurface(SURFACE_ID).dataModel.record.keep,
+      "Preserved sibling",
+    );
+    assert.equal(
+      harness.engine.getClientDataModel([SURFACE_ID]).surfaces[SURFACE_ID]
+        .record[""],
+      "Edited",
+    );
+    assert.deepEqual(harness.engine.getSurface(SURFACE_ID).theme, {
+      primaryColor: "#0f766e",
+    });
     await act(() => harness.engine.applyMessage(responseMessage("Edited")));
     assert.equal(
       harness.engine.getSurface(SURFACE_ID).dataModel.response,

@@ -11,7 +11,7 @@ import { z } from "zod";
 
 import { createDemoSchemas, FIXTURE_CATALOG_ID } from "./catalog-contract.mjs";
 export { FIXTURE_CATALOG_ID };
-const { ColumnSchema, TextSchema, InputSchema, ButtonSchema } =
+const { ThemeSchema, ColumnSchema, TextSchema, InputSchema, ButtonSchema } =
   createDemoSchemas({
     z,
     A2UIActionSchema,
@@ -20,18 +20,19 @@ const { ColumnSchema, TextSchema, InputSchema, ButtonSchema } =
   });
 
 type PresenterProps<Schema extends z.AnyZodObject> = A2UIPresenterProps<
-  A2UIResolvedProps<z.output<Schema>>
+  A2UIResolvedProps<z.output<Schema>>,
+  z.output<typeof ThemeSchema>
 >;
 
-function usePalette() {
+function usePalette(theme?: Readonly<z.output<typeof ThemeSchema>>) {
   const dark = useColorScheme() === "dark";
 
   return {
     background: dark ? "#000000" : "#ffffff",
-    border: dark ? "#3f3f46" : "#d4d4d8",
+    border: theme?.primaryColor ?? (dark ? "#3f3f46" : "#d4d4d8"),
     muted: dark ? "#a1a1aa" : "#52525b",
-    primary: dark ? "#ffffff" : "#000000",
-    primaryText: dark ? "#000000" : "#ffffff",
+    primary: theme?.primaryColor ?? (dark ? "#ffffff" : "#000000"),
+    primaryText: theme ? "#ffffff" : dark ? "#000000" : "#ffffff",
     text: dark ? "#ffffff" : "#000000",
   } as const;
 }
@@ -39,8 +40,9 @@ function usePalette() {
 function ColumnPresenter({
   props,
   renderChild,
+  theme,
 }: PresenterProps<typeof ColumnSchema>) {
-  const colors = usePalette();
+  const colors = usePalette(theme);
   const card = props.appearance === "card";
 
   return (
@@ -60,8 +62,8 @@ function ColumnPresenter({
   );
 }
 
-function TextPresenter({ props }: PresenterProps<typeof TextSchema>) {
-  const colors = usePalette();
+function TextPresenter({ props, theme }: PresenterProps<typeof TextSchema>) {
+  const colors = usePalette(theme);
   const variant = props.variant ?? "body";
 
   return (
@@ -79,8 +81,8 @@ function TextPresenter({ props }: PresenterProps<typeof TextSchema>) {
   );
 }
 
-function InputPresenter({ props }: PresenterProps<typeof InputSchema>) {
-  const colors = usePalette();
+function InputPresenter({ props, theme }: PresenterProps<typeof InputSchema>) {
+  const colors = usePalette(theme);
 
   return (
     <TextInput
@@ -107,8 +109,9 @@ function InputPresenter({ props }: PresenterProps<typeof InputSchema>) {
 function ButtonPresenter({
   props,
   dispatch,
+  theme,
 }: PresenterProps<typeof ButtonSchema>) {
-  const colors = usePalette();
+  const colors = usePalette(theme);
 
   return (
     <Pressable
@@ -136,6 +139,7 @@ function ButtonPresenter({
 
 export const fixtureCatalog = defineA2UICatalog({
   id: FIXTURE_CATALOG_ID,
+  themeSchema: ThemeSchema,
   components: {
     Column: { schema: ColumnSchema, presenter: ColumnPresenter },
     Text: { schema: TextSchema, presenter: TextPresenter },

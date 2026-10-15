@@ -4,7 +4,13 @@ import {
   type A2UIRendererError,
   type A2UIUserAction,
 } from "a2ui-react-native-renderer";
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   Pressable,
   ScrollView,
@@ -22,9 +28,11 @@ export function NetworkDemo() {
   const [endpoint, setEndpoint] = useState(
     process.env.EXPO_PUBLIC_A2UI_DEMO_URL ?? "ws://localhost:8080",
   );
+  const [version, setVersion] = useState<"v0.9" | "v0.9.1">("v0.9.1");
   const [session, setSession] = useState<{
     id: number;
     endpoint: string;
+    version: "v0.9" | "v0.9.1";
   } | null>(null);
   const generation = useRef(0);
   const color = dark ? "#fafafa" : "#18181b";
@@ -37,8 +45,8 @@ export function NetworkDemo() {
     >
       <Text style={[styles.title, { color }]}>Local network demo</Text>
       <Text style={{ color }}>
-        A deterministic producer streams A2UI v0.9.1 messages over WebSocket.
-        Edit the rendered input and send an action to see its reply.
+        Test themes, exact data paths, edited model round trips and surface
+        recovery against a local producer. Choose a version before connecting.
       </Text>
       <TextInput
         accessibilityLabel="WebSocket endpoint"
@@ -49,12 +57,26 @@ export function NetworkDemo() {
         onChangeText={setEndpoint}
         style={[styles.endpoint, { color }]}
       />
+      <View style={styles.controls}>
+        {(["v0.9", "v0.9.1"] as const).map((candidate) => (
+          <Control
+            key={candidate}
+            label={`${candidate}${version === candidate ? " ✓" : ""}`}
+            disabled={session !== null}
+            onPress={() => setVersion(candidate)}
+          />
+        ))}
+      </View>
       {session === null ? (
         <Control
           label="Connect"
           disabled={!endpoint.trim()}
           onPress={() =>
-            setSession({ id: ++generation.current, endpoint: endpoint.trim() })
+            setSession({
+              id: ++generation.current,
+              endpoint: endpoint.trim(),
+              version,
+            })
           }
         />
       ) : (
@@ -64,6 +86,7 @@ export function NetworkDemo() {
         <NetworkSession
           key={session.id}
           endpoint={session.endpoint}
+          version={session.version}
           color={color}
         />
       ) : (
@@ -78,9 +101,11 @@ export function NetworkDemo() {
 
 function NetworkSession({
   endpoint,
+  version,
   color,
 }: {
   endpoint: string;
+  version: "v0.9" | "v0.9.1";
   color: string;
 }) {
   const [state, setState] = useState<"connecting" | "open" | "closed">(
@@ -91,6 +116,7 @@ function NetworkSession({
     null,
   );
   const [lastAction, setLastAction] = useState<A2UIUserAction | null>(null);
+  const [lastPayload, setLastPayload] = useState<unknown>(null);
   const connection = useRef<ReturnType<typeof createDemoConnection> | null>(
     null,
   );
@@ -99,12 +125,50 @@ function NetworkSession({
     onError: setRendererError,
     onAction: (action) => {
       setLastAction(action);
-      connection.current?.send({ type: "action", action });
+      sendToProducer({ type: "action", action });
     },
   });
+  const subscribe = useCallback(
+    (listener: () => void) => engine.subscribeSurface("network-demo", listener),
+    [engine],
+  );
+  const getSurface = useCallback(
+    () => engine.getSurface("network-demo"),
+    [engine],
+  );
+  const surface = useSyncExternalStore(subscribe, getSurface, getSurface);
+  const ready =
+    surface !== undefined &&
+    surface.rootId !== null &&
+    surface.pendingComponentIds.length === 0;
+  function sendToProducer(
+    message:
+      | { type: "action"; action: A2UIUserAction }
+      | { type: "chat"; text: string },
+  ): void {
+    try {
+      const model = engine.getClientDataModel(["network-demo"]);
+      const payload = {
+        ...message,
+        version,
+        ...(model ? { metadata: { a2uiClientDataModel: model } } : {}),
+      };
+      if (connection.current?.send(payload)) {
+        setTransportError(null);
+        setLastPayload(payload);
+      }
+    } catch (error) {
+      setTransportError(
+        error instanceof Error
+          ? error.message
+          : "Could not prepare model metadata",
+      );
+    }
+  }
   useEffect(() => {
     const active = createDemoConnection({
       url: endpoint,
+      version,
       onState: setState,
       onError: setTransportError,
       onMessage: (message) => engine.applyMessage(message),
@@ -114,26 +178,67 @@ function NetworkSession({
       connection.current = null;
       active.close();
     };
-  }, [endpoint, engine]);
-  const command = (name: "recover" | "delete") =>
+  }, [endpoint, engine, version]);
+  const command = (name: string) =>
     connection.current?.send({ type: "command", command: name });
   return (
     <View style={styles.session}>
       <Text accessibilityLiveRegion="polite" style={{ color }}>
         Connection: {state}
       </Text>
+      <Text style={{ color }}>
+        Protocol: {version} · Model sharing:{" "}
+        {surface?.sendDataModel ? "on" : "off"}
+      </Text>
+      <Text style={{ color }}>
+        Edit the form, then use Send action or Send chat. The reply confirms the
+        full model and preserved sibling received by the server. Teal controls
+        come from the surface theme; No theme restores app defaults.
+      </Text>
+      <Control
+        label="Send chat with current form"
+        disabled={state !== "open" || !ready}
+        onPress={() =>
+          sendToProducer({ type: "chat", text: "Confirm the current form" })
+        }
+      />
       <View style={styles.controls}>
-        <Control
-          label="Recover invalid update"
-          disabled={state !== "open"}
-          onPress={() => command("recover")}
-        />
-        <Control
-          label="Delete surface"
-          disabled={state !== "open"}
-          onPress={() => command("delete")}
-        />
+        {(
+          [
+            ["Invalid list path", "invalid-path"],
+            ["Restore input", "restore-path"],
+            ["Invalid theme", "invalid-theme"],
+            ["Recover invalid update", "recover"],
+          ] as const
+        ).map(([label, name]) => (
+          <Control
+            key={name}
+            label={label}
+            disabled={state !== "open" || !ready}
+            onPress={() => command(name)}
+          />
+        ))}
+        {(
+          [
+            ["Recreate form", "recreate"],
+            ["No theme", "without-theme"],
+            ["Opt out of model sharing", "opt-out"],
+            ["Delete surface (try twice)", "delete"],
+          ] as const
+        ).map(([label, name]) => (
+          <Control
+            key={name}
+            label={label}
+            disabled={state !== "open"}
+            onPress={() => command(name)}
+          />
+        ))}
       </View>
+      <Text style={{ color }}>
+        Invalid path, invalid theme and a second deletion intentionally report
+        errors. Restore input keeps edits; Recreate form resets values and turns
+        model sharing back on. No theme also recreates the form.
+      </Text>
       <A2UISurface
         engine={engine}
         surfaceId="network-demo"
@@ -154,6 +259,11 @@ function NetworkSession({
         <Text style={{ color }}>
           Last renderer error: {rendererError.code} (later valid messages can
           recover)
+        </Text>
+      ) : null}
+      {lastPayload !== null ? (
+        <Text selectable style={{ color }}>
+          Last sent payload: {JSON.stringify(lastPayload, null, 2)}
         </Text>
       ) : null}
       {lastAction !== null ? (

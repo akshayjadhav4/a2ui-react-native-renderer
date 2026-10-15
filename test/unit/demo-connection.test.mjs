@@ -44,7 +44,14 @@ test("app connection forwards messages and separates parse, demo and socket erro
   const f = fixture();
   assert.equal(f.connection.send({ type: "action" }), false);
   f.socket.open();
-  assert.deepEqual(f.socket.sent, [{ type: "command", command: "start" }]);
+  assert.deepEqual(f.socket.sent, [
+    {
+      type: "command",
+      command: "start",
+      version: "v0.9.1",
+      sendDataModel: true,
+    },
+  ]);
   f.socket.receive('{"version":"v0.9.1"}');
   assert.deepEqual(f.messages, [{ version: "v0.9.1" }]);
   f.socket.receive("{");
@@ -102,4 +109,27 @@ test("constructor and close failures do not escape UI callbacks", () => {
     throw new Error("Closed");
   };
   assert.doesNotThrow(() => other.connection.close());
+});
+
+test("connection sends the chosen version and opt-in policy at session start", () => {
+  const socket = new FakeSocket();
+  const connection = createDemoConnection({
+    url: "ws://example",
+    version: "v0.9",
+    sendDataModel: false,
+    createSocket: () => socket,
+    onMessage: () => {},
+    onState: () => {},
+    onError: () => {},
+  });
+  socket.open();
+  assert.deepEqual(socket.sent, [
+    {
+      type: "command",
+      command: "start",
+      version: "v0.9",
+      sendDataModel: false,
+    },
+  ]);
+  connection.close();
 });

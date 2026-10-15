@@ -16,6 +16,9 @@ export function createDemoSchemas({
   A2UIDynamicStringSchema,
 }) {
   return {
+    ThemeSchema: z
+      .object({ primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/) })
+      .strict(),
     ColumnSchema: z.object({
       children: A2UIChildListSchema,
       appearance: z.enum(["plain", "card"]).optional(),

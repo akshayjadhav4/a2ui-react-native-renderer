@@ -10,14 +10,20 @@ const components = (items) => ({
 export const initialMessages = [
   {
     version,
-    createSurface: { surfaceId: SURFACE_ID, catalogId: FIXTURE_CATALOG_ID },
+    createSurface: {
+      surfaceId: SURFACE_ID,
+      catalogId: FIXTURE_CATALOG_ID,
+      sendDataModel: true,
+      theme: { primaryColor: "#0f766e" },
+    },
   },
   {
     version,
     updateDataModel: {
       surfaceId: SURFACE_ID,
       value: {
-        draft: "Hello from the app",
+        record: { "": "Hello from the app", keep: "Preserved sibling" },
+        items: ["First item"],
         response: "Waiting for your action",
       },
     },
@@ -27,7 +33,7 @@ export const initialMessages = [
       id: "root",
       component: "Column",
       appearance: "card",
-      children: ["title", "input", "button", "response"],
+      children: ["title", "input", "sibling", "button", "response"],
     },
   ]),
   components([
@@ -42,15 +48,24 @@ export const initialMessages = [
     {
       id: "input",
       component: "Input",
-      value: { path: "/draft" },
+      value: { path: "/record/" },
       placeholder: "Message to the producer",
+    },
+    {
+      id: "sibling",
+      component: "Text",
+      text: { path: "/record/keep" },
+      variant: "caption",
     },
     {
       id: "button",
       component: "Button",
       label: "Send action",
       action: {
-        event: { name: "submit_demo", context: { value: { path: "/draft" } } },
+        event: {
+          name: "submit_demo",
+          context: { value: { path: "/record/" } },
+        },
       },
     },
     {
@@ -90,3 +105,52 @@ export const deleteMessage = {
   version,
   deleteSurface: { surfaceId: SURFACE_ID },
 };
+
+export function messagesForSession(
+  wireVersion,
+  { sendDataModel = true, themed = true } = {},
+) {
+  return initialMessages.map((message) => ({
+    ...message,
+    version: wireVersion,
+    ...(message.createSurface
+      ? {
+          createSurface: {
+            surfaceId: SURFACE_ID,
+            catalogId: FIXTURE_CATALOG_ID,
+            sendDataModel,
+            ...(themed ? { theme: { primaryColor: "#0f766e" } } : {}),
+          },
+        }
+      : {}),
+  }));
+}
+
+export function inputBindingMessage(wireVersion, path) {
+  return {
+    version: wireVersion,
+    updateComponents: {
+      surfaceId: SURFACE_ID,
+      components: [
+        {
+          id: "input",
+          component: "Input",
+          value: { path },
+          placeholder: "Message to the producer",
+        },
+      ],
+    },
+  };
+}
+
+export function invalidThemeMessage(wireVersion) {
+  return {
+    version: wireVersion,
+    createSurface: {
+      surfaceId: SURFACE_ID,
+      catalogId: FIXTURE_CATALOG_ID,
+      sendDataModel: true,
+      theme: { primaryColor: 42 },
+    },
+  };
+}

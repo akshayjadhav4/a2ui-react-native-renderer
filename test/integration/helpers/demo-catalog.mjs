@@ -19,6 +19,7 @@ const schemas = createDemoSchemas({
 });
 export const demoCatalog = defineA2UICatalog({
   id: FIXTURE_CATALOG_ID,
+  themeSchema: schemas.ThemeSchema,
   components: {
     Column: {
       schema: schemas.ColumnSchema,
