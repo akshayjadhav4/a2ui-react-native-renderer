@@ -31,6 +31,10 @@ The component name is the map key (`Label`). It must match the `component`
 field emitted in `updateComponents`. The surface catalog ID must match
 `catalog.id`.
 
+The message's `version` is the A2UI wire version (`v0.9` or `v0.9.1`). A
+suffix such as `:v1` in the catalog ID versions the app's own component
+contract; it is independent of the wire version.
+
 Descriptions are optional runtime metadata. If provided, they cannot be empty.
 The renderer does not automatically send descriptions or schemas to a model.
 
@@ -55,6 +59,13 @@ the React Native package root; use it during a build or on a server that can
 load the app's catalog module. If that module imports native components,
 generate a JSON artifact in a compatible build environment and let the server
 deliver the artifact. The app owns that delivery.
+
+Sharing this document keeps agent guidance derived from the client's schema,
+but does not automatically enforce validation on the server or negotiate a
+catalog with the client. The app configures its agent/validator and supplies
+any referenced official common-type schemas needed by its JSON Schema tool.
+The client's engine still validates received messages against its registered
+catalog. Keep catalog IDs aligned and version incompatible contract changes.
 
 The exporter supports strings, numbers, booleans, literals, enums, nested
 objects, arrays, unions, optional and nullable fields, JSON defaults,

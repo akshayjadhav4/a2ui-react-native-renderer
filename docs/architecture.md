@@ -19,8 +19,10 @@ agent or server
 
 ### Public React API
 
-`A2UIRenderer` is the convenience composition. `A2UIProvider`, `A2UISurface`,
-and the hooks support application-owned engines and custom placement. React
+`A2UIRenderer` is the convenience composition. `useA2UIEngine` owns one engine
+for a mounted feature, and `A2UISurface engine={engine}` places its surfaces
+directly. `createA2UIEngine` and `A2UIProvider` support application-controlled
+lifetimes and shared context. React
 components subscribe through `useSyncExternalStore`; protocol state is not
 duplicated in React state.
 
@@ -52,7 +54,7 @@ references are recorded as pending while known cycles and limits still fail.
 ### Render Resolver
 
 The resolver selects the surface catalog, resolves dynamic properties and
-template scope, invokes the presenter, and recursively renders explicit child
+template scope, renders the presenter as a React component, and recursively renders explicit child
 references. Component and surface error boundaries prevent consumer presenter
 failures from escaping into the host application.
 
@@ -110,14 +112,41 @@ or DOM rendering modules.
 Expo, AG-UI, TanStack AI, CopilotKit, Hono, SSE, WebSocket clients, styling
 systems, and application stores belong outside the package.
 
-## Simple And Advanced Ownership
+## Public Entry Boundaries
+
+- `a2ui-react-native-renderer`: engine, React APIs, catalog definitions and
+  protocol schema helpers.
+- `a2ui-react-native-renderer/catalog-schema`: exports the app catalog as a
+  JSON Schema document for agent guidance or server validation tooling. Apps
+  own delivery and server-side validation; exporting does not negotiate a
+  schema over the network.
+- `a2ui-react-native-renderer/testing`: optional real-engine harness with
+  recorded user actions. It supplies no mounting or assertion framework.
+
+The native root does not import either optional entry. Both optional entries
+can load in Node; the app's own catalog module must also be compatible with
+that environment. Native presenters can be attached separately or the app can
+export a schema artifact during a compatible build step.
+
+`example/server` and the Expo WebSocket client demonstrate app-owned transport.
+They are outside the published package and the renderer's dependency graph.
+
+## Engine Ownership And Surface Placement
 
 With `A2UIRenderer`, the component owns engine creation and disposal. It is
 appropriate when every active surface renders together.
 
-With `createA2UIEngine`, the application owns lifetime, replay, and placement.
-This is appropriate for chat transcripts and navigation trees where different
-surfaces render in different locations.
+With `useA2UIEngine`, a mounted conversation or feature owns placement while
+the hook creates and disposes its engine. The engine survives rerenders and
+Strict Mode effect replay; callbacks use their latest values. Catalog identity,
+catalog order and effective limits remain fixed until the owner is remounted.
+The app subscribes to its message source in an effect and returns its cleanup.
 
-Both paths use the same engine, validation, presenter resolution, and recovery
+With `createA2UIEngine`, the application explicitly owns disposal, replay and
+placement, including engines that outlive a mounted feature. Use a provider
+for context hooks across a subtree, or pass the engine directly to each
+surface. A direct surface supplies that context to its presenters and never
+disposes its engine.
+
+All paths use the same engine, validation, presenter resolution, and recovery
 behavior. The simple API is composition, not a second runtime.

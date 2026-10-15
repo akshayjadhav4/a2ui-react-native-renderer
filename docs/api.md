@@ -58,6 +58,22 @@ owns surface state and data models, dispatches actions, reports errors, and
 publishes external-store subscriptions. Call `dispose()` when an
 application-owned engine is permanently retired.
 
+| Method                                        | Contract                                                                                                                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `applyMessage(message: unknown)`              | Validate and process one incoming operation                                                                                    |
+| `applyMessages(messages: readonly unknown[])` | Process in order; invalid operations retain valid state and later operations still run; subscribers are notified for the batch |
+| `getSnapshot()`                               | Read the stable engine snapshot, including active/failed IDs and error count                                                   |
+| `getSurface(surfaceId)`                       | Read an immutable accepted surface snapshot or `undefined`                                                                     |
+| `getErrors()`                                 | Read the immutable historical error collection                                                                                 |
+| `subscribe(listener)`                         | Observe engine publications; returns unsubscribe                                                                               |
+| `subscribeSurface(surfaceId, listener)`       | Observe publications affecting one surface; returns unsubscribe                                                                |
+| `dispose()`                                   | Permanently release surface state and subscriptions; repeated disposal is safe                                                 |
+
+Invalid messages report through `onError` and `getErrors()`; invalid
+construction settings, including duplicate catalog IDs, throw synchronously.
+Batch processing is not an all-or-nothing transaction. Dispose only after the
+app has stopped sources and unmounted consumers; the engine cannot be reused.
+
 ### `useA2UIEngine`
 
 Creates one React-owned engine from `A2UIEngineOptions` and disposes it after
@@ -79,6 +95,15 @@ does not, because those belong to the supplied engine. Both modes accept
 `messages` is required in owned-engine mode and optional with an external
 engine. Omission applies no messages, so `<A2UIRenderer engine={engine} />`
 observes imperative updates without a dummy empty collection.
+
+For collection ingestion, an unchanged array is not replayed. When the new
+array retains the previous message objects as its prefix, only appended
+messages are applied. A shortened, reordered, or recreated prefix replays the
+supplied collection into the existing engine; it does not clear that engine.
+Keep messages immutable and retain object identity when appending. Use a
+keyed owner for a deliberate fresh session. Catalog identity/order, owned
+versus external mode, and external engine identity cannot change while this
+renderer remains mounted. Callbacks in owned mode may change.
 
 ### `A2UIProvider`
 
@@ -137,6 +162,8 @@ the runtime. Use them inside consumer component schemas.
 Frozen defaults used by new engines: 500 components per surface, depth 64,
 1 MiB serialized data model per surface, and 1,000 messages per batch. Override
 individual values through `createA2UIEngine({ limits })`.
+`useA2UIEngine({ catalogs, limits })` accepts the same overrides. The convenience
+renderer has no `limits` prop; supply a configured engine when limits differ.
 
 ## Catalog Types
 

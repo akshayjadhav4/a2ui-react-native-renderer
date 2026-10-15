@@ -173,7 +173,7 @@ pnpm test
 pnpm example:check
 pnpm pack:check
 pnpm consumer:smoke
-pnpm exec prettier --check SPEC-consumer-tooling.md HANDOFF.md
+pnpm exec prettier --check SPEC-consumer-tooling.md
 ```
 
 The plan must establish these runnable demo commands (new private package name

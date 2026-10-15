@@ -33,8 +33,8 @@ ambiguous client converter.
 
 ## 3. Choose Ownership
 
-Use `A2UIRenderer` for one colocated active-surface region. Use an
-`useA2UIEngine` in a mounted conversation or feature owner when surfaces belong
+Use `A2UIRenderer` for one colocated active-surface region. Use the
+`useA2UIEngine` hook in a mounted conversation or feature owner when surfaces belong
 to individual chat turns or screens:
 
 ```tsx
@@ -138,15 +138,16 @@ limits for the application's presenters and target devices.
 ## 9. Remove Deep Imports And Bundled Assumptions
 
 Import renderer APIs from `a2ui-react-native-renderer`; schema export uses the
-public `a2ui-react-native-renderer/catalog-schema` subpath. Other deep imports
+public `a2ui-react-native-renderer/catalog-schema` subpath. Optional test tooling
+uses `a2ui-react-native-renderer/testing`. Other deep imports
 are private. The package does not include the
 Basic Catalog, functions such as `openUrl`, or native controls. Define and
 register every capability the application's A2UI producer may emit.
 
 ## Compatibility Notes
 
-Plan to release these public type and schema changes in `0.2.0`; this working
-tree does not change the package version or publish a release.
+These changes are unreleased. The next package version and any license change
+require maintainer approval; this migration does not select or publish a release.
 
 - Both v0.9 and v0.9.1 progressive component graphs are accepted. A missing
   root or child is pending; invalid schemas, known cycles, and configured limits

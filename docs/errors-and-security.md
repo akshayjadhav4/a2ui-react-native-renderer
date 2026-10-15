@@ -18,22 +18,27 @@ Before publishing a surface update, the engine checks:
 Validation is necessary but does not make a presenter safe. Consumers must also
 restrict native capabilities exposed by their own components and functions.
 
+Dynamic bound values and function results are resolved and checked during
+mounted rendering; presenter failures are also render-time errors. An empty
+error list after headless ingestion does not prove those paths are valid.
+See [Testing](./testing.md) for checks that mount a surface.
+
 ## Error Codes
 
-| Code                      | Meaning                                                       |
-| ------------------------- | ------------------------------------------------------------- |
-| `INVALID_MESSAGE`         | Message does not satisfy a supported operation contract       |
-| `UNSUPPORTED_VERSION`     | Message declares a version other than v0.9 or v0.9.1          |
-| `UNKNOWN_CATALOG`         | Surface requests a catalog not registered in its engine       |
-| `DUPLICATE_CATALOG`       | Engine configuration repeats a catalog ID                     |
-| `UNKNOWN_COMPONENT`       | Graph requests a component absent from the surface catalog    |
-| `INVALID_COMPONENT_PROPS` | Component properties fail the consumer Zod schema             |
-| `INVALID_ROOT`            | Retained for compatibility; an absent root is now pending     |
-| `INVALID_REFERENCE`       | Empty ID, duplicate ID, known cycle, or arbitrary child call  |
-| `BINDING_ERROR`           | Data pointer, typed bound value, or local setter is invalid   |
-| `FUNCTION_ERROR`          | Function lookup, arguments, execution, or return value failed |
-| `PRESENTER_ERROR`         | Consumer presenter or fallback failed during React rendering  |
-| `RESOURCE_LIMIT_EXCEEDED` | Configured batch, graph, depth, or data limit was exceeded    |
+| Code                      | Meaning                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `INVALID_MESSAGE`         | Message does not satisfy a supported operation contract                                  |
+| `UNSUPPORTED_VERSION`     | Message declares a version other than v0.9 or v0.9.1                                     |
+| `UNKNOWN_CATALOG`         | Surface requests a catalog not registered in its engine                                  |
+| `DUPLICATE_CATALOG`       | Retained public code; duplicate engine catalog IDs throw `TypeError` during construction |
+| `UNKNOWN_COMPONENT`       | Graph requests a component absent from the surface catalog                               |
+| `INVALID_COMPONENT_PROPS` | Component properties fail the consumer Zod schema                                        |
+| `INVALID_ROOT`            | Retained for compatibility; an absent root is now pending                                |
+| `INVALID_REFERENCE`       | Empty ID, duplicate ID, known cycle, or arbitrary child call                             |
+| `BINDING_ERROR`           | Data pointer, typed bound value, or local setter is invalid                              |
+| `FUNCTION_ERROR`          | Function lookup, arguments, execution, or return value failed                            |
+| `PRESENTER_ERROR`         | Consumer presenter or fallback failed during React rendering                             |
+| `RESOURCE_LIMIT_EXCEEDED` | Configured batch, graph, depth, or data limit was exceeded                               |
 
 Errors include safe routing identifiers where available. `cause` may contain
 sensitive runtime detail and should be restricted to trusted telemetry.

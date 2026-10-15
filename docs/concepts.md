@@ -7,8 +7,9 @@ it. For exact signatures, see the [Public API](./api.md).
 The package has two levels of API:
 
 1. **Simple:** pass A2UI messages and catalogs to `A2UIRenderer`.
-2. **Advanced:** own an engine and render individual surfaces with
-   `A2UIProvider` and `A2UISurface`.
+2. **Custom placement:** use `useA2UIEngine` for a mounted feature and pass its
+   engine directly to `A2UISurface`. Use `createA2UIEngine` for an explicitly
+   managed lifetime, with an optional provider for shared context.
 
 Most applications should begin with the simple API. The advanced API exists for
 streaming chat, multiple surfaces, custom placement, and explicit lifecycle
@@ -287,6 +288,26 @@ better suited to:
 Simple consumers do not need to create the engine manually because
 `A2UIRenderer` can own one internally.
 
+## `useA2UIEngine`
+
+Use this hook when a mounted feature owns the engine lifetime but chooses
+where each surface belongs:
+
+```tsx
+const engine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
+return <A2UISurface engine={engine} surfaceId="main" />;
+```
+
+The hook returns a stable engine, uses current callbacks, and disposes it after
+final unmount while preserving it through Strict Mode effect replay. Catalog
+objects/order and effective resource limits are construction settings; remount
+the owner to change them. Feed incoming messages from handlers/effects and
+clean up the app-owned source when leaving the feature. See the complete
+[streaming example](./streaming-and-actions.md).
+
+`createA2UIEngine` remains useful when the app explicitly controls a lifetime
+outside React. The app must dispose that engine itself.
+
 ## `A2UIProvider`
 
 `A2UIProvider` makes an existing engine available through React context.
@@ -306,15 +327,18 @@ The provider does not:
 - duplicate engine state in React state.
 
 It is dependency injection for the React tree. Descendants such as
-`A2UISurface` and engine hooks can locate the same engine without passing it
-through every component.
+`A2UISurface`, `useA2UISurface`, `useA2UISurfaceIds`, and `useA2UIErrors` can
+read the provided engine. `useA2UIEngine` creates an engine; it does not read
+this context.
 
 Use a provider when the application owns a long-lived engine. Do not add a
 provider only because one appears in the advanced example.
 
 ## `A2UISurface`
 
-`A2UISurface` renders one surface from the nearest `A2UIProvider`.
+`A2UISurface` renders one surface from an explicit `engine` prop or, when
+omitted, the nearest `A2UIProvider`. An explicit engine takes precedence and
+supplies its context to the presenter subtree. A surface never disposes it.
 
 ```tsx
 <A2UISurface surfaceId="products-42" />
@@ -367,9 +391,11 @@ Surface snapshots are replaced only when that surface commits a valid change.
 They expose immutable `pendingComponentIds`: `["root"]` before root arrives,
 then distinct missing structural IDs reachable from root. Missing bound data
 stays `undefined` in presenter props instead of appearing in this list.
-The renderer may rerender the changed surface's component tree because dynamic
-properties can depend on any value in its current data model. This favors
-correct binding behavior while retaining isolation between surfaces.
+Each mounted node observes the current surface snapshot. Dynamic properties
+and consumer functions resolve against accepted updates; healthy presenters
+with equivalent observable inputs can be preserved. Full scope values, local
+React state/context, setters and late children remain current. Notifications
+and resolution can still visit every node; see [Reactivity](./architecture.md#presenter-reactivity).
 
 The package's default resource limit permits 500 components per surface. An
 integration fixture validates and renders a complete 500-component surface to
@@ -391,7 +417,7 @@ surface placement or engine ownership.
 />
 ```
 
-It composes the lower-level primitives:
+In owned-engine mode it composes the lower-level primitives:
 
 ```text
 A2UIRenderer
@@ -404,6 +430,11 @@ A2UIRenderer
 
 The renderer must not recreate its engine on every React render. It must not
 reapply unchanged message arrays repeatedly.
+
+With an external engine, `<A2UIRenderer engine={engine} />` observes surfaces
+without requiring `messages`. Engine creation, callbacks and disposal then
+belong to the engine's owner. Collection replay and fixed construction settings
+are described in the [API reference](./api.md#a2uirenderer).
 
 Use `A2UIRenderer` when:
 
@@ -525,8 +556,9 @@ specific structured error codes and preserve the last valid revision.
 
 A2UI input is generated remotely and must be considered untrusted.
 
-Every validation, protocol, binding, or presenter failure produces a structured
+Runtime validation, protocol, binding, and presenter failures produce a structured
 error through `onError` and the engine error API.
+Invalid construction settings throw synchronously instead.
 
 ```tsx
 <A2UIRenderer
@@ -588,7 +620,17 @@ Choose this when:
 - messages are already collected in an array;
 - minimal setup is the priority.
 
-### Use Engine + Provider + Surface
+### Use Hook-Owned Engine + Surface
+
+```tsx
+const engine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
+return <A2UISurface engine={engine} surfaceId="main" />;
+```
+
+Choose this for per-turn or per-screen placement within a mounted feature.
+The hook owns disposal; the app owns its source and placement.
+
+### Use An Explicitly Managed Engine
 
 ```tsx
 const engine = createA2UIEngine({ catalogs: [catalog] });
@@ -647,6 +689,8 @@ The separation exists to keep the package simple for static rendering while
 remaining correct for incremental, long-lived A2UI applications.
 
 ## Related Guides
+
+- [Testing Your Catalog](./testing.md)
 
 - [Architecture](./architecture.md)
 - [Catalogs](./catalogs.md)

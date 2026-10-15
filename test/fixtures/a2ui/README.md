@@ -25,4 +25,6 @@ SHA-256 checksums:
 | `v0_9_1/server_to_client.json` | `ed1ee11b4f1e94dd08ebe0d57bedb436cb452cc546d26cae407858ae477af288` |
 | `v0_9_1/catalog.json`          | `8cc94d0a482e67048f9fc989964ca5da56fe42f531d919315a508989fb22e13e` |
 
-See [the schema audit](../../../tasks/catalog-contract-schema-audit.md) for the compatibility conclusions.
+The common-type and catalog fixtures are byte-identical across these two
+versions; the server-to-client schema files differ. Compatibility is checked
+by the protocol and catalog-schema tests against these pinned fixtures.
