@@ -242,3 +242,94 @@ test("replacing the root type switches to the matching presenter", async () => {
     children: ["Badge root"],
   });
 });
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} mounted deletion and error recovery preserve another surface`, async () => {
+    const errors = [];
+    const counts = {};
+    const catalog = createCatalog(counts);
+    const engine = createA2UIEngine({
+      catalogs: [catalog],
+      onError: (error) => errors.push(error),
+    });
+    const messages = (id, text) =>
+      createSurfaceMessages(catalog.id, id, text).map((message) => ({
+        ...message,
+        version,
+      }));
+    engine.applyMessages([
+      ...messages("target", "Old"),
+      {
+        version,
+        updateDataModel: { surfaceId: "target", value: { old: true } },
+      },
+      ...messages("healthy", "Healthy"),
+    ]);
+    const healthy = engine.getSurface("healthy");
+    let healthyNotifications = 0;
+    const unsubscribe = engine.subscribeSurface(
+      "healthy",
+      () => healthyNotifications++,
+    );
+    let renderer;
+    await act(() => {
+      renderer = TestRenderer.create(
+        React.createElement(
+          A2UIProvider,
+          { engine },
+          React.createElement(
+            React.Fragment,
+            null,
+            React.createElement(A2UISurface, { surfaceId: "target" }),
+            React.createElement(A2UISurface, { surfaceId: "healthy" }),
+          ),
+        ),
+      );
+    });
+    try {
+      await act(() =>
+        engine.applyMessage({
+          version,
+          deleteSurface: { surfaceId: "target" },
+        }),
+      );
+      assert.equal(engine.getSurface("target"), undefined);
+      assert.deepEqual(
+        renderer.root
+          .findAllByType("NativeText")
+          .map((node) => node.children[0]),
+        ["Healthy"],
+      );
+      await act(() =>
+        engine.applyMessage({
+          version,
+          deleteSurface: { surfaceId: "target" },
+        }),
+      );
+      assert.equal(errors.length, 1);
+      assert.equal(errors[0].code, "INVALID_MESSAGE");
+      assert.deepEqual(
+        renderer.root
+          .findAllByType("NativeText")
+          .map((node) => node.children[0]),
+        ["Healthy"],
+      );
+      await act(() => engine.applyMessages(messages("target", "Fresh")));
+      assert.deepEqual(
+        renderer.root
+          .findAllByType("NativeText")
+          .map((node) => node.children[0]),
+        ["Fresh", "Healthy"],
+      );
+      assert.deepEqual(engine.getSurface("target").dataModel, {});
+      assert.deepEqual(engine.getSnapshot().failedSurfaceIds, []);
+      assert.equal(engine.getSurface("healthy"), healthy);
+      assert.equal(healthyNotifications, 0);
+      assert.equal(counts.healthy, 1);
+    } finally {
+      await act(() => renderer.unmount());
+      unsubscribe();
+      engine.dispose();
+    }
+  });
+}

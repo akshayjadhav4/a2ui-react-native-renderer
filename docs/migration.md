@@ -178,3 +178,14 @@ require maintainer approval; this migration does not select or publish a release
 - React Native Web is not a guaranteed initial target.
 - There is no native module, so both React Native architectures can consume the
   JavaScript package when peer versions are satisfied.
+
+### Delete Only Existing Surfaces
+
+`deleteSurface` now reports `INVALID_MESSAGE` through `onError` when the target
+surface does not currently exist. This includes a never-created ID, an ID whose
+creation failed, and a second deletion after the first succeeded. Avoid sending
+duplicate cleanup messages for the same active surface.
+
+Valid deletion still removes only its target. Creating the same ID again starts
+fresh components and data and clears its current surface error. An invalid
+deletion does not prevent later valid messages in the batch from being applied.

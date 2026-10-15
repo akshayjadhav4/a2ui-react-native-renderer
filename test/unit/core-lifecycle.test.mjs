@@ -124,3 +124,55 @@ for (const version of ["v0.9", "v0.9.1"]) {
     assert.equal(core.getSurface("s"), undefined);
   });
 }
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  for (const state of ["never-created", "deleted", "failed-create"]) {
+    test(`${version} rejects deletion of a ${state} surface`, () => {
+      const core = createCore();
+      core.apply({
+        version,
+        createSurface: { surfaceId: "healthy", catalogId: catalog.id },
+      });
+      const healthy = core.getSurface("healthy");
+      if (state === "deleted") {
+        core.apply({
+          version,
+          createSurface: { surfaceId: "target", catalogId: catalog.id },
+        });
+        assert.equal(
+          core.apply({ version, deleteSurface: { surfaceId: "target" } })
+            .success,
+          true,
+        );
+      } else if (state === "failed-create") {
+        assert.equal(
+          core.apply({
+            version,
+            createSurface: { surfaceId: "target", catalogId: "unknown" },
+          }).success,
+          false,
+        );
+      }
+      const result = core.apply({
+        version,
+        deleteSurface: { surfaceId: "target" },
+      });
+      assert.equal(result.success, false);
+      assert.equal(result.error.code, "INVALID_MESSAGE");
+      assert.equal(result.error.severity, "error");
+      assert.equal(result.error.surfaceId, "target");
+      assert.equal(core.getSurface("target"), undefined);
+      assert.equal(core.getSurface("healthy"), healthy);
+      assert.deepEqual(core.getSurfaceIds(), ["healthy"]);
+      assert.equal(
+        core.apply({
+          version,
+          createSurface: { surfaceId: "target", catalogId: catalog.id },
+        }).success,
+        true,
+      );
+      assert.equal(core.getSurface("target").revision, 1);
+      assert.deepEqual(core.getSurface("target").dataModel, {});
+    });
+  }
+}

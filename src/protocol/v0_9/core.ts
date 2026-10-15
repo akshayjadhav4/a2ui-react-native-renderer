@@ -101,6 +101,13 @@ export class A2UIProtocolCore {
 
     if ("deleteSurface" in message) {
       const { surfaceId } = message.deleteSurface;
+      if (!this.surfaces.has(surfaceId)) {
+        return failure(
+          "INVALID_MESSAGE",
+          `A2UI surface "${surfaceId}" does not exist`,
+          surfaceId,
+        );
+      }
       this.surfaces.delete(surfaceId);
       return { success: true, surfaceId };
     }
