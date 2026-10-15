@@ -1,4 +1,5 @@
 import { Text } from "react-native";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import {
@@ -7,6 +8,7 @@ import {
   A2UISurface,
   createA2UIEngine,
   defineA2UICatalog,
+  useA2UIEngine,
   type A2UIMessage,
   type A2UIUserAction,
 } from "../../src/index.js";
@@ -23,14 +25,14 @@ const catalog = defineA2UICatalog({
 
 const messages: A2UIMessage[] = [
   {
-    version: "v0.9",
+    version: "v0.9.1",
     createSurface: {
       surfaceId: "welcome",
       catalogId: catalog.id,
     },
   },
   {
-    version: "v0.9",
+    version: "v0.9.1",
     updateComponents: {
       surfaceId: "welcome",
       components: [
@@ -46,6 +48,41 @@ const messages: A2UIMessage[] = [
 
 export function AgentUI() {
   return <A2UIRenderer catalogs={[catalog]} messages={messages} />;
+}
+
+export function AgentSurface({
+  backendSocket,
+  surfaceId,
+}: {
+  backendSocket: WebSocket;
+  surfaceId: string;
+}) {
+  const engine = useA2UIEngine({
+    catalogs: [catalog],
+    onError: (error) => console.error("A2UI rendering failed", error),
+  });
+
+  useEffect(() => {
+    function handleBackendMessage(event: { data?: unknown }) {
+      if (typeof event.data !== "string") return;
+
+      let a2uiMessage: unknown;
+      try {
+        a2uiMessage = JSON.parse(event.data);
+      } catch {
+        console.error("Backend sent invalid JSON");
+        return;
+      }
+      engine.applyMessage(a2uiMessage);
+    }
+
+    backendSocket.addEventListener("message", handleBackendMessage);
+    return () => {
+      backendSocket.removeEventListener("message", handleBackendMessage);
+    };
+  }, [backendSocket, engine]);
+
+  return <A2UISurface engine={engine} surfaceId={surfaceId} />;
 }
 
 function sendActionToAgent(_action: A2UIUserAction): void {}
