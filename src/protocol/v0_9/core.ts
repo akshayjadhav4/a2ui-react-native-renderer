@@ -13,7 +13,6 @@ import { A2UIWireMessageSchema } from "./wireSchemas.js";
 
 interface CoreSurface {
   readonly snapshot: A2UISurfaceSnapshot;
-  readonly sendDataModel: boolean;
 }
 
 export type A2UIProtocolCoreResult =
@@ -135,6 +134,8 @@ export class A2UIProtocolCore {
         snapshot: Object.freeze({
           surfaceId,
           catalogId,
+          version: message.version,
+          sendDataModel: sendDataModel ?? false,
           ...(acceptedTheme === undefined ? {} : { theme: acceptedTheme }),
           rootId: null,
           pendingComponentIds: Object.freeze(["root"]),
@@ -142,7 +143,6 @@ export class A2UIProtocolCore {
           dataModel: EMPTY_DATA_MODEL,
           revision: 1,
         }),
-        sendDataModel: sendDataModel ?? false,
       });
       return { success: true, surfaceId };
     }

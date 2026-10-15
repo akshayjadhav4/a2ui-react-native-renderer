@@ -176,3 +176,43 @@ for (const version of ["v0.9", "v0.9.1"]) {
     });
   }
 }
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} retains creation metadata policy through updates and recreation`, () => {
+    const core = createCore();
+    const create = {
+      version,
+      createSurface: {
+        surfaceId: "s",
+        catalogId: catalog.id,
+        sendDataModel: true,
+      },
+    };
+    core.apply(create);
+    assert.equal(core.getSurface("s").version, version);
+    assert.equal(core.getSurface("s").sendDataModel, true);
+    const otherVersion = version === "v0.9" ? "v0.9.1" : "v0.9";
+    core.apply({
+      version: otherVersion,
+      updateDataModel: { surfaceId: "s", value: { name: "Edited" } },
+    });
+    assert.equal(core.getSurface("s").version, version);
+    assert.equal(core.getSurface("s").sendDataModel, true);
+    const before = core.getSurface("s");
+    assert.equal(
+      core.apply({
+        version: otherVersion,
+        createSurface: { surfaceId: "s", catalogId: catalog.id },
+      }).success,
+      false,
+    );
+    assert.equal(core.getSurface("s"), before);
+    core.apply({ version, deleteSurface: { surfaceId: "s" } });
+    core.apply({
+      version: otherVersion,
+      createSurface: { surfaceId: "s", catalogId: catalog.id },
+    });
+    assert.equal(core.getSurface("s").version, otherVersion);
+    assert.equal(core.getSurface("s").sendDataModel, false);
+  });
+}

@@ -203,14 +203,57 @@ the current surface data model and calls `onAction` with an official
 const engine = createA2UIEngine({
   catalogs: [catalog],
   onAction(action) {
-    agent.send({ forwardedProps: { a2ui: { action } } });
+    const surface = engine.getSurface(action.surfaceId);
+    if (surface) sendToAgent({ version: surface.version, action });
   },
 });
+
+function sendToAgent(content: unknown): void {
+  // This example dedicates one engine to one receiving backend.
+  const clientDataModel = engine.getClientDataModel(
+    engine.getSnapshot().surfaceIds,
+  );
+  agent.send({
+    content,
+    metadata: clientDataModel ? { a2uiClientDataModel: clientDataModel } : {},
+  });
+}
+
+// Chat messages use the same sending function as actions.
+sendToAgent({ text: "Please confirm my order" });
 ```
 
-The package does not prescribe the outer payload. The consumer may send an
-AG-UI action turn, call an API route, execute an application command, or handle
-the action locally.
+`agent.send` and its outer payload are illustrative app-owned transport code.
+Adapt them to your backend. The official action envelope is `{ version, action }`;
+`a2uiClientDataModel` is separate transport metadata, not a field inside that
+A2UI action envelope. Apps can also handle actions locally without sending them.
+
+### Attach the Current Data Model
+
+The server opts in by setting `sendDataModel: true` in `createSurface`.
+`getClientDataModel(surfaceIds)` checks that flag automatically: developers call
+it in one sending function instead of tracking flags or input edits themselves.
+The result contains the **full current accepted model**, including local edits
+and untouched fields, for each selected opted-in surface.
+
+Call it when preparing every outgoing message to the creating server, including
+chat messages. Include all that destination's active surfaces in the selection.
+For an engine shared across backends, supply only IDs owned by the receiving
+backend; the helper cannot infer ownership. There is no default global selection.
+
+The helper excludes missing, deleted and opted-out surfaces, deduplicates IDs,
+and returns `undefined` if nothing qualifies. Otherwise it returns a detached,
+deeply frozen `{ version, surfaces }` value to place under `a2uiClientDataModel`.
+It sends no network messages and does not change engine state or invoke callbacks.
+Snapshots expose readonly creation `version` and `sendDataModel` fields; updates
+retain them and recreation resets them from the new creation message.
+
+Included models must be JSON objects and share one creation version. Mixed
+versions, array/scalar roots or non-JSON values cause a synchronous `TypeError`
+without a partial result or `onError` call. Nested arrays of JSON values are valid;
+`undefined` array slots are not JSON values. Handle preparation failures at your
+app's sending boundary instead of silently sending without requested data.
+Existing rendering of non-object data models remains supported.
 
 Do not add a visible fake user message unless that is an intentional product
 choice. Action-only turns can remain protocol events while the server responds

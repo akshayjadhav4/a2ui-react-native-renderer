@@ -11,14 +11,15 @@ below; related symbols share examples in the linked guides.
 ### `defineA2UICatalog`
 
 Creates an immutable catalog from a non-empty ID, consumer component
-definitions, and optional consumer functions. Duplicate function names and
+definitions, optional consumer functions, and an optional `themeSchema`. Duplicate function names and
 invalid definitions throw during catalog creation. See [Catalogs](./catalogs.md).
 
 ### `defineA2UIComponent`
 
 Pairs one Zod object schema with one React Native presenter while preserving
 inferred resolved-property and binding-setter types. The helper is optional;
-component definitions may also be written inline in `defineA2UICatalog`.
+component definitions may also be written inline in `defineA2UICatalog`. An
+optional second theme type parameter supports reusable themed presenters.
 
 ### `defineA2UIFunction`
 
@@ -31,7 +32,8 @@ Import from `a2ui-react-native-renderer/catalog-schema` in server or build-time
 code. `exportA2UICatalogSchema(catalog)` returns a fresh, JSON-serializable A2UI
 v0.9-family catalog schema document for the same catalog used by the mobile
 renderer. `$id` and `catalogId` equal `catalog.id`; component and function
-entries use the catalog's registered names. The output excludes presenters and
+entries use the catalog's registered names. `$defs.theme` describes the optional
+custom theme schema, or a generic object when none is configured. The output excludes presenters and
 function implementations. Supported property schemas and A2UI marker
 references are described in [Catalogs](./catalogs.md#export-a-catalog-for-an-agent).
 Unsupported conversion throws a path-specific `TypeError`. The application
@@ -64,6 +66,7 @@ application-owned engine is permanently retired.
 | `applyMessages(messages: readonly unknown[])` | Process in order; invalid operations retain valid state and later operations still run; subscribers are notified for the batch |
 | `getSnapshot()`                               | Read the stable engine snapshot, including active/failed IDs and error count                                                   |
 | `getSurface(surfaceId)`                       | Read an immutable accepted surface snapshot or `undefined`                                                                     |
+| `getClientDataModel(surfaceIds)`              | Prepare full current models for explicitly selected opted-in surfaces, or `undefined`; never sends data                        |
 | `getErrors()`                                 | Read the immutable historical error collection                                                                                 |
 | `subscribe(listener)`                         | Observe engine publications; returns unsubscribe                                                                               |
 | `subscribeSurface(surfaceId, listener)`       | Observe publications affecting one surface; returns unsubscribe                                                                |
@@ -73,6 +76,13 @@ Invalid messages report through `onError` and `getErrors()`; invalid
 construction settings, including duplicate catalog IDs, throw synchronously.
 Batch processing is not an all-or-nothing transaction. Dispose only after the
 app has stopped sources and unmounted consumers; the engine cannot be reused.
+
+`getClientDataModel` returns a detached, deeply frozen `A2UIClientDataModel`
+value for transport metadata `a2uiClientDataModel`. Selection is required; only
+active surfaces with `sendDataModel: true` are included. The caller selects IDs
+owned by the receiving backend. It throws `TypeError` for mixed included creation
+versions or included models that are not JSON objects, without partial output
+or engine mutations. See the [shared sending example](./streaming-and-actions.md#action-round-trip).
 
 ### `useA2UIEngine`
 
@@ -167,23 +177,23 @@ renderer has no `limits` prop; supply a configured engine when limits differ.
 
 ## Catalog Types
 
-| Export                     | Contract                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------- |
-| `A2UIBindingScope`         | Current template value and absolute JSON-pointer path                           |
-| `A2UICatalog`              | Immutable normalized catalog returned by `defineA2UICatalog`                    |
-| `A2UICatalogDefinition`    | Input contract accepted by `defineA2UICatalog`                                  |
-| `A2UIChildRenderer`        | Presenter callback for rendering a referenced child in an optional scope        |
-| `A2UIComponentAction`      | Action value a presenter may dispatch                                           |
-| `A2UIComponentDefinition`  | One Zod schema, presenter, and optional description                             |
-| `A2UIComponentDefinitions` | Component-name to definition map inferred from schemas                          |
-| `A2UIComponentSchemas`     | Component-name to Zod object schema map                                         |
-| `A2UIFunctionDefinition`   | Named function schema, return kind, implementation, and description             |
-| `A2UIFunctionReturnKind`   | Allowed declared return kinds                                                   |
-| `A2UIFunctionReturnMap`    | Type mapping from return kind to runtime value                                  |
-| `A2UIPresenter`            | React presenter function for resolved component properties                      |
-| `A2UIPresenterProps`       | Presenter input: props, IDs, scope, child renderer, and dispatch                |
-| `A2UIResolvedChild`        | Resolved child component ID and template base path                              |
-| `A2UIResolvedProps`        | Recursively maps wire properties to presenter values and optional typed setters |
+| Export                     | Contract                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `A2UIBindingScope`         | Current template value and absolute JSON-pointer path                                     |
+| `A2UICatalog`              | Immutable normalized catalog returned by `defineA2UICatalog`                              |
+| `A2UICatalogDefinition`    | Input contract accepted by `defineA2UICatalog`                                            |
+| `A2UIChildRenderer`        | Presenter callback for rendering a referenced child in an optional scope                  |
+| `A2UIComponentAction`      | Action value a presenter may dispatch                                                     |
+| `A2UIComponentDefinition`  | One Zod schema, presenter, and optional description                                       |
+| `A2UIComponentDefinitions` | Component-name to definition map inferred from schemas                                    |
+| `A2UIComponentSchemas`     | Component-name to Zod object schema map                                                   |
+| `A2UIFunctionDefinition`   | Named function schema, return kind, implementation, and description                       |
+| `A2UIFunctionReturnKind`   | Allowed declared return kinds                                                             |
+| `A2UIFunctionReturnMap`    | Type mapping from return kind to runtime value                                            |
+| `A2UIPresenter`            | React presenter function for resolved component properties                                |
+| `A2UIPresenterProps`       | Presenter input: props, optional readonly theme, IDs, scope, child renderer, and dispatch |
+| `A2UIResolvedChild`        | Resolved child component ID and template base path                                        |
+| `A2UIResolvedProps`        | Recursively maps wire properties to presenter values and optional typed setters           |
 
 A dynamic presenter value can be `undefined` when its data path is missing.
 Generated `setX` exists only while that property is directly bound; it is
@@ -208,14 +218,15 @@ stale calls through the engine's structured error channel.
 
 ## Engine Types
 
-| Export                  | Contract                                                            |
-| ----------------------- | ------------------------------------------------------------------- |
-| `A2UIEngine`            | Public message, snapshot, subscription, error, and disposal methods |
-| `A2UIEngineOptions`     | Catalogs, callbacks, and resource-limit overrides                   |
-| `A2UIEngineSnapshot`    | Engine revision plus active/failed IDs and error count              |
-| `A2UISurfaceSnapshot`   | Immutable surface state, including reachable pending component IDs  |
-| `A2UIComponentSnapshot` | Immutable component ID, type, and wire-property snapshot            |
-| `A2UIResourceLimits`    | Complete resource-limit configuration                               |
+| Export                  | Contract                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `A2UIEngine`            | Public message, snapshot, subscription, error, and disposal methods                                |
+| `A2UIEngineOptions`     | Catalogs, callbacks, and resource-limit overrides                                                  |
+| `A2UIEngineSnapshot`    | Engine revision plus active/failed IDs and error count                                             |
+| `A2UISurfaceSnapshot`   | Immutable surface state: creation version/policy, optional theme, components, data and pending IDs |
+| `A2UIClientDataModel`   | Readonly version and selected surface-to-JSON-object model map for outgoing metadata               |
+| `A2UIComponentSnapshot` | Immutable component ID, type, and wire-property snapshot                                           |
+| `A2UIResourceLimits`    | Complete resource-limit configuration                                                              |
 
 ## Error And React Types
 

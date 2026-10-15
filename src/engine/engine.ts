@@ -1,4 +1,5 @@
 import type { A2UIRendererError } from "../errors/types.js";
+import { prepareClientDataModel } from "./clientDataModel.js";
 import { resolveA2UIAction } from "./actions.js";
 import { A2UIProtocolCore } from "../protocol/v0_9/core.js";
 import { isA2UIFunctionInvocationError } from "../protocol/v0_9/functions.js";
@@ -156,6 +157,9 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
     },
     getSurface(surfaceId: string): A2UISurfaceSnapshot | undefined {
       return core.getSurface(surfaceId);
+    },
+    getClientDataModel(surfaceIds) {
+      return prepareClientDataModel(surfaceIds, (id) => core.getSurface(id));
     },
     getErrors(): readonly A2UIRendererError[] {
       return errors;

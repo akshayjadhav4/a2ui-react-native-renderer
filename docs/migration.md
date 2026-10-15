@@ -161,6 +161,11 @@ register every capability the application's A2UI producer may emit.
 These changes are unreleased. The next package version and any license change
 require maintainer approval; this migration does not select or publish a release.
 
+- Surface snapshots now expose readonly creation `version` and `sendDataModel`
+  (`false` when omitted). `engine.getClientDataModel(surfaceIds)` prepares
+  opted-in full current models for app-owned transport. Existing `onAction`
+  callbacks are unchanged. Use a shared sending function for actions and chat
+  messages; see [streaming and actions](./streaming-and-actions.md#action-round-trip).
 - Catalogs can now define an optional `themeSchema`. Presenters receive a
   deeply readonly optional `theme`, and surface snapshots expose it as a generic
   readonly record. Existing no-theme definitions need no changes. The schema

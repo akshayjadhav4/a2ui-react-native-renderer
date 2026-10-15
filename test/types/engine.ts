@@ -71,3 +71,12 @@ export function EngineHookTypeFixture(): null {
   useA2UIEngine({});
   return null;
 }
+
+if (surface) {
+  const version: "v0.9" | "v0.9.1" = surface.version;
+  const enabled: boolean = surface.sendDataModel;
+  void version;
+  void enabled;
+  // @ts-expect-error Creation settings are immutable.
+  surface.sendDataModel = false;
+}

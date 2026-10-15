@@ -35,6 +35,8 @@ export interface A2UIComponentSnapshot {
 }
 
 export interface A2UISurfaceSnapshot {
+  readonly version: "v0.9" | "v0.9.1";
+  readonly sendDataModel: boolean;
   readonly theme?: A2UIReadonlyTheme<Record<string, unknown>>;
   readonly surfaceId: string;
   readonly catalogId: string;
@@ -52,11 +54,31 @@ export interface A2UIEngineSnapshot {
   readonly errorCount: number;
 }
 
+interface ClientJsonObject {
+  readonly [key: string]: ClientJsonValue;
+}
+
+type ClientJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly ClientJsonValue[]
+  | ClientJsonObject;
+
+export interface A2UIClientDataModel {
+  readonly version: A2UISurfaceSnapshot["version"];
+  readonly surfaces: Readonly<Record<string, ClientJsonObject>>;
+}
+
 export interface A2UIEngine {
   applyMessage(message: unknown): void;
   applyMessages(messages: readonly unknown[]): void;
   getSnapshot(): A2UIEngineSnapshot;
   getSurface(surfaceId: string): A2UISurfaceSnapshot | undefined;
+  getClientDataModel(
+    surfaceIds: readonly string[],
+  ): A2UIClientDataModel | undefined;
   getErrors(): readonly A2UIRendererError[];
   subscribe(listener: () => void): () => void;
   subscribeSurface(surfaceId: string, listener: () => void): () => void;

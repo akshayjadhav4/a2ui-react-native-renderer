@@ -59,6 +59,7 @@ export type {
 export type { A2UIFallbackRenderer } from "./errors/DevelopmentFallback.js";
 export type { A2UIDiagnosticsMode } from "./errors/diagnostics.js";
 export type {
+  A2UIClientDataModel,
   A2UIComponentSnapshot,
   A2UIEngine,
   A2UIEngineOptions,
