@@ -54,7 +54,7 @@ approval automatically. Reaudit affected sections if the candidate changes.
 3. Move the relevant `CHANGELOG.md` entries from `[Unreleased]` to a dated
    heading matching that approved version and release date. Update the
    version/license assertions in `scripts/pack-check.mjs` when approved metadata
-   changes: they currently protect the migration's `0.1.1` / Apache-2.0 values.
+   changes: they currently protect the `1.0.0` / Apache-2.0 candidate values.
    The publish readiness guard currently accepts stable versions only;
    prerelease publishing needs a separately reviewed guard/test update.
 

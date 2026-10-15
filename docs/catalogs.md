@@ -174,6 +174,7 @@ unknown functions are reported when the function is evaluated during render.
 A presenter receives:
 
 - `props`: schema-validated, dynamically resolved values;
+- `theme`: optional validated readonly values from surface creation;
 - `surfaceId` and `componentId`: stable protocol identifiers;
 - `scope`: current template value and absolute pointer path;
 - `renderChild(componentId, scopePath?)`: renders an explicit child reference;

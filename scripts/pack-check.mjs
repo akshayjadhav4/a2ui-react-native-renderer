@@ -124,9 +124,9 @@ function assertPackageMetadata(packageJson, packageRoot) {
   if (packageJson.name !== "a2ui-react-native-renderer") {
     throw new Error("Packed package has an unexpected name");
   }
-  if (packageJson.version !== "0.1.1" || packageJson.license !== "Apache-2.0") {
+  if (packageJson.version !== "1.0.0" || packageJson.license !== "Apache-2.0") {
     throw new Error(
-      "Packed package version or license changed during this module",
+      "Packed package must match the 1.0.0 / Apache-2.0 release candidate",
     );
   }
   if (

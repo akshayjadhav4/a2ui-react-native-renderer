@@ -5,8 +5,32 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-15
+
+### Breaking changes
+
+- Direct binding setters are optional; literals and function results have no
+  setter. Handle missing bound values as `undefined` in native presenters.
+- Invalid messages in `applyMessages` are skipped while later valid messages
+  continue. Applications must no longer rely on per-surface batch rollback.
+- Missing roots and children are pending during progressive rendering instead
+  of rejected updates. Use `renderPending` for app-owned loading UI.
+- Data paths preserve empty field names and reject invalid array indexes and
+  inherited properties. `/record/` addresses the empty-name field, while
+  `/record` addresses the whole record.
+- Deleting a missing or already-deleted surface reports `INVALID_MESSAGE`.
+- Supplied themes must be JSON objects and satisfy any catalog `themeSchema`;
+  invalid themes reject surface creation.
+
+See the [migration guide](./docs/migration.md) before upgrading from 0.1.x.
+
 ### Added
 
+- Added catalog-defined `themeSchema`, validated readonly themes in presenters
+  and snapshots, and theme rules in exported catalog schemas.
+- Added `engine.getClientDataModel(surfaceIds)` to prepare opted-in current
+  models, including local edits, for app-owned outgoing message metadata.
+  Snapshots expose the surface's creation version and `sendDataModel` flag.
 - Added `createA2UITestHarness` from `a2ui-react-native-renderer/testing` for
   app-owned catalog/surface checks through the real engine, with recorded
   user actions and detached frozen action-list snapshots. Bring your own
@@ -42,7 +66,7 @@ project follows [Semantic Versioning](https://semver.org/).
   mode still requires messages and retains existing collection replay rules.
 - Replaced `@a2ui/web_core` with an in-package protocol core that keeps native
   bundles free of its Basic Catalog and Lit dependencies.
-- Added v0.9.1 messages alongside v0.9 for complete component graphs. The
+- Added v0.9.1 messages alongside v0.9, including progressive component graphs. The
   `A2UIMessage` type and public value schemas are now package-owned.
 - `applyMessages` now continues after an invalid message and commits later
   valid messages, including on the same surface. Each accepted message commits
@@ -60,6 +84,10 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- JSON pointer reads and writes now preserve empty-name object fields, validate
+  array indexes consistently, and avoid inherited JavaScript properties.
+- Missing and repeated surface deletions now report structured errors without
+  blocking later valid messages.
 - Presenter errors now recover after batched surface deletion/recreation even
   when the new surface repeats the old revision number.
 - Pending and absent surfaces now update error fallback UI when a rejected

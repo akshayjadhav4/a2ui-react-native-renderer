@@ -1,6 +1,6 @@
 # Errors And Security
 
-A2UI is remotely produced executable presentation data. Treat every message,
+A2UI is remotely produced declarative presentation data. Treat every message,
 component property, binding, URL, and action context as untrusted input.
 
 ## Validation Boundary

@@ -1,6 +1,6 @@
 {
   "name": "a2ui-react-native-renderer",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "A2UI renderer for React Native and Expo. Build native generative UI from AI agent JSON with your own components, TypeScript, and Zod schemas.",
   "keywords": [
     "a2ui",

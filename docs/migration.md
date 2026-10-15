@@ -1,7 +1,9 @@
 # Migration Guide
 
-This guide is for applications moving from an app-local A2UI renderer or a
-simplified `spec` renderer to `a2ui-react-native-renderer`.
+This guide covers upgrading from `a2ui-react-native-renderer` 0.1.x to 1.0.0,
+and moving from an app-local or simplified `spec` renderer. Existing package
+users should review the binding, progressive rendering, batch recovery, and
+surface deletion changes below.
 
 ## 1. Separate Catalog From Transport
 
@@ -158,8 +160,8 @@ register every capability the application's A2UI producer may emit.
 
 ## Compatibility Notes
 
-These changes are unreleased. The next package version and any license change
-require maintainer approval; this migration does not select or publish a release.
+These changes are included in the 1.0.0 release candidate. The license remains
+Apache-2.0. Preparing this candidate does not publish it.
 
 - Surface snapshots now expose readonly creation `version` and `sendDataModel`
   (`false` when omitted). `engine.getClientDataModel(surfaceIds)` prepares
