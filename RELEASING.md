@@ -4,8 +4,8 @@ Releases are currently manual and protected by npm two-factor authentication.
 Hosted CI, trusted publishing, and provenance are intentionally deferred while
 the package has one maintainer.
 
-No command in this guide may publish `0.1.0` without explicit maintainer
-approval.
+Publishing any version requires explicit maintainer approval. Migration work
+does not authorize a release, choose the next version, or change the license.
 
 ## Prerequisites
 
@@ -17,6 +17,22 @@ approval.
 - Node.js 20 or newer and pnpm 10.15.1 are installed.
 - The release is prepared on the default branch with a clean worktree.
 - The maintainer has reviewed the package API, changelog, and tarball contents.
+- The maintainer has approved the documentation audit for the exact candidate
+  commit and reviewed the remaining device-verification limitations.
+
+## Documentation Approval Before Release
+
+Review every file in `docs/` against the candidate implementation, including
+the package-owned protocol core, hook/direct-surface and explicit-engine
+lifetimes, progressive graphs, binding setters, actions/errors, reactivity,
+catalog export, and the optional testing entry. Check links and compile the
+guide fixtures with `pnpm typecheck`; run the documentation tests and package
+contents check. Confirm that `tasks/` remains local and absent from the tarball.
+
+Present corrections, verification results and unresolved limitations to the
+maintainer, and obtain explicit confirmation before publishing. This is a
+manual release requirement; the publish guard does not record documentation
+approval automatically. Reaudit affected sections if the candidate changes.
 
 ## Prepare A Version
 
@@ -31,12 +47,16 @@ approval.
 
 2. Update `package.json`:
 
-   - set `version` to the approved stable version, initially `0.1.0`;
+   - set `version` to the explicitly approved next stable version;
    - set `private` to `false`;
    - add the exact public repository, homepage, and issue URLs.
 
 3. Move the relevant `CHANGELOG.md` entries from `[Unreleased]` to a dated
-   heading such as `## [0.1.0] - 2026-07-18`.
+   heading matching that approved version and release date. Update the
+   version/license assertions in `scripts/pack-check.mjs` when approved metadata
+   changes: they currently protect the `1.0.0` / Apache-2.0 candidate values.
+   The publish readiness guard currently accepts stable versions only;
+   prerelease publishing needs a separately reviewed guard/test update.
 
 4. Install from the committed lockfile and run the complete gate:
 
@@ -86,8 +106,9 @@ Install the registry version into a new temporary Expo consumer and repeat the
 basic render check. Then tag the exact committed release:
 
 ```sh
-git tag -a v0.1.0 -m "a2ui-react-native-renderer v0.1.0"
-git push origin v0.1.0
+VERSION="$(node -p "require('./package.json').version")"
+git tag -a "v$VERSION" -m "a2ui-react-native-renderer v$VERSION"
+git push origin "v$VERSION"
 ```
 
 The npm version, changelog heading, commit, and git tag must agree.

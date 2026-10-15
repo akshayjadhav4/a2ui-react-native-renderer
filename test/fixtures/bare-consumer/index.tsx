@@ -1,10 +1,12 @@
 import {
   A2UIDynamicStringSchema,
-  A2UIRenderer,
+  A2UISurface,
   defineA2UICatalog,
+  useA2UIEngine,
   type A2UIMessage,
 } from "a2ui-react-native-renderer";
 import { AppRegistry, Text } from "react-native";
+import { useEffect, useRef } from "react";
 import { z } from "zod";
 
 const catalog = defineA2UICatalog({
@@ -41,7 +43,15 @@ const messages = [
 ] satisfies readonly A2UIMessage[];
 
 function App() {
-  return <A2UIRenderer catalogs={[catalog]} messages={messages} />;
+  const engine = useA2UIEngine({ catalogs: [catalog] });
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      engine.applyMessages(messages);
+    }
+  }, [engine]);
+  return <A2UISurface engine={engine} surfaceId="main" />;
 }
 
 AppRegistry.registerComponent("A2UIBareConsumer", () => App);

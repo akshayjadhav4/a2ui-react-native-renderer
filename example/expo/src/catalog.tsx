@@ -9,41 +9,30 @@ import {
 import { Pressable, Text, TextInput, View, useColorScheme } from "react-native";
 import { z } from "zod";
 
-export const FIXTURE_CATALOG_ID = "urn:example:a2ui:catalog:v1";
-
-const ColumnSchema = z.object({
-  children: A2UIChildListSchema,
-  appearance: z.enum(["plain", "card"]).optional(),
-});
-
-const TextSchema = z.object({
-  text: A2UIDynamicStringSchema,
-  variant: z.enum(["title", "body", "caption"]).optional(),
-});
-
-const InputSchema = z.object({
-  value: A2UIDynamicStringSchema,
-  placeholder: z.string().optional(),
-});
-
-const ButtonSchema = z.object({
-  label: A2UIDynamicStringSchema,
-  action: A2UIActionSchema,
-});
+import { createDemoSchemas, FIXTURE_CATALOG_ID } from "./catalog-contract.mjs";
+export { FIXTURE_CATALOG_ID };
+const { ThemeSchema, ColumnSchema, TextSchema, InputSchema, ButtonSchema } =
+  createDemoSchemas({
+    z,
+    A2UIActionSchema,
+    A2UIChildListSchema,
+    A2UIDynamicStringSchema,
+  });
 
 type PresenterProps<Schema extends z.AnyZodObject> = A2UIPresenterProps<
-  A2UIResolvedProps<z.output<Schema>>
+  A2UIResolvedProps<z.output<Schema>>,
+  z.output<typeof ThemeSchema>
 >;
 
-function usePalette() {
+function usePalette(theme?: Readonly<z.output<typeof ThemeSchema>>) {
   const dark = useColorScheme() === "dark";
 
   return {
     background: dark ? "#000000" : "#ffffff",
-    border: dark ? "#3f3f46" : "#d4d4d8",
+    border: theme?.primaryColor ?? (dark ? "#3f3f46" : "#d4d4d8"),
     muted: dark ? "#a1a1aa" : "#52525b",
-    primary: dark ? "#ffffff" : "#000000",
-    primaryText: dark ? "#000000" : "#ffffff",
+    primary: theme?.primaryColor ?? (dark ? "#ffffff" : "#000000"),
+    primaryText: theme ? "#ffffff" : dark ? "#000000" : "#ffffff",
     text: dark ? "#ffffff" : "#000000",
   } as const;
 }
@@ -51,8 +40,9 @@ function usePalette() {
 function ColumnPresenter({
   props,
   renderChild,
+  theme,
 }: PresenterProps<typeof ColumnSchema>) {
-  const colors = usePalette();
+  const colors = usePalette(theme);
   const card = props.appearance === "card";
 
   return (
@@ -72,8 +62,8 @@ function ColumnPresenter({
   );
 }
 
-function TextPresenter({ props }: PresenterProps<typeof TextSchema>) {
-  const colors = usePalette();
+function TextPresenter({ props, theme }: PresenterProps<typeof TextSchema>) {
+  const colors = usePalette(theme);
   const variant = props.variant ?? "body";
 
   return (
@@ -91,12 +81,13 @@ function TextPresenter({ props }: PresenterProps<typeof TextSchema>) {
   );
 }
 
-function InputPresenter({ props }: PresenterProps<typeof InputSchema>) {
-  const colors = usePalette();
+function InputPresenter({ props, theme }: PresenterProps<typeof InputSchema>) {
+  const colors = usePalette(theme);
 
   return (
     <TextInput
       accessibilityLabel={props.placeholder ?? "A2UI text input"}
+      editable={props.setValue !== undefined}
       onChangeText={props.setValue}
       placeholder={props.placeholder}
       placeholderTextColor={colors.muted}
@@ -110,7 +101,7 @@ function InputPresenter({ props }: PresenterProps<typeof InputSchema>) {
         paddingHorizontal: 14,
         paddingVertical: 12,
       }}
-      value={props.value}
+      value={props.value ?? ""}
     />
   );
 }
@@ -118,8 +109,9 @@ function InputPresenter({ props }: PresenterProps<typeof InputSchema>) {
 function ButtonPresenter({
   props,
   dispatch,
+  theme,
 }: PresenterProps<typeof ButtonSchema>) {
-  const colors = usePalette();
+  const colors = usePalette(theme);
 
   return (
     <Pressable
@@ -147,6 +139,7 @@ function ButtonPresenter({
 
 export const fixtureCatalog = defineA2UICatalog({
   id: FIXTURE_CATALOG_ID,
+  themeSchema: ThemeSchema,
   components: {
     Column: { schema: ColumnSchema, presenter: ColumnPresenter },
     Text: { schema: TextSchema, presenter: TextPresenter },

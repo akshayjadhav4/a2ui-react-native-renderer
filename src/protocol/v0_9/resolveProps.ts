@@ -1,4 +1,3 @@
-import { scrapeSchemaBehavior, type BehaviorNode } from "@a2ui/web_core/v0_9";
 import type { z } from "zod";
 
 import type {
@@ -11,9 +10,28 @@ import {
   resolveBindingPath,
   resolveStructuralChildren,
 } from "./bindings.js";
-import { evaluateA2UIFunction } from "./functions.js";
+import {
+  A2UIFunctionInvocationError,
+  evaluateA2UIFunction,
+} from "./functions.js";
+import {
+  inspectA2UISchemaBehavior,
+  matchesA2UIDynamicKind,
+  type A2UISchemaBehavior,
+} from "./behavior.js";
 
-export type A2UIDataSetter = (path: string, value: unknown) => void;
+export interface A2UIDataWrite {
+  readonly path: string;
+  readonly value: unknown;
+  readonly bindingPath: string;
+  readonly propertyPath: readonly (string | number)[];
+  readonly behavior: Extract<A2UISchemaBehavior, { type: "DYNAMIC" }>;
+}
+
+export type A2UIDataSetter = (write: A2UIDataWrite) => void;
+export type A2UISetterFactory = (
+  binding: Omit<A2UIDataWrite, "value">,
+) => (value: unknown) => void;
 
 export function resolvePresenterProps(
   schema: z.AnyZodObject,
@@ -22,41 +40,61 @@ export function resolvePresenterProps(
   scopePath: string,
   setData: A2UIDataSetter,
   functions: readonly A2UIFunctionDefinition[],
+  setterFactory?: A2UISetterFactory,
 ): Readonly<Record<string, unknown>> {
-  const behavior = scrapeSchemaBehavior(schema);
+  const behavior = inspectA2UISchemaBehavior(schema);
   if (behavior.type !== "OBJECT") {
     return Object.freeze({ ...rawProps });
   }
 
   return Object.freeze(
-    resolveObject(rawProps, behavior, dataModel, scopePath, setData, functions),
+    resolveObject(
+      rawProps,
+      behavior,
+      dataModel,
+      scopePath,
+      setterFactory ??
+        ((binding) => (value) => {
+          setData({ ...binding, value });
+        }),
+      functions,
+      [],
+    ),
   );
 }
 
 function resolveValue(
   value: unknown,
-  behavior: BehaviorNode,
+  behavior: A2UISchemaBehavior,
   dataModel: unknown,
   scopePath: string,
-  setData: A2UIDataSetter,
+  createSetter: A2UISetterFactory,
   functions: readonly A2UIFunctionDefinition[],
+  propertyPath: readonly (string | number)[],
 ): unknown {
   switch (behavior.type) {
     case "DYNAMIC":
-      return resolveDynamicValue(value, dataModel, scopePath, functions);
+      return resolveDynamicValue(
+        value,
+        behavior,
+        dataModel,
+        scopePath,
+        functions,
+      );
     case "STRUCTURAL":
       return resolveChildren(value, dataModel, scopePath);
     case "ARRAY":
       return Array.isArray(value)
         ? Object.freeze(
-            value.map((item) =>
+            value.map((item, index) =>
               resolveValue(
                 item,
                 behavior.element,
                 dataModel,
                 scopePath,
-                setData,
+                createSetter,
                 functions,
+                [...propertyPath, index],
               ),
             ),
           )
@@ -69,12 +107,14 @@ function resolveValue(
               behavior,
               dataModel,
               scopePath,
-              setData,
+              createSetter,
               functions,
+              propertyPath,
             ),
           )
         : value;
     case "ACTION":
+    case "COMPONENT_ID":
     case "CHECKABLE":
     case "STATIC":
       return value;
@@ -83,11 +123,12 @@ function resolveValue(
 
 function resolveObject(
   value: Readonly<Record<string, unknown>>,
-  behavior: Extract<BehaviorNode, { type: "OBJECT" }>,
+  behavior: Extract<A2UISchemaBehavior, { type: "OBJECT" }>,
   dataModel: unknown,
   scopePath: string,
-  setData: A2UIDataSetter,
+  createSetter: A2UISetterFactory,
   functions: readonly A2UIFunctionDefinition[],
+  propertyPath: readonly (string | number)[],
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -97,23 +138,27 @@ function resolveObject(
       behavior.shape[key] ?? { type: "STATIC" },
       dataModel,
       scopePath,
-      setData,
+      createSetter,
       functions,
+      [...propertyPath, key],
     );
   }
 
   for (const [key, childBehavior] of Object.entries(behavior.shape)) {
-    if (childBehavior.type !== "DYNAMIC") {
+    if (childBehavior.type !== "DYNAMIC" || !isDataBinding(value[key])) {
       continue;
     }
 
     const rawValue = value[key];
     const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
-    result[setterName] = (nextValue: unknown): void => {
-      if (isDataBinding(rawValue)) {
-        setData(resolveBindingPath(scopePath, rawValue.path), nextValue);
-      }
-    };
+    if (isDataBinding(rawValue)) {
+      result[setterName] = createSetter({
+        path: resolveBindingPath(scopePath, rawValue.path),
+        bindingPath: rawValue.path,
+        propertyPath: [...propertyPath, key],
+        behavior: childBehavior,
+      });
+    }
   }
 
   return result;
@@ -121,24 +166,36 @@ function resolveObject(
 
 function resolveDynamicValue(
   value: unknown,
+  behavior: Extract<A2UISchemaBehavior, { type: "DYNAMIC" }>,
   dataModel: unknown,
   scopePath: string,
   functions: readonly A2UIFunctionDefinition[],
 ): unknown {
   if (isDataBinding(value)) {
-    return readDataPointer(
+    const resolved = readDataPointer(
       dataModel,
       resolveBindingPath(scopePath, value.path),
     );
+    if (resolved !== undefined && !matchesA2UIDynamicKind(resolved, behavior)) {
+      throw new TypeError(`A2UI bound value has invalid ${behavior.kind} type`);
+    }
+    return resolved;
   }
 
   if (isFunctionCall(value)) {
-    return evaluateA2UIFunction({
+    const resolved = evaluateA2UIFunction({
       call: value,
       functions,
       dataModel,
       scopePath,
     });
+    if (!matchesA2UIDynamicKind(resolved, behavior)) {
+      throw new A2UIFunctionInvocationError(
+        value.call,
+        `A2UI function "${value.call}" produced an invalid ${behavior.kind} value`,
+      );
+    }
+    return resolved;
   }
 
   return value;

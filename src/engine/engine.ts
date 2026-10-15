@@ -1,16 +1,10 @@
-import type { ComponentModel } from "@a2ui/web_core/v0_9";
-
 import type { A2UIRendererError } from "../errors/types.js";
+import { prepareClientDataModel } from "./clientDataModel.js";
 import { resolveA2UIAction } from "./actions.js";
-import {
-  A2UIV09Adapter,
-  type ParsedA2UIMessage,
-} from "../protocol/v0_9/adapter.js";
-import { updateDataPointer } from "../protocol/v0_9/bindings.js";
+import { A2UIProtocolCore } from "../protocol/v0_9/core.js";
 import { isA2UIFunctionInvocationError } from "../protocol/v0_9/functions.js";
 import type { A2UIUserAction } from "../types/messages.js";
 import type {
-  A2UIComponentSnapshot,
   A2UIEngine,
   A2UIEngineOptions,
   A2UIEngineSnapshot,
@@ -20,11 +14,7 @@ import {
   A2UI_ENGINE_INTERNALS,
   type A2UIEngineWithInternals,
 } from "./internals.js";
-import {
-  measureSerializedBytes,
-  resolveA2UIResourceLimits,
-} from "../validation/limits.js";
-import { validateMessageBatch } from "../validation/validateMessages.js";
+import { resolveA2UIResourceLimits } from "../validation/limits.js";
 
 const EMPTY_ERRORS: readonly A2UIRendererError[] = Object.freeze([]);
 
@@ -32,24 +22,26 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
   validateCatalogs(options.catalogs);
   const limits = resolveA2UIResourceLimits(options.limits);
 
-  const adapter = new A2UIV09Adapter(options.catalogs);
+  const core = new A2UIProtocolCore(options.catalogs, limits);
   const catalogs = new Map(
     options.catalogs.map((catalog) => [catalog.id, catalog]),
   );
-  const surfaces = new Map<string, A2UISurfaceSnapshot>();
-  const dataModels = new Map<string, unknown>();
-  const surfaceRevisions = new Map<string, number>();
   const surfaceErrors = new Map<string, A2UIRendererError>();
   const listeners = new Set<() => void>();
   const surfaceListeners = new Map<string, Set<() => void>>();
   let errors = EMPTY_ERRORS;
-  let snapshot = createEngineSnapshot(0, surfaces, surfaceErrors, errors);
+  let snapshot = createEngineSnapshot(
+    0,
+    core.getSurfaceIds(),
+    surfaceErrors,
+    errors,
+  );
   let disposed = false;
 
   const publish = (affectedSurfaceIds: ReadonlySet<string>): void => {
     snapshot = createEngineSnapshot(
       snapshot.revision + 1,
-      surfaces,
+      core.getSurfaceIds(),
       surfaceErrors,
       errors,
       snapshot,
@@ -109,50 +101,25 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       return;
     }
 
-    const parsedMessages: ParsedA2UIMessage[] = [];
     for (const input of messages) {
-      const parsed = adapter.parseMessage(input);
-      if (!parsed.success) {
-        reportBatchError(
-          parseFailureToError(input, parsed.failure),
-          affectedSurfaceIds,
-        );
-        changed = true;
-        continue;
-      }
-
-      parsedMessages.push(parsed.value);
-    }
-
-    const validated = validateMessageBatch({
-      messages: parsedMessages,
-      surfaces,
-      catalogs,
-      limits,
-    });
-    for (const error of validated.errors) {
-      reportBatchError(error, affectedSurfaceIds);
-      changed = true;
-    }
-
-    for (const parsed of validated.accepted) {
       try {
-        const stagedDataModel = stageDataModelUpdate(parsed, dataModels);
-        adapter.processMessage(parsed.message);
-        commitDataModelUpdate(parsed, stagedDataModel, dataModels);
-        updateSurfaceSnapshot(
-          adapter,
-          parsed,
-          surfaces,
-          surfaceRevisions,
-          dataModels,
-        );
-        surfaceErrors.delete(parsed.surfaceId);
-        affectedSurfaceIds.add(parsed.surfaceId);
+        const result = core.apply(input);
+        if (result.success) {
+          surfaceErrors.delete(result.surfaceId);
+          affectedSurfaceIds.add(result.surfaceId);
+        } else {
+          reportBatchError(result.error, affectedSurfaceIds);
+        }
         changed = true;
       } catch (cause) {
         reportBatchError(
-          processingFailureToError(parsed, cause),
+          {
+            code: "INVALID_MESSAGE",
+            message:
+              cause instanceof Error ? cause.message : "A2UI processing failed",
+            severity: "error",
+            cause,
+          },
           affectedSurfaceIds,
         );
         changed = true;
@@ -189,7 +156,10 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       return snapshot;
     },
     getSurface(surfaceId: string): A2UISurfaceSnapshot | undefined {
-      return surfaces.get(surfaceId);
+      return core.getSurface(surfaceId);
+    },
+    getClientDataModel(surfaceIds) {
+      return prepareClientDataModel(surfaceIds, (id) => core.getSurface(id));
     },
     getErrors(): readonly A2UIRendererError[] {
       return errors;
@@ -216,10 +186,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
       }
 
       disposed = true;
-      adapter.dispose();
-      surfaces.clear();
-      dataModels.clear();
-      surfaceRevisions.clear();
+      core.dispose();
       surfaceErrors.clear();
       listeners.clear();
       surfaceListeners.clear();
@@ -243,51 +210,14 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
         );
       },
       setDataValue(surfaceId, path, value): void {
-        const surface = surfaces.get(surfaceId);
-        if (surface === undefined) {
-          this.reportError({
-            code: "INVALID_MESSAGE",
-            message: `Cannot update data for missing surface "${surfaceId}"`,
-            severity: "error",
-            surfaceId,
-            path,
-          });
-          return;
-        }
-
         try {
-          const frozenValue = freezeDataSnapshot(value);
-          const nextDataModel = updateDataPointer(
-            dataModels.get(surfaceId) ?? EMPTY_DATA_MODEL,
-            path,
-            frozenValue,
-          );
-          if (
-            measureSerializedBytes(nextDataModel) > limits.maxDataModelBytes
-          ) {
-            this.reportError({
-              code: "RESOURCE_LIMIT_EXCEEDED",
-              message: `A2UI data model exceeds the ${String(limits.maxDataModelBytes)} byte limit`,
-              severity: "error",
-              surfaceId,
-              path,
-            });
-            return;
+          const result = core.setDataValue(surfaceId, path, value);
+          if (result.success) {
+            surfaceErrors.delete(surfaceId);
+            publish(new Set([surfaceId]));
+          } else {
+            this.reportError(result.error);
           }
-          adapter.setDataValue(surfaceId, path, value);
-          dataModels.set(surfaceId, nextDataModel);
-
-          const revision = (surfaceRevisions.get(surfaceId) ?? 0) + 1;
-          surfaceRevisions.set(surfaceId, revision);
-          surfaces.set(
-            surfaceId,
-            Object.freeze({
-              ...surface,
-              dataModel: nextDataModel,
-              revision,
-            }),
-          );
-          publish(new Set([surfaceId]));
         } catch (cause) {
           this.reportError({
             code: "INVALID_MESSAGE",
@@ -300,7 +230,7 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
         }
       },
       dispatchAction(surfaceId, componentId, scopePath, action): void {
-        const surface = surfaces.get(surfaceId);
+        const surface = core.getSurface(surfaceId);
         if (surface === undefined) {
           this.reportError({
             code: "INVALID_MESSAGE",
@@ -345,127 +275,32 @@ export function createA2UIEngine(options: A2UIEngineOptions): A2UIEngine {
   return Object.freeze(engine);
 }
 
-function updateSurfaceSnapshot(
-  adapter: A2UIV09Adapter,
-  parsed: ParsedA2UIMessage,
-  surfaces: Map<string, A2UISurfaceSnapshot>,
-  surfaceRevisions: Map<string, number>,
-  dataModels: ReadonlyMap<string, unknown>,
-): void {
-  if (parsed.operation === "deleteSurface") {
-    surfaces.delete(parsed.surfaceId);
-    surfaceRevisions.delete(parsed.surfaceId);
-    return;
-  }
-
-  const surface = adapter.getSurface(parsed.surfaceId);
-  if (surface === undefined) {
-    return;
-  }
-
-  const revision = (surfaceRevisions.get(parsed.surfaceId) ?? 0) + 1;
-  surfaceRevisions.set(parsed.surfaceId, revision);
-
-  const componentEntries = Array.from(
-    surface.componentsModel.entries,
-    ([, model]) => [model.id, createComponentSnapshot(model)] as const,
-  );
-  const components = Object.freeze(Object.fromEntries(componentEntries));
-
-  surfaces.set(
-    parsed.surfaceId,
-    Object.freeze({
-      surfaceId: surface.id,
-      catalogId: surface.catalog.id,
-      rootId: surface.componentsModel.get("root") === undefined ? null : "root",
-      components,
-      dataModel: dataModels.get(parsed.surfaceId) ?? EMPTY_DATA_MODEL,
-      revision,
-    }),
-  );
-}
-
-const EMPTY_DATA_MODEL = Object.freeze({});
-
-function stageDataModelUpdate(
-  parsed: ParsedA2UIMessage,
-  dataModels: ReadonlyMap<string, unknown>,
-): unknown {
-  if (parsed.operation !== "updateDataModel") {
-    return undefined;
-  }
-
-  const message = parsed.message;
-  if (!("updateDataModel" in message)) {
-    return undefined;
-  }
-
-  const current = dataModels.get(parsed.surfaceId) ?? EMPTY_DATA_MODEL;
-  const path = message.updateDataModel.path ?? "/";
-  const value = freezeDataSnapshot(message.updateDataModel.value);
-  return updateDataPointer(current, path, value);
-}
-
-function commitDataModelUpdate(
-  parsed: ParsedA2UIMessage,
-  stagedDataModel: unknown,
-  dataModels: Map<string, unknown>,
-): void {
-  if (parsed.operation === "createSurface") {
-    dataModels.set(parsed.surfaceId, EMPTY_DATA_MODEL);
-    return;
-  }
-
-  if (parsed.operation === "updateDataModel") {
-    dataModels.set(parsed.surfaceId, stagedDataModel);
-    return;
-  }
-
-  if (parsed.operation === "deleteSurface") {
-    dataModels.delete(parsed.surfaceId);
-  }
-}
-
-function freezeDataSnapshot(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return Object.freeze(value.map(freezeDataSnapshot));
-  }
-
-  if (isRecord(value)) {
-    return Object.freeze(
-      Object.fromEntries(
-        Object.entries(value).map(([key, nestedValue]) => [
-          key,
-          freezeDataSnapshot(nestedValue),
-        ]),
-      ),
-    );
-  }
-
-  return value;
-}
-
-function createComponentSnapshot(model: ComponentModel): A2UIComponentSnapshot {
-  return Object.freeze({
-    id: model.id,
-    type: model.type,
-    props: Object.freeze({ ...model.properties }),
-  });
-}
-
 function createEngineSnapshot(
   revision: number,
-  surfaces: ReadonlyMap<string, A2UISurfaceSnapshot>,
+  surfaceIds: readonly string[],
   surfaceErrors: ReadonlyMap<string, A2UIRendererError>,
   errors: readonly A2UIRendererError[],
   previous?: A2UIEngineSnapshot,
 ): A2UIEngineSnapshot {
   return Object.freeze({
     revision,
-    surfaceIds: stableMapKeys(surfaces, previous?.surfaceIds),
+    surfaceIds: stableList(surfaceIds, previous?.surfaceIds),
     failedSurfaceIds: stableMapKeys(surfaceErrors, previous?.failedSurfaceIds),
     errorCount: errors.length,
   });
+}
+
+function stableList(
+  current: readonly string[],
+  previous: readonly string[] | undefined,
+): readonly string[] {
+  if (
+    previous?.length === current.length &&
+    current.every((value, index) => previous[index] === value)
+  ) {
+    return previous;
+  }
+  return current;
 }
 
 function stableMapKeys(
@@ -491,80 +326,6 @@ function stableMapKeys(
   return Object.freeze(Array.from(map.keys()));
 }
 
-function parseFailureToError(
-  input: unknown,
-  failure: {
-    readonly error: unknown;
-    readonly path?: string;
-    readonly unsupportedVersion: boolean;
-  },
-): A2UIRendererError {
-  const identifiers = extractIdentifiers(input);
-
-  return {
-    code: failure.unsupportedVersion
-      ? "UNSUPPORTED_VERSION"
-      : "INVALID_MESSAGE",
-    message: failure.unsupportedVersion
-      ? "Only A2UI v0.9 messages are supported"
-      : "Invalid A2UI v0.9 message",
-    severity: "error",
-    ...identifiers,
-    ...(failure.path === undefined ? {} : { path: failure.path }),
-    cause: failure.error,
-  };
-}
-
-function processingFailureToError(
-  parsed: ParsedA2UIMessage,
-  cause: unknown,
-): A2UIRendererError {
-  const message =
-    cause instanceof Error ? cause.message : "A2UI processing failed";
-  const unknownCatalog = message.startsWith("Catalog not found:");
-
-  return {
-    code: unknownCatalog ? "UNKNOWN_CATALOG" : "INVALID_MESSAGE",
-    message,
-    severity: "error",
-    surfaceId: parsed.surfaceId,
-    ...(parsed.catalogId === undefined ? {} : { catalogId: parsed.catalogId }),
-    cause,
-  };
-}
-
-function extractIdentifiers(input: unknown): {
-  readonly surfaceId?: string;
-  readonly catalogId?: string;
-} {
-  if (!isRecord(input)) {
-    return {};
-  }
-
-  for (const operation of [
-    "createSurface",
-    "updateComponents",
-    "updateDataModel",
-    "deleteSurface",
-  ] as const) {
-    const payload = input[operation];
-    if (!isRecord(payload)) {
-      continue;
-    }
-
-    return {
-      ...(typeof payload.surfaceId === "string"
-        ? { surfaceId: payload.surfaceId }
-        : {}),
-      ...(typeof payload.catalogId === "string"
-        ? { catalogId: payload.catalogId }
-        : {}),
-    };
-  }
-
-  return {};
-}
-
 function validateCatalogs(catalogs: A2UIEngineOptions["catalogs"]): void {
   if (catalogs.length === 0) {
     throw new TypeError("A2UI engine requires at least one catalog");
@@ -577,8 +338,4 @@ function validateCatalogs(catalogs: A2UIEngineOptions["catalogs"]): void {
     }
     ids.add(catalog.id);
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

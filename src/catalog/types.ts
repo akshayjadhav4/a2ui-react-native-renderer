@@ -20,16 +20,26 @@ export interface A2UIResolvedChild {
 
 type A2UIDynamicWireValue = A2UIDataBindingValue | A2UIFunctionCallValue;
 
-type A2UIResolvedProp<Value> = [NonNullable<Value>] extends [A2UIChildList]
-  ? readonly A2UIResolvedChild[] | Extract<Value, undefined>
-  : Exclude<Value, A2UIDynamicWireValue>;
+type A2UIResolvedProp<Value> = [NonNullable<Value>] extends [A2UIAction]
+  ? Value
+  : [NonNullable<Value>] extends [A2UIChildList]
+    ? readonly A2UIResolvedChild[] | Extract<Value, undefined>
+    : A2UIDataBindingValue extends NonNullable<Value>
+      ? A2UIResolvedLiteral<Exclude<Value, A2UIDynamicWireValue>> | undefined
+      : A2UIResolvedLiteral<Value>;
+
+type A2UIResolvedLiteral<Value> = Value extends readonly (infer Item)[]
+  ? readonly A2UIResolvedProp<Item>[]
+  : Value extends object
+    ? A2UIResolvedProps<Value>
+    : Value;
 
 type A2UIBindingSetters<Props extends object> = {
   readonly [
     Key in keyof Props as A2UIDataBindingValue extends NonNullable<Props[Key]>
       ? `set${Capitalize<string & Key>}`
       : never
-  ]: (value: Exclude<NonNullable<Props[Key]>, A2UIDynamicWireValue>) => void;
+  ]?: (value: Exclude<Props[Key], A2UIDynamicWireValue | undefined>) => void;
 };
 
 export type A2UIResolvedProps<Props extends object> = {
@@ -43,7 +53,18 @@ export type A2UIChildRenderer = (
 
 export type A2UIComponentAction = A2UIAction;
 
-export interface A2UIPresenterProps<Props extends object> {
+export type A2UIReadonlyTheme<Value> = Value extends object
+  ? { readonly [Key in keyof Value]: A2UIReadonlyTheme<Value[Key]> }
+  : Value;
+
+type CatalogTheme<Schema extends z.AnyZodObject | undefined> =
+  Schema extends z.AnyZodObject ? z.output<Schema> : Record<string, unknown>;
+
+export interface A2UIPresenterProps<
+  Props extends object,
+  Theme extends object = Record<string, unknown>,
+> {
+  readonly theme?: A2UIReadonlyTheme<Theme>;
   readonly props: Readonly<Props>;
   readonly surfaceId: string;
   readonly componentId: string;
@@ -52,15 +73,17 @@ export interface A2UIPresenterProps<Props extends object> {
   readonly dispatch: (action: A2UIComponentAction) => void;
 }
 
-export type A2UIPresenter<Props extends object> = (
-  props: A2UIPresenterProps<Props>,
-) => ReactNode;
+export type A2UIPresenter<
+  Props extends object,
+  Theme extends object = Record<string, unknown>,
+> = (props: A2UIPresenterProps<Props, Theme>) => ReactNode;
 
 export interface A2UIComponentDefinition<
   Schema extends z.AnyZodObject = z.AnyZodObject,
+  Theme extends object = Record<string, unknown>,
 > {
   readonly schema: Schema;
-  readonly presenter: A2UIPresenter<A2UIResolvedProps<z.output<Schema>>>;
+  readonly presenter: A2UIPresenter<A2UIResolvedProps<z.output<Schema>>, Theme>;
   readonly description?: string;
 }
 
@@ -91,25 +114,39 @@ export type A2UIComponentSchemas = Readonly<Record<string, z.AnyZodObject>>;
 
 export type A2UIComponentDefinitions<
   Schemas extends A2UIComponentSchemas = A2UIComponentSchemas,
+  Theme extends object = Record<string, unknown>,
 > = {
-  readonly [Name in keyof Schemas]: A2UIComponentDefinition<Schemas[Name]>;
+  readonly [Name in keyof Schemas]: A2UIComponentDefinition<
+    Schemas[Name],
+    Theme
+  >;
 };
 
 export interface A2UICatalog<
   Schemas extends A2UIComponentSchemas = A2UIComponentSchemas,
   Functions extends readonly A2UIFunctionDefinition[] =
     readonly A2UIFunctionDefinition[],
+  ThemeSchema extends z.AnyZodObject | undefined = undefined,
 > {
   readonly id: string;
-  readonly components: A2UIComponentDefinitions<Schemas>;
+  readonly themeSchema?: ThemeSchema;
+  readonly components: A2UIComponentDefinitions<
+    Schemas,
+    NoInfer<CatalogTheme<ThemeSchema>>
+  >;
   readonly functions: Readonly<Functions>;
 }
 
 export interface A2UICatalogDefinition<
   Schemas extends A2UIComponentSchemas,
   Functions extends readonly A2UIFunctionDefinition[],
+  ThemeSchema extends z.AnyZodObject | undefined = undefined,
 > {
   readonly id: string;
-  readonly components: A2UIComponentDefinitions<Schemas>;
+  readonly themeSchema?: ThemeSchema;
+  readonly components: A2UIComponentDefinitions<
+    Schemas,
+    NoInfer<CatalogTheme<ThemeSchema>>
+  >;
   readonly functions?: Functions;
 }

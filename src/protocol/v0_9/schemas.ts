@@ -1,13 +1,14 @@
 export {
   ActionSchema as A2UIActionSchema,
   ChildListSchema as A2UIChildListSchema,
+  ComponentIdSchema as A2UIComponentIdSchema,
   DataBindingSchema as A2UIDataBindingSchema,
   DynamicBooleanSchema as A2UIDynamicBooleanSchema,
   DynamicNumberSchema as A2UIDynamicNumberSchema,
   DynamicStringListSchema as A2UIDynamicStringListSchema,
   DynamicStringSchema as A2UIDynamicStringSchema,
   DynamicValueSchema as A2UIDynamicValueSchema,
-} from "@a2ui/web_core/v0_9";
+} from "./commonSchemas.js";
 
 export type {
   Action as A2UIAction,
@@ -19,4 +20,4 @@ export type {
   DynamicStringList as A2UIDynamicStringList,
   DynamicValue as A2UIDynamicValue,
   FunctionCall as A2UIFunctionCallValue,
-} from "@a2ui/web_core/v0_9";
+} from "./commonSchemas.js";

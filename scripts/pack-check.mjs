@@ -27,9 +27,14 @@ const requiredFiles = [
   "docs/errors-and-security.md",
   "docs/migration.md",
   "docs/streaming-and-actions.md",
+  "docs/testing.md",
   "package.json",
   "lib/module/index.js",
   "lib/typescript/index.d.ts",
+  "lib/module/catalog-schema.js",
+  "lib/typescript/catalog-schema.d.ts",
+  "lib/module/testing.js",
+  "lib/typescript/testing.d.ts",
 ];
 const localDependencyPrefixes = ["file:", "link:", "workspace:"];
 
@@ -119,6 +124,34 @@ function assertPackageMetadata(packageJson, packageRoot) {
   if (packageJson.name !== "a2ui-react-native-renderer") {
     throw new Error("Packed package has an unexpected name");
   }
+  if (packageJson.version !== "1.0.0" || packageJson.license !== "Apache-2.0") {
+    throw new Error(
+      "Packed package must match the 1.0.0 / Apache-2.0 release candidate",
+    );
+  }
+  if (
+    Object.keys(packageJson.dependencies ?? {}).length > 0 ||
+    Object.keys(packageJson.optionalDependencies ?? {}).length > 0 ||
+    packageJson.peerDependencies?.ajv !== undefined
+  ) {
+    throw new Error(
+      "Packed renderer gained a runtime schema-export dependency",
+    );
+  }
+
+  const forbiddenDependencies = [
+    "@a2ui/web_core",
+    "lit",
+    "lit-html",
+    "lit-element",
+  ];
+  if (
+    forbiddenDependencies.some(
+      (name) => packageJson.dependencies?.[name] !== undefined,
+    )
+  ) {
+    throw new Error("Packed renderer includes a web runtime dependency");
+  }
 
   for (const target of [
     packageJson.main,
@@ -130,6 +163,22 @@ function assertPackageMetadata(packageJson, packageRoot) {
       throw new Error("Packed package is missing a public entrypoint");
     }
     readFileSync(resolve(packageRoot, target), "utf8");
+  }
+
+  const catalogSchemaExport = packageJson.exports?.["./catalog-schema"];
+  if (
+    catalogSchemaExport?.import !== "./lib/module/catalog-schema.js" ||
+    catalogSchemaExport?.types !== "./lib/typescript/catalog-schema.d.ts"
+  ) {
+    throw new Error("Packed package is missing the catalog-schema subpath");
+  }
+
+  const testingExport = packageJson.exports?.["./testing"];
+  if (
+    testingExport?.import !== "./lib/module/testing.js" ||
+    testingExport?.types !== "./lib/typescript/testing.d.ts"
+  ) {
+    throw new Error("Packed package is missing the testing subpath");
   }
 
   for (const dependencyGroup of [
@@ -161,6 +210,12 @@ function assertNoLocalPaths(packageRoot) {
     const contents = readFileSync(path, "utf8");
     if (contents.includes(repositoryRoot)) {
       throw new Error(`Packed file contains the repository path: ${path}`);
+    }
+    if (
+      path.startsWith(join(packageRoot, "lib")) &&
+      /@a2ui\/web_core|basic_catalog|lit-html|lit-element|@lit\//.test(contents)
+    ) {
+      throw new Error(`Packed runtime contains a web renderer module: ${path}`);
     }
   }
 }

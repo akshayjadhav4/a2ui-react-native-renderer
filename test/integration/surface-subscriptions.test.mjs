@@ -15,6 +15,82 @@ import {
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+test("direct surface switches subscriptions and ignores updates from old sources", async () => {
+  const renderCounts = {};
+  const catalog = createCatalog(renderCounts);
+  const first = createA2UIEngine({ catalogs: [catalog] });
+  const second = createA2UIEngine({ catalogs: [catalog] });
+  first.applyMessages(createSurfaceMessages(catalog.id, "first", "First"));
+  second.applyMessages([
+    ...createSurfaceMessages(catalog.id, "second", "Second"),
+    ...createSurfaceMessages(catalog.id, "third", "Third"),
+  ]);
+  const subscriptions = new Map();
+  const track = (engine) =>
+    new Proxy(engine, {
+      get(target, name) {
+        if (name !== "subscribeSurface") return Reflect.get(target, name);
+        return (id, listener) => {
+          subscriptions.set(id, (subscriptions.get(id) ?? 0) + 1);
+          const unsubscribe = target.subscribeSurface(id, listener);
+          return () => {
+            subscriptions.set(id, subscriptions.get(id) - 1);
+            unsubscribe();
+          };
+        };
+      },
+    });
+  // Delegate from a separate object because engines are frozen.
+  const trackedFirst = track({ ...first });
+  const trackedSecond = track({ ...second });
+  let renderer;
+  await act(() => {
+    renderer = TestRenderer.create(
+      React.createElement(A2UISurface, {
+        engine: trackedFirst,
+        surfaceId: "first",
+      }),
+    );
+  });
+  assert.ok(subscriptions.get("first") > 0);
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UISurface, {
+        engine: trackedSecond,
+        surfaceId: "second",
+      }),
+    );
+  });
+  assert.equal(subscriptions.get("first"), 0);
+  assert.ok(subscriptions.get("second") > 0);
+  const counts = { ...renderCounts };
+  await act(() => {
+    first.applyMessage(updateText("first", "Old engine updated"));
+  });
+  assert.deepEqual(renderCounts, counts);
+  assert.deepEqual(renderer.toJSON().children, ["Second"]);
+  await act(() => {
+    renderer.update(
+      React.createElement(A2UISurface, {
+        engine: trackedSecond,
+        surfaceId: "third",
+      }),
+    );
+  });
+  assert.equal(subscriptions.get("second"), 0);
+  assert.ok(subscriptions.get("third") > 0);
+  await act(() => {
+    second.applyMessage(updateText("third", "Third updated"));
+  });
+  assert.deepEqual(renderer.toJSON().children, ["Third updated"]);
+  await act(() => {
+    renderer.unmount();
+  });
+  assert.equal(subscriptions.get("third"), 0);
+  first.dispose();
+  second.dispose();
+});
+
 function createCatalog(renderCounts) {
   return defineA2UICatalog({
     id: "urn:example:a2ui:catalog:v1",
@@ -166,3 +242,94 @@ test("replacing the root type switches to the matching presenter", async () => {
     children: ["Badge root"],
   });
 });
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} mounted deletion and error recovery preserve another surface`, async () => {
+    const errors = [];
+    const counts = {};
+    const catalog = createCatalog(counts);
+    const engine = createA2UIEngine({
+      catalogs: [catalog],
+      onError: (error) => errors.push(error),
+    });
+    const messages = (id, text) =>
+      createSurfaceMessages(catalog.id, id, text).map((message) => ({
+        ...message,
+        version,
+      }));
+    engine.applyMessages([
+      ...messages("target", "Old"),
+      {
+        version,
+        updateDataModel: { surfaceId: "target", value: { old: true } },
+      },
+      ...messages("healthy", "Healthy"),
+    ]);
+    const healthy = engine.getSurface("healthy");
+    let healthyNotifications = 0;
+    const unsubscribe = engine.subscribeSurface(
+      "healthy",
+      () => healthyNotifications++,
+    );
+    let renderer;
+    await act(() => {
+      renderer = TestRenderer.create(
+        React.createElement(
+          A2UIProvider,
+          { engine },
+          React.createElement(
+            React.Fragment,
+            null,
+            React.createElement(A2UISurface, { surfaceId: "target" }),
+            React.createElement(A2UISurface, { surfaceId: "healthy" }),
+          ),
+        ),
+      );
+    });
+    try {
+      await act(() =>
+        engine.applyMessage({
+          version,
+          deleteSurface: { surfaceId: "target" },
+        }),
+      );
+      assert.equal(engine.getSurface("target"), undefined);
+      assert.deepEqual(
+        renderer.root
+          .findAllByType("NativeText")
+          .map((node) => node.children[0]),
+        ["Healthy"],
+      );
+      await act(() =>
+        engine.applyMessage({
+          version,
+          deleteSurface: { surfaceId: "target" },
+        }),
+      );
+      assert.equal(errors.length, 1);
+      assert.equal(errors[0].code, "INVALID_MESSAGE");
+      assert.deepEqual(
+        renderer.root
+          .findAllByType("NativeText")
+          .map((node) => node.children[0]),
+        ["Healthy"],
+      );
+      await act(() => engine.applyMessages(messages("target", "Fresh")));
+      assert.deepEqual(
+        renderer.root
+          .findAllByType("NativeText")
+          .map((node) => node.children[0]),
+        ["Fresh", "Healthy"],
+      );
+      assert.deepEqual(engine.getSurface("target").dataModel, {});
+      assert.deepEqual(engine.getSnapshot().failedSurfaceIds, []);
+      assert.equal(engine.getSurface("healthy"), healthy);
+      assert.equal(healthyNotifications, 0);
+      assert.equal(counts.healthy, 1);
+    } finally {
+      await act(() => renderer.unmount());
+      unsubscribe();
+      engine.dispose();
+    }
+  });
+}

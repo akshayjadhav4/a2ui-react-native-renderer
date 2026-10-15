@@ -195,3 +195,69 @@ test("contains malformed presenter actions as renderer errors", async () => {
   assert.equal(errors.at(-1).surfaceId, "main");
   assert.equal(errors.at(-1).componentId, "root");
 });
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} action context rejects invalid array reads and recovers with empty-name fields`, async () => {
+    const actions = [];
+    const errors = [];
+    const engine = createA2UIEngine({
+      catalogs: [catalog],
+      onAction: (action) => actions.push(action),
+      onError: (error) => errors.push(error),
+    });
+    const button = (path) => ({
+      id: "root",
+      component: "Button",
+      label: "Choose",
+      action: {
+        event: { name: "choose", context: { selected: { path } } },
+      },
+    });
+    engine.applyMessages([
+      { version, createSurface: { surfaceId: "main", catalogId: catalog.id } },
+      {
+        version,
+        updateDataModel: {
+          surfaceId: "main",
+          value: { items: ["A"], record: { "": "Selected" } },
+        },
+      },
+      {
+        version,
+        updateComponents: {
+          surfaceId: "main",
+          components: [button("/items/length")],
+        },
+      },
+    ]);
+    let renderer;
+    await act(() => {
+      renderer = TestRenderer.create(
+        React.createElement(
+          A2UIProvider,
+          { engine },
+          React.createElement(A2UISurface, { surfaceId: "main" }),
+        ),
+      );
+    });
+    try {
+      await act(() => renderer.root.findByType("NativeButton").props.onPress());
+      assert.deepEqual(actions, []);
+      assert.equal(errors.at(-1).code, "INVALID_MESSAGE");
+      await act(() =>
+        engine.applyMessage({
+          version,
+          updateComponents: {
+            surfaceId: "main",
+            components: [button("/record/")],
+          },
+        }),
+      );
+      await act(() => renderer.root.findByType("NativeButton").props.onPress());
+      assert.equal(actions.length, 1);
+      assert.equal(actions[0].context.selected, "Selected");
+    } finally {
+      await act(() => renderer.unmount());
+    }
+  });
+}

@@ -1,4 +1,9 @@
-import type { A2uiClientAction, A2uiMessage } from "@a2ui/web_core/v0_9";
+import type { z } from "zod";
 
-export type A2UIMessage = A2uiMessage;
-export type A2UIUserAction = A2uiClientAction;
+import type {
+  A2UIWireActionPayloadSchema,
+  A2UIWireMessage,
+} from "../protocol/v0_9/wireSchemas.js";
+
+export type A2UIMessage = A2UIWireMessage;
+export type A2UIUserAction = z.infer<typeof A2UIWireActionPayloadSchema>;

@@ -4,3 +4,4 @@ coverage/
 .npm-cache/
 *.tgz
 .DS_Store
+/tasks/

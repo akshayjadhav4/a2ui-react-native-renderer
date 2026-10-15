@@ -1,4 +1,7 @@
-import { scrapeSchemaBehavior, type BehaviorNode } from "@a2ui/web_core/v0_9";
+import {
+  inspectA2UISchemaBehavior,
+  type A2UISchemaBehavior,
+} from "../protocol/v0_9/behavior.js";
 
 import type { A2UIRegisteredCatalog } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
@@ -26,7 +29,11 @@ export interface ValidateComponentUpdateInput {
 }
 
 export type ValidateComponentUpdateResult =
-  | { readonly success: true; readonly components: A2UIComponentGraph }
+  | {
+      readonly success: true;
+      readonly components: A2UIComponentGraph;
+      readonly pendingComponentIds: readonly string[];
+    }
   | { readonly success: false; readonly error: A2UIRendererError };
 
 export function validateComponentUpdate({
@@ -73,7 +80,12 @@ export function validateComponentUpdate({
       );
     }
 
-    const definition = catalog.components[type];
+    const definition = Object.prototype.hasOwnProperty.call(
+      catalog.components,
+      type,
+    )
+      ? catalog.components[type]
+      : undefined;
     if (definition === undefined) {
       return failure({
         code: "UNKNOWN_COMPONENT",
@@ -103,10 +115,11 @@ export function validateComponentUpdate({
       });
     }
 
-    candidate[id] = Object.freeze({
-      id,
-      type,
-      props: freezeRecord(props),
+    Object.defineProperty(candidate, id, {
+      value: Object.freeze({ id, type, props: freezeRecord(props) }),
+      enumerable: true,
+      writable: true,
+      configurable: true,
     });
   }
 
@@ -122,21 +135,14 @@ export function validateComponentUpdate({
     });
   }
 
-  if (candidate.root === undefined) {
-    return failure({
-      code: "INVALID_ROOT",
-      message: `A2UI surface "${surfaceId}" has no root component`,
-      severity: "error",
-      surfaceId,
-      catalogId: catalog.id,
-      componentId: "root",
-      path: "/updateComponents/components",
-    });
-  }
-
   const edges = new Map<string, readonly string[]>();
   for (const component of Object.values(candidate)) {
-    const definition = catalog.components[component.type];
+    const definition = Object.prototype.hasOwnProperty.call(
+      catalog.components,
+      component.type,
+    )
+      ? catalog.components[component.type]
+      : undefined;
     if (definition === undefined) {
       return failure({
         code: "UNKNOWN_COMPONENT",
@@ -152,7 +158,7 @@ export function validateComponentUpdate({
     try {
       collectBehaviorReferences(
         component.props,
-        scrapeSchemaBehavior(definition.schema),
+        inspectA2UISchemaBehavior(definition.schema),
         references,
       );
     } catch (cause) {
@@ -170,18 +176,30 @@ export function validateComponentUpdate({
     edges.set(component.id, Object.freeze(references));
   }
 
+  const unresolvedIds = new Set<string>();
   for (const [componentId, references] of edges) {
     for (const reference of references) {
-      if (candidate[reference] === undefined) {
+      if (reference.length === 0) {
         return invalidReference(
           surfaceId,
           catalog.id,
           `/components/${escapePointerToken(componentId)}`,
-          `A2UI component "${componentId}" references missing component "${reference}"`,
+          `A2UI component "${componentId}" has an empty child reference`,
           componentId,
         );
       }
+      if (!edges.has(reference)) unresolvedIds.add(reference);
     }
+  }
+  if (unresolvedIds.size > limits.maxComponentsPerSurface) {
+    return failure({
+      code: "RESOURCE_LIMIT_EXCEEDED",
+      message: `A2UI surface exceeds the ${String(limits.maxComponentsPerSurface)} pending component limit`,
+      severity: "error",
+      surfaceId,
+      catalogId: catalog.id,
+      path: "/updateComponents/components",
+    });
   }
 
   const cycle = findCycle(edges);
@@ -208,12 +226,38 @@ export function validateComponentUpdate({
     });
   }
 
-  return { success: true, components: freezeRecord(candidate) };
+  return {
+    success: true,
+    components: freezeRecord(candidate),
+    pendingComponentIds: collectPendingFromRoot(edges),
+  };
+}
+
+function collectPendingFromRoot(
+  edges: ReadonlyMap<string, readonly string[]>,
+): readonly string[] {
+  if (!edges.has("root")) return Object.freeze(["root"]);
+
+  const visited = new Set<string>();
+  const pending = new Set<string>();
+  const visit = (id: string): void => {
+    if (visited.has(id)) return;
+    visited.add(id);
+    for (const childId of edges.get(id) ?? []) {
+      if (edges.has(childId)) {
+        visit(childId);
+      } else {
+        pending.add(childId);
+      }
+    }
+  };
+  visit("root");
+  return Object.freeze(Array.from(pending));
 }
 
 function collectBehaviorReferences(
   value: unknown,
-  behavior: BehaviorNode,
+  behavior: A2UISchemaBehavior,
   references: string[],
 ): void {
   switch (behavior.type) {
@@ -238,6 +282,11 @@ function collectBehaviorReferences(
         if (typeof value.path === "string") {
           validateBindingPath(value.path);
         }
+      }
+      return;
+    case "COMPONENT_ID":
+      if (typeof value === "string") {
+        references.push(value);
       }
       return;
     case "ARRAY":
@@ -299,6 +348,7 @@ function findCycle(
 
     visiting.add(componentId);
     for (const childId of edges.get(componentId) ?? []) {
+      if (!edges.has(childId)) continue;
       const cycle = visit(childId);
       if (cycle !== undefined) {
         return cycle;
@@ -328,7 +378,9 @@ function findMaximumDepth(
       return knownDepth;
     }
 
-    const children = edges.get(componentId) ?? [];
+    const children = (edges.get(componentId) ?? []).filter((id) =>
+      edges.has(id),
+    );
     const depth = 1 + Math.max(0, ...children.map(visit));
     depths.set(componentId, depth);
     return depth;

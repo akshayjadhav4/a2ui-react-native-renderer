@@ -1,6 +1,6 @@
 import {
   A2UIRenderer,
-  createA2UIEngine,
+  useA2UIEngine,
   type A2UIRendererError,
   type A2UIUserAction,
 } from "a2ui-react-native-renderer";
@@ -26,7 +26,6 @@ import {
   streamingMessages,
 } from "../fixtures";
 
-const NO_MESSAGES = [] as const;
 const STREAM_LABELS = [
   "createSurface applied",
   "updateDataModel applied",
@@ -46,20 +45,23 @@ export function RendererShowcase() {
   const [streamStatus, setStreamStatus] = useState("Ready");
   const [isStreaming, setIsStreaming] = useState(false);
   const streamRun = useRef(0);
-  const [engine] = useState(() => {
-    const nextEngine = createA2UIEngine({
-      catalogs: [fixtureCatalog],
-      onAction: setLastAction,
-      onError: setLastError,
-    });
-    nextEngine.applyMessages(simpleMessages);
-    return nextEngine;
+  const engine = useA2UIEngine({
+    catalogs: [fixtureCatalog],
+    onAction: setLastAction,
+    onError: setLastError,
   });
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      engine.applyMessages(simpleMessages);
+    }
+  }, [engine]);
 
   useEffect(
     () => () => {
       streamRun.current += 1;
-      engine.dispose();
     },
     [engine],
   );
@@ -172,7 +174,6 @@ export function RendererShowcase() {
       <A2UIRenderer
         diagnostics="development"
         engine={engine}
-        messages={NO_MESSAGES}
         renderFallback={(error) => <ErrorFallback error={error} />}
       />
     </ScrollView>

@@ -12,6 +12,7 @@ import {
   A2UISurface,
   createA2UIEngine,
   defineA2UICatalog,
+  defineA2UIFunction,
 } from "../../lib/module/index.js";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -33,6 +34,23 @@ const catalog = defineA2UICatalog({
           onChangeText: props.setValue,
         }),
     },
+    NestedInputs: {
+      schema: z.object({
+        rows: z.array(z.object({ value: A2UIDynamicStringSchema })),
+      }),
+      presenter: ({ props }) =>
+        React.createElement(
+          "NativeColumn",
+          null,
+          props.rows.map((row, index) =>
+            React.createElement("NativeInput", {
+              key: index,
+              value: row.value,
+              onChangeText: row.setValue,
+            }),
+          ),
+        ),
+    },
     Column: {
       schema: z.object({ children: A2UIChildListSchema }),
       presenter: ({ props, renderChild }) =>
@@ -43,21 +61,40 @@ const catalog = defineA2UICatalog({
         ),
     },
   },
+  functions: [
+    defineA2UIFunction({
+      name: "fixedLabel",
+      args: z.object({}),
+      returns: "string",
+      execute: () => "From function",
+    }),
+    defineA2UIFunction({
+      name: "numericLabel",
+      args: z.object({}),
+      returns: "number",
+      execute: () => 42,
+    }),
+  ],
 });
 
-function createEngineWithSurface(components, dataModel) {
-  const engine = createA2UIEngine({ catalogs: [catalog] });
+function createEngineWithSurface(
+  components,
+  dataModel,
+  onError,
+  version = "v0.9",
+) {
+  const engine = createA2UIEngine({ catalogs: [catalog], onError });
   engine.applyMessages([
     {
-      version: "v0.9",
+      version,
       createSurface: { surfaceId: "main", catalogId: catalog.id },
     },
     {
-      version: "v0.9",
+      version,
       updateDataModel: { surfaceId: "main", value: dataModel },
     },
     {
-      version: "v0.9",
+      version,
       updateComponents: { surfaceId: "main", components },
     },
   ]);
@@ -169,3 +206,318 @@ test("writes through a relative two-way binding", async () => {
     "Mango",
   );
 });
+
+test("only direct bindings expose an input setter", async () => {
+  const literalEngine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: "Fixed" }],
+    {},
+  );
+  const literalRenderer = await renderSurface(literalEngine);
+  const literalInput = literalRenderer.root.findByType("NativeInput");
+  assert.equal(literalInput.props.value, "Fixed");
+  assert.equal(literalInput.props.onChangeText, undefined);
+
+  const functionEngine = createEngineWithSurface(
+    [
+      {
+        id: "root",
+        component: "Input",
+        value: { call: "fixedLabel", returnType: "string" },
+      },
+    ],
+    {},
+  );
+  const functionRenderer = await renderSurface(functionEngine);
+  const functionInput = functionRenderer.root.findByType("NativeInput");
+  assert.equal(functionInput.props.value, "From function");
+  assert.equal(functionInput.props.onChangeText, undefined);
+
+  const boundEngine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    {},
+  );
+  const boundRenderer = await renderSurface(boundEngine);
+  const boundInput = boundRenderer.root.findByType("NativeInput");
+  assert.equal(boundInput.props.value, undefined);
+  assert.equal(typeof boundInput.props.onChangeText, "function");
+
+  await act(() => boundInput.props.onChangeText("Created"));
+  assert.deepEqual(boundEngine.getSurface("main").dataModel, {
+    name: "Created",
+  });
+});
+
+test("contains wrong-type bound reads and recovers after corrected data", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: 42 },
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+
+  assert.equal(renderer.toJSON(), null);
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+  assert.equal(errors.at(-1)?.componentId, "root");
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9",
+      updateDataModel: { surfaceId: "main", path: "/name", value: "Ready" },
+    });
+  });
+
+  assert.equal(renderer.root.findByType("NativeInput").props.value, "Ready");
+});
+
+test("contains a function result with the wrong dynamic field type", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [
+      {
+        id: "root",
+        component: "Input",
+        value: { call: "numericLabel", returnType: "string" },
+      },
+    ],
+    {},
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+
+  assert.equal(renderer.toJSON(), null);
+  assert.equal(errors.at(-1)?.code, "FUNCTION_ERROR");
+  assert.equal(errors.at(-1)?.componentId, "root");
+});
+
+test("rejects invalid setter values without changing the surface", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: "Before" },
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+  const setter = renderer.root.findByType("NativeInput").props.onChangeText;
+  const before = engine.getSurface("main");
+
+  await act(() => setter(42));
+
+  assert.strictEqual(engine.getSurface("main"), before);
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+  assert.equal(errors.at(-1)?.componentId, "root");
+
+  await act(() => {
+    setter("First");
+    setter("Second");
+  });
+  assert.deepEqual(engine.getSurface("main").dataModel, { name: "Second" });
+});
+
+test("saved setters cannot write after rebind or surface deletion", async () => {
+  const errors = [];
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: "Before", other: "Other" },
+    (error) => errors.push(error),
+  );
+  const renderer = await renderSurface(engine);
+  const savedSetter =
+    renderer.root.findByType("NativeInput").props.onChangeText;
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "main",
+        components: [
+          { id: "root", component: "Input", value: { path: "/other" } },
+        ],
+      },
+    });
+  });
+  const rebound = engine.getSurface("main");
+
+  await act(() => savedSetter("Stale"));
+  assert.strictEqual(engine.getSurface("main"), rebound);
+  assert.deepEqual(rebound.dataModel, { name: "Before", other: "Other" });
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+
+  await act(() => {
+    renderer.root.findByType("NativeInput").props.onChangeText("Current");
+  });
+  assert.deepEqual(engine.getSurface("main").dataModel, {
+    name: "Before",
+    other: "Current",
+  });
+
+  await act(() => {
+    engine.applyMessage({
+      version: "v0.9",
+      deleteSurface: { surfaceId: "main" },
+    });
+  });
+  await act(() => savedSetter("Deleted"));
+  assert.equal(engine.getSurface("main"), undefined);
+  assert.equal(errors.at(-1)?.code, "BINDING_ERROR");
+});
+
+test("nested setter paths stay bound to their own array item", async () => {
+  const engine = createEngineWithSurface(
+    [
+      {
+        id: "root",
+        component: "NestedInputs",
+        rows: [
+          { value: { path: "/names/0" } },
+          { value: { path: "/names/1" } },
+        ],
+      },
+    ],
+    { names: ["A", "B"] },
+  );
+  const renderer = await renderSurface(engine);
+  const inputs = renderer.root.findAllByType("NativeInput");
+
+  await act(() => inputs[1].props.onChangeText("Changed"));
+  assert.deepEqual(engine.getSurface("main").dataModel, {
+    names: ["A", "Changed"],
+  });
+});
+
+test("a local write notifies only its bound surface", async () => {
+  const engine = createEngineWithSurface(
+    [{ id: "root", component: "Input", value: { path: "/name" } }],
+    { name: "Main" },
+  );
+  engine.applyMessages([
+    {
+      version: "v0.9",
+      createSurface: { surfaceId: "other", catalogId: catalog.id },
+    },
+    {
+      version: "v0.9",
+      updateDataModel: { surfaceId: "other", value: { name: "Other" } },
+    },
+    {
+      version: "v0.9",
+      updateComponents: {
+        surfaceId: "other",
+        components: [
+          { id: "root", component: "Input", value: { path: "/name" } },
+        ],
+      },
+    },
+  ]);
+  const otherBefore = engine.getSurface("other");
+  let mainNotifications = 0;
+  let otherNotifications = 0;
+  engine.subscribeSurface("main", () => mainNotifications++);
+  engine.subscribeSurface("other", () => otherNotifications++);
+  const renderer = await renderSurface(engine);
+
+  await act(() => {
+    renderer.root.findByType("NativeInput").props.onChangeText("Updated");
+  });
+
+  assert.equal(mainNotifications, 1);
+  assert.equal(otherNotifications, 0);
+  assert.strictEqual(engine.getSurface("other"), otherBefore);
+  assert.deepEqual(engine.getSurface("main").dataModel, { name: "Updated" });
+});
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} input edits preserve empty-name scopes in repeated lists`, async () => {
+    const errors = [];
+    const engine = createEngineWithSurface(
+      [
+        {
+          id: "root",
+          component: "Column",
+          children: { componentId: "row", path: "/records/" },
+        },
+        { id: "row", component: "Input", value: { path: "field/" } },
+      ],
+      {
+        records: {
+          "": [
+            { field: { "": "A", keep: "one" } },
+            { field: { "": "B", keep: "two" } },
+          ],
+        },
+      },
+      (error) => errors.push(error),
+      version,
+    );
+    const before = engine.getSurface("main");
+    const renderer = await renderSurface(engine);
+    try {
+      const inputs = renderer.root.findAllByType("NativeInput");
+      assert.deepEqual(
+        inputs.map((input) => input.props.value),
+        ["A", "B"],
+      );
+      const setter = inputs[1].props.onChangeText;
+      await act(() => setter("Changed"));
+      assert.deepEqual(engine.getSurface("main").dataModel.records[""], [
+        { field: { "": "A", keep: "one" } },
+        { field: { "": "Changed", keep: "two" } },
+      ]);
+      assert.equal(before.dataModel.records[""][1].field[""], "B");
+      const accepted = engine.getSurface("main");
+      await act(() => setter(42));
+      assert.equal(engine.getSurface("main"), accepted);
+      assert.equal(errors.at(-1).code, "BINDING_ERROR");
+      await act(() =>
+        engine.applyMessage({
+          version,
+          updateComponents: {
+            surfaceId: "main",
+            components: [
+              { id: "row", component: "Input", value: { path: "field/keep" } },
+            ],
+          },
+        }),
+      );
+      const rebound = engine.getSurface("main");
+      await act(() => setter("Stale"));
+      assert.equal(engine.getSurface("main"), rebound);
+      assert.equal(errors.at(-1).code, "BINDING_ERROR");
+    } finally {
+      await act(() => renderer.unmount());
+    }
+  });
+
+  test(`${version} invalid array reads are contained and recover after correction`, async () => {
+    const errors = [];
+    const engine = createEngineWithSurface(
+      [{ id: "root", component: "Input", value: { path: "/items/length" } }],
+      { items: ["A"] },
+      (error) => errors.push(error),
+      version,
+    );
+    const renderer = await renderSurface(engine);
+    try {
+      assert.equal(renderer.toJSON(), null);
+      assert.equal(errors.at(-1).code, "BINDING_ERROR");
+      await act(() =>
+        engine.applyMessage({
+          version,
+          updateComponents: {
+            surfaceId: "main",
+            components: [
+              { id: "root", component: "Input", value: { path: "/items/0" } },
+            ],
+          },
+        }),
+      );
+      assert.equal(renderer.root.findByType("NativeInput").props.value, "A");
+      await act(() =>
+        renderer.root.findByType("NativeInput").props.onChangeText("B"),
+      );
+      assert.deepEqual(engine.getSurface("main").dataModel, { items: ["B"] });
+    } finally {
+      await act(() => renderer.unmount());
+    }
+  });
+}

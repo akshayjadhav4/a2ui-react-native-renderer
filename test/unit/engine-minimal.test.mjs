@@ -84,6 +84,28 @@ test("publishes one stable snapshot notification for a message batch", () => {
   unsubscribe();
 });
 
+test("notifies a surface subscriber when a pre-root component is buffered", () => {
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  engine.applyMessage(welcomeMessages[0]);
+  let notifications = 0;
+  engine.subscribeSurface("welcome", () => {
+    notifications += 1;
+  });
+
+  engine.applyMessage({
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "welcome",
+      components: [{ id: "label", component: "Text", text: "Early" }],
+    },
+  });
+
+  assert.equal(notifications, 1);
+  assert.equal(engine.getSurface("welcome").rootId, null);
+  assert.deepEqual(engine.getSurface("welcome").pendingComponentIds, ["root"]);
+  assert.equal(engine.getSurface("welcome").revision, 2);
+});
+
 test("reports malformed messages without throwing or replacing valid state", () => {
   const errors = [];
   const engine = createA2UIEngine({
@@ -129,6 +151,63 @@ test("reports unsupported protocol versions distinctly", () => {
   assert.equal(errors.length, 1);
   assert.equal(errors[0].code, "UNSUPPORTED_VERSION");
   assert.equal(engine.getSurface("future"), undefined);
+});
+
+test("accepts a v0.9.1 lifecycle through the public engine", () => {
+  const engine = createA2UIEngine({ catalogs: [catalog] });
+  engine.applyMessages(
+    welcomeMessages.map((message) => ({ ...message, version: "v0.9.1" })),
+  );
+  assert.equal(
+    engine.getSurface("welcome")?.components.root.props.text,
+    "Hello from A2UI",
+  );
+
+  engine.applyMessage({
+    version: "v0.9.1",
+    deleteSurface: { surfaceId: "welcome" },
+  });
+  assert.equal(engine.getSurface("welcome"), undefined);
+});
+
+test("classifies malformed v0.9.1 content and recovers later in the batch", () => {
+  const errors = [];
+  const engine = createA2UIEngine({
+    catalogs: [catalog],
+    onError: (error) => errors.push(error),
+  });
+  let notifications = 0;
+  engine.subscribe(() => {
+    notifications += 1;
+  });
+
+  engine.applyMessages([
+    {
+      version: "v0.9.1",
+      createSurface: { surfaceId: "welcome", catalogId: catalog.id },
+    },
+    {
+      version: "v0.9.1",
+      updateDataModel: { surfaceId: "welcome", path: 3, value: "bad" },
+    },
+    {
+      version: "v0.9.1",
+      updateComponents: {
+        surfaceId: "welcome",
+        components: [{ id: "root", component: "Text", text: "Recovered" }],
+      },
+    },
+  ]);
+
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].code, "INVALID_MESSAGE");
+  assert.equal(errors[0].surfaceId, "welcome");
+  assert.equal(
+    engine.getSurface("welcome")?.components.root.props.text,
+    "Recovered",
+  );
+  assert.equal(engine.getSurface("welcome")?.revision, 2);
+  assert.equal(notifications, 1);
 });
 
 test("keeps engine instances isolated", () => {

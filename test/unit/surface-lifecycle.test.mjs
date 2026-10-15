@@ -163,3 +163,83 @@ test("recreating a deleted surface starts a fresh lifecycle", () => {
     "After recreation",
   );
 });
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} missing deletions report errors without notifying healthy surfaces`, () => {
+    const errors = [];
+    const engine = createA2UIEngine({
+      catalogs: [catalog],
+      onError: (error) => errors.push(error),
+    });
+    engine.applyMessage({
+      version,
+      createSurface: { surfaceId: "healthy", catalogId: catalog.id },
+    });
+    const healthy = engine.getSurface("healthy");
+    const ids = engine.getSnapshot().surfaceIds;
+    let healthyNotifications = 0;
+    let targetNotifications = 0;
+    engine.subscribeSurface("healthy", () => healthyNotifications++);
+    engine.subscribeSurface("target", () => targetNotifications++);
+    engine.applyMessage({ version, deleteSurface: { surfaceId: "target" } });
+    assert.equal(errors.length, 1);
+    assert.equal(errors[0].code, "INVALID_MESSAGE");
+    assert.equal(errors[0].surfaceId, "target");
+    assert.deepEqual(engine.getSnapshot().failedSurfaceIds, ["target"]);
+    assert.equal(engine.getErrors()[0], errors[0]);
+    assert.equal(engine.getSurface("healthy"), healthy);
+    assert.equal(engine.getSnapshot().surfaceIds, ids);
+    assert.equal(healthyNotifications, 0);
+    assert.equal(targetNotifications, 1);
+
+    engine.applyMessages([
+      { version, deleteSurface: { surfaceId: "target" } },
+      {
+        version,
+        createSurface: { surfaceId: "target", catalogId: catalog.id },
+      },
+      {
+        version,
+        updateDataModel: { surfaceId: "target", value: { fresh: true } },
+      },
+    ]);
+    assert.equal(errors.length, 2);
+    assert.equal(engine.getErrors().length, 2);
+    assert.deepEqual(engine.getSnapshot().failedSurfaceIds, []);
+    assert.deepEqual(engine.getSurface("target").dataModel, { fresh: true });
+    assert.equal(engine.getSurface("healthy"), healthy);
+    assert.equal(healthyNotifications, 0);
+    assert.equal(targetNotifications, 2);
+    engine.dispose();
+  });
+
+  test(`${version} ordered recreation clears old state and disposal ignores deletions`, () => {
+    const engine = createA2UIEngine({ catalogs: [catalog] });
+    engine.applyMessages([
+      { version, createSurface: { surfaceId: "main", catalogId: catalog.id } },
+      { version, updateDataModel: { surfaceId: "main", value: { old: true } } },
+      {
+        version,
+        updateComponents: {
+          surfaceId: "main",
+          components: [{ id: "root", component: "Text", text: "Old" }],
+        },
+      },
+      { version, deleteSurface: { surfaceId: "main" } },
+      { version, deleteSurface: { surfaceId: "main" } },
+      { version, createSurface: { surfaceId: "main", catalogId: catalog.id } },
+    ]);
+    assert.equal(engine.getErrors().length, 1);
+    assert.deepEqual(engine.getSnapshot().failedSurfaceIds, []);
+    assert.deepEqual(engine.getSurface("main").dataModel, {});
+    assert.deepEqual(engine.getSurface("main").components, {});
+    assert.equal(engine.getSurface("main").revision, 1);
+    engine.dispose();
+    const disposed = engine.getSnapshot();
+    const errorsBeforeIgnoredMessage = engine.getErrors();
+    engine.applyMessage({ version, deleteSurface: { surfaceId: "main" } });
+    assert.equal(engine.getSnapshot(), disposed);
+    assert.equal(engine.getErrors(), errorsBeforeIgnoredMessage);
+    assert.equal(engine.getSurface("main"), undefined);
+  });
+}

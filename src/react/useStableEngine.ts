@@ -4,6 +4,10 @@ import { createA2UIEngine } from "../engine/engine.js";
 import type { A2UIEngine, A2UIRegisteredCatalog } from "../engine/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
 import type { A2UIUserAction } from "../types/messages.js";
+import {
+  resolveA2UIResourceLimits,
+  type A2UIResourceLimits,
+} from "../validation/limits.js";
 
 export interface A2UIEngineCallbacks {
   readonly onAction?: (action: A2UIUserAction) => void | Promise<void>;
@@ -20,16 +24,22 @@ type StableEngineInput =
       readonly engine?: undefined;
       readonly catalogs: readonly A2UIRegisteredCatalog[];
       readonly callbacks: A2UIEngineCallbacks;
+      readonly limits?: Partial<A2UIResourceLimits>;
     };
 
 interface StableEngineState {
   readonly engine: A2UIEngine;
   readonly ownsEngine: boolean;
   readonly catalogs?: readonly A2UIRegisteredCatalog[];
+  readonly limits?: A2UIResourceLimits;
   mounted: boolean;
+  disposed: boolean;
 }
 
-export function useStableEngine(input: StableEngineInput): A2UIEngine {
+export function useStableEngine(
+  input: StableEngineInput,
+  ownerName: "A2UIRenderer" | "useA2UIEngine" = "A2UIRenderer",
+): A2UIEngine {
   const callbacksRef = useRef<A2UIEngineCallbacks>({});
   if (input.engine === undefined) {
     callbacksRef.current = input.callbacks;
@@ -39,7 +49,7 @@ export function useStableEngine(input: StableEngineInput): A2UIEngine {
   if (stateRef.current === null) {
     stateRef.current = createStableEngineState(input, callbacksRef);
   } else {
-    assertStableConfiguration(stateRef.current, input);
+    assertStableConfiguration(stateRef.current, input, ownerName);
   }
 
   useEffect(() => {
@@ -52,7 +62,8 @@ export function useStableEngine(input: StableEngineInput): A2UIEngine {
     return () => {
       state.mounted = false;
       void Promise.resolve().then(() => {
-        if (!state.mounted) {
+        if (!state.mounted && !state.disposed) {
+          state.disposed = true;
           state.engine.dispose();
         }
       });
@@ -67,11 +78,19 @@ function createStableEngineState(
   callbacksRef: RefObject<A2UIEngineCallbacks>,
 ): StableEngineState {
   if (input.engine !== undefined) {
-    return { engine: input.engine, ownsEngine: false, mounted: false };
+    return {
+      engine: input.engine,
+      ownsEngine: false,
+      mounted: false,
+      disposed: false,
+    };
   }
 
+  const catalogs = [...input.catalogs];
+  const limits = resolveA2UIResourceLimits(input.limits);
   const engine = createA2UIEngine({
-    catalogs: input.catalogs,
+    catalogs,
+    limits,
     onAction: (action) => callbacksRef.current.onAction?.(action),
     onError: (error) => callbacksRef.current.onError?.(error),
   });
@@ -79,14 +98,17 @@ function createStableEngineState(
   return {
     engine,
     ownsEngine: true,
-    catalogs: input.catalogs,
+    catalogs,
+    limits,
     mounted: false,
+    disposed: false,
   };
 }
 
 function assertStableConfiguration(
   state: StableEngineState,
   input: StableEngineInput,
+  ownerName: "A2UIRenderer" | "useA2UIEngine",
 ): void {
   if (state.ownsEngine === (input.engine !== undefined)) {
     throw new Error(
@@ -112,7 +134,17 @@ function assertStableConfiguration(
     input.catalogs.some((catalog, index) => catalog !== state.catalogs?.[index])
   ) {
     throw new Error(
-      "A2UIRenderer catalogs must remain stable for the mounted renderer",
+      `${ownerName} catalogs must remain stable for the mounted ${ownerName === "A2UIRenderer" ? "renderer" : "hook"}`,
     );
+  }
+
+  const limits = resolveA2UIResourceLimits(input.limits);
+  if (
+    Object.entries(limits).some(
+      ([name, value]) =>
+        state.limits?.[name as keyof A2UIResourceLimits] !== value,
+    )
+  ) {
+    throw new Error(`${ownerName} limits must remain stable while mounted`);
   }
 }

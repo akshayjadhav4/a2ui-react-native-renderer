@@ -30,7 +30,10 @@ export function readDataPointer(data: unknown, path: string): unknown {
       return undefined;
     }
 
-    current = current[token];
+    if (Array.isArray(current)) {
+      parseArrayIndex(token, path);
+    }
+    current = Object.hasOwn(current, token) ? current[token] : undefined;
   }
 
   return current;
@@ -91,9 +94,11 @@ function updateContainer(
   }
 
   const container = createContainer(current, token, originalPath);
-  const currentValue = Array.isArray(container)
-    ? container[parseArrayIndex(token, originalPath)]
-    : container[token];
+  const currentValue = Object.hasOwn(container, token)
+    ? Array.isArray(container)
+      ? container[parseArrayIndex(token, originalPath)]
+      : container[token]
+    : undefined;
   const nextValue =
     remaining.length === 0
       ? value
@@ -113,9 +118,7 @@ function updateContainer(
     );
   }
 
-  const result: Record<string, unknown> = { ...container };
-  result[token] = nextValue;
-  return Object.freeze(result);
+  return Object.freeze({ ...container, [token]: nextValue });
 }
 
 function createContainer(
@@ -161,7 +164,7 @@ function normalizePointer(path: string): string {
     );
   }
 
-  return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+  return path;
 }
 
 function decodePointerToken(token: string): string {
@@ -201,7 +204,14 @@ function parseArrayIndex(token: string, path: string): number {
     );
   }
 
-  return Number(token);
+  const index = Number(token);
+  if (index > 2 ** 32 - 2) {
+    throw new TypeError(
+      `A2UI data path "${path}" uses out-of-range array token "${token}"`,
+    );
+  }
+
+  return index;
 }
 
 function isArrayIndex(value: string): boolean {

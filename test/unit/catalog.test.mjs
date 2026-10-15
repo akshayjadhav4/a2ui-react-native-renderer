@@ -7,6 +7,7 @@ import {
   defineA2UICatalog,
   defineA2UIComponent,
   defineA2UIFunction,
+  A2UIDynamicStringSchema,
 } from "../../lib/module/index.js";
 
 const TextComponent = defineA2UIComponent({
@@ -110,4 +111,58 @@ test("freezes component and function definitions", () => {
 
   assert.ok(Object.isFrozen(component));
   assert.ok(Object.isFrozen(fn));
+});
+
+test("rejects nested generated setter name collisions", () => {
+  assert.throws(
+    () =>
+      defineA2UIComponent({
+        schema: z.object({
+          content: z.object({
+            value: A2UIDynamicStringSchema,
+            setValue: z.string(),
+          }),
+        }),
+        presenter: () => null,
+      }),
+    {
+      name: "TypeError",
+      message: /generated setter "setValue" conflicts with a schema property/,
+    },
+  );
+
+  assert.doesNotThrow(() =>
+    defineA2UIComponent({
+      schema: z.object({ value: z.string(), setValue: z.string() }),
+      presenter: () => null,
+    }),
+  );
+});
+
+test("retains an optional theme schema and rejects non-object roots", () => {
+  const themeSchema = z.object({ color: z.string() });
+  assert.equal(
+    defineA2UICatalog({
+      id: "theme",
+      themeSchema,
+      components: { Text: TextComponent },
+    }).themeSchema,
+    themeSchema,
+  );
+  for (const schema of [
+    z.string(),
+    z.array(z.string()),
+    themeSchema.optional(),
+    themeSchema.default({ color: "red" }),
+  ]) {
+    assert.throws(
+      () =>
+        defineA2UICatalog({
+          id: "invalid-theme",
+          themeSchema: schema,
+          components: { Text: TextComponent },
+        }),
+      /theme schema must be a Zod object/,
+    );
+  }
 });

@@ -1,6 +1,9 @@
 import type { z } from "zod";
 
-import type { A2UIFunctionDefinition } from "../catalog/types.js";
+import type {
+  A2UIFunctionDefinition,
+  A2UIReadonlyTheme,
+} from "../catalog/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
 import type { A2UIUserAction } from "../types/messages.js";
 import type { A2UIResourceLimits } from "../validation/limits.js";
@@ -12,6 +15,7 @@ export interface A2UIRegisteredComponent {
 }
 
 export interface A2UIRegisteredCatalog {
+  readonly themeSchema?: z.AnyZodObject | undefined;
   readonly id: string;
   readonly components: Readonly<Record<string, A2UIRegisteredComponent>>;
   readonly functions: readonly A2UIFunctionDefinition[];
@@ -31,9 +35,13 @@ export interface A2UIComponentSnapshot {
 }
 
 export interface A2UISurfaceSnapshot {
+  readonly version: "v0.9" | "v0.9.1";
+  readonly sendDataModel: boolean;
+  readonly theme?: A2UIReadonlyTheme<Record<string, unknown>>;
   readonly surfaceId: string;
   readonly catalogId: string;
   readonly rootId: string | null;
+  readonly pendingComponentIds: readonly string[];
   readonly components: Readonly<Record<string, A2UIComponentSnapshot>>;
   readonly dataModel: unknown;
   readonly revision: number;
@@ -46,11 +54,31 @@ export interface A2UIEngineSnapshot {
   readonly errorCount: number;
 }
 
+interface ClientJsonObject {
+  readonly [key: string]: ClientJsonValue;
+}
+
+type ClientJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly ClientJsonValue[]
+  | ClientJsonObject;
+
+export interface A2UIClientDataModel {
+  readonly version: A2UISurfaceSnapshot["version"];
+  readonly surfaces: Readonly<Record<string, ClientJsonObject>>;
+}
+
 export interface A2UIEngine {
   applyMessage(message: unknown): void;
   applyMessages(messages: readonly unknown[]): void;
   getSnapshot(): A2UIEngineSnapshot;
   getSurface(surfaceId: string): A2UISurfaceSnapshot | undefined;
+  getClientDataModel(
+    surfaceIds: readonly string[],
+  ): A2UIClientDataModel | undefined;
   getErrors(): readonly A2UIRendererError[];
   subscribe(listener: () => void): () => void;
   subscribeSurface(surfaceId: string, listener: () => void): () => void;

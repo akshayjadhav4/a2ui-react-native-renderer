@@ -60,6 +60,25 @@ test("supports nested consumer function calls", () => {
   assert.equal(result, "4 items");
 });
 
+test("accepts a registered function call with omitted optional args", () => {
+  const greet = defineA2UIFunction({
+    name: "greet",
+    args: z.object({}),
+    returns: "string",
+    execute: () => "Hello",
+  });
+
+  assert.equal(
+    evaluateA2UIFunction({
+      call: { call: "greet", returnType: "string" },
+      functions: [greet],
+      dataModel: {},
+      scopePath: "/",
+    }),
+    "Hello",
+  );
+});
+
 test("rejects unknown functions and ships no implicit built-ins", () => {
   for (const functionName of ["missing", "openUrl", "formatCurrency"]) {
     assert.throws(
@@ -153,4 +172,32 @@ test("freezes object and array results", () => {
   assert.equal(Object.isFrozen(result), true);
   assert.equal(Object.isFrozen(result.items), true);
   assert.equal(Object.isFrozen(result.items[0]), true);
+});
+
+test("function arguments preserve empty-name scopes and reject array properties before execution", () => {
+  const calls = [];
+  const record = defineA2UIFunction({
+    name: "recordCount",
+    args: z.object({ count: z.number() }),
+    returns: "number",
+    execute: ({ count }) => {
+      calls.push(count);
+      return count;
+    },
+  });
+  const evaluate = (path) =>
+    evaluateA2UIFunction({
+      call: {
+        call: "recordCount",
+        args: { count: { path } },
+        returnType: "number",
+      },
+      functions: [record],
+      dataModel: { record: { "": { count: 7 } }, items: [1, 2] },
+      scopePath: "/record/",
+    });
+  assert.throws(() => evaluate("/items/length"), TypeError);
+  assert.deepEqual(calls, []);
+  assert.equal(evaluate("count"), 7);
+  assert.deepEqual(calls, [7]);
 });

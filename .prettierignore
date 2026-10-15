@@ -1,0 +1,2 @@
+# Keep pinned upstream schema fixtures byte-for-byte identical to their source.
+test/fixtures/a2ui/**/*.json

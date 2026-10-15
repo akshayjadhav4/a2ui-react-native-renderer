@@ -5,6 +5,102 @@ project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-15
+
+### Breaking changes
+
+- Direct binding setters are optional; literals and function results have no
+  setter. Handle missing bound values as `undefined` in native presenters.
+- Invalid messages in `applyMessages` are skipped while later valid messages
+  continue. Applications must no longer rely on per-surface batch rollback.
+- Missing roots and children are pending during progressive rendering instead
+  of rejected updates. Use `renderPending` for app-owned loading UI.
+- Data paths preserve empty field names and reject invalid array indexes and
+  inherited properties. `/record/` addresses the empty-name field, while
+  `/record` addresses the whole record.
+- Deleting a missing or already-deleted surface reports `INVALID_MESSAGE`.
+- Supplied themes must be JSON objects and satisfy any catalog `themeSchema`;
+  invalid themes reject surface creation.
+
+See the [migration guide](./docs/migration.md) before upgrading from 0.1.x.
+
+### Added
+
+- Added catalog-defined `themeSchema`, validated readonly themes in presenters
+  and snapshots, and theme rules in exported catalog schemas.
+- Added `engine.getClientDataModel(surfaceIds)` to prepare opted-in current
+  models, including local edits, for app-owned outgoing message metadata.
+  Snapshots expose the surface's creation version and `sendDataModel` flag.
+- Added `createA2UITestHarness` from `a2ui-react-native-renderer/testing` for
+  app-owned catalog/surface checks through the real engine, with recorded
+  user actions and detached frozen action-list snapshots. Bring your own
+  assertions and mounting tools; normal native bundles exclude this helper.
+- Added an Expo network demo with progressive WebSocket delivery, writable
+  input/action replies, recovery, deletion and session cleanup. The deterministic
+  producer and its dependency remain private example code; shared catalog
+  schemas and native presenters remain app-owned.
+
+- Added `useA2UIEngine(options)` to manage a mounted feature's engine lifetime,
+  preserve state across rerenders, and use current action/error callbacks.
+  Catalogs and effective resource limits remain construction settings.
+- Added optional `engine` placement to `A2UISurface`, allowing one surface to
+  render without an outer provider while retaining provider-based usage.
+- Added `exportA2UICatalogSchema` from
+  `a2ui-react-native-renderer/catalog-schema` so an app can generate an A2UI
+  v0.9/v0.9.1 catalog document from the same app-owned catalog used by the
+  renderer. Supported Zod properties, A2UI marker references, and representable
+  functions are exported without presenters or executable implementations;
+  unsupported schemas fail with a named path. Apps own delivery to the agent.
+
+### Changed
+
+- Healthy presenters are now preserved when their observable inputs are
+  unchanged. Component nodes observe current state independently, so unaffected
+  template peers can skip calls while updated or late children still render.
+  Setters remain stable while their ownership/binding is unchanged. Full scope
+  values, current consumer function results, React state, and app context remain
+  observable. A measured 499-item fixture moved from 500 calls to two after one
+  item edit; this is a presenter-work measurement, not a device FPS guarantee.
+- External-engine `A2UIRenderer` now permits omitted `messages`; it observes
+  imperative engine updates without requiring an empty array. Owned-engine
+  mode still requires messages and retains existing collection replay rules.
+- Replaced `@a2ui/web_core` with an in-package protocol core that keeps native
+  bundles free of its Basic Catalog and Lit dependencies.
+- Added v0.9.1 messages alongside v0.9, including progressive component graphs. The
+  `A2UIMessage` type and public value schemas are now package-owned.
+- `applyMessages` now continues after an invalid message and commits later
+  valid messages, including on the same surface. Each accepted message commits
+  atomically; oversized batches still reject in full.
+- Presenter `setX` callbacks now exist only for direct data bindings and are
+  optional in `A2UIResolvedProps`. Missing bound values remain `undefined`;
+  nested resolved props are inferred recursively. Wrong-type reads and writes
+  report structured errors, and stale setters cannot update old bindings.
+- Component definitions now stream in either order: pre-root updates are
+  buffered, and unresolved structural children stay pending while available
+  siblings render. Snapshots expose `pendingComponentIds`, both React entry
+  points accept app-owned `renderPending`, and `A2UIComponentIdSchema` marks a
+  single child without changing presenter props into a list. Missing references
+  no longer raise an error; malformed IDs, known cycles, and limits still do.
+
+### Fixed
+
+- JSON pointer reads and writes now preserve empty-name object fields, validate
+  array indexes consistently, and avoid inherited JavaScript properties.
+- Missing and repeated surface deletions now report structured errors without
+  blocking later valid messages.
+- Presenter errors now recover after batched surface deletion/recreation even
+  when the new surface repeats the old revision number.
+- Pending and absent surfaces now update error fallback UI when a rejected
+  operation leaves their accepted snapshot unchanged. Rendered content stays
+  stable after rejected updates.
+- Switching a surface's engine or ID clears old presenter failures even when
+  the new surface has the same revision.
+
+### Known limitation
+
+- The protocol has no general completion signal for a child definition that
+  never arrives. The application owns any timeout or retry policy.
+
 ## [0.1.1] - 2026-07-18
 
 ### Fixed

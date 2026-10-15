@@ -1,9 +1,13 @@
 {
   "name": "a2ui-react-native-renderer",
-  "version": "0.1.1",
-  "description": "A catalog-agnostic A2UI renderer and protocol runtime for React Native and Expo",
+  "version": "1.0.0",
+  "description": "A2UI renderer for React Native and Expo. Build native generative UI from AI agent JSON with your own components, TypeScript, and Zod schemas.",
   "keywords": [
     "a2ui",
+    "a2ui-renderer",
+    "react-native-a2ui",
+    "server-driven-ui",
+    "dynamic-forms",
     "react-native",
     "expo",
     "generative-ui",
@@ -37,6 +41,16 @@
       "react-native": "./lib/module/index.js",
       "import": "./lib/module/index.js",
       "default": "./lib/module/index.js"
+    },
+    "./catalog-schema": {
+      "types": "./lib/typescript/catalog-schema.d.ts",
+      "import": "./lib/module/catalog-schema.js",
+      "default": "./lib/module/catalog-schema.js"
+    },
+    "./testing": {
+      "types": "./lib/typescript/testing.d.ts",
+      "import": "./lib/module/testing.js",
+      "default": "./lib/module/testing.js"
     },
     "./package.json": "./package.json"
   },
@@ -94,6 +108,7 @@
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-test-renderer": "^19.1.0",
+    "ajv": "8.20.0",
     "eslint": "^10.7.0",
     "prettier": "^3.9.5",
     "react": "19.2.3",
@@ -103,8 +118,5 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.64.0",
     "zod": "3.25.76"
-  },
-  "dependencies": {
-    "@a2ui/web_core": "0.9.0"
   }
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { resolveA2UIUserAction } from "../../lib/module/engine/actions.js";
+import { A2UIWireActionEnvelopeSchema } from "../../lib/module/protocol/v0_9/wireSchemas.js";
 
 test("creates an official user action and resolves current context bindings", () => {
   const action = resolveA2UIUserAction({
@@ -38,6 +39,12 @@ test("creates an official user action and resolves current context bindings", ()
   });
   assert.equal(Object.isFrozen(action), true);
   assert.equal(Object.isFrozen(action.context), true);
+  for (const version of ["v0.9", "v0.9.1"]) {
+    assert.equal(
+      A2UIWireActionEnvelopeSchema.safeParse({ version, action }).success,
+      true,
+    );
+  }
 });
 
 test("resolves escaped context pointers", () => {
@@ -84,4 +91,17 @@ test("rejects malformed and local function actions", () => {
       }),
     /registered client function/,
   );
+});
+
+test("action context preserves empty-name scopes and rejects invalid array properties", () => {
+  const resolve = (path) =>
+    resolveA2UIUserAction({
+      surfaceId: "main",
+      sourceComponentId: "root",
+      scopePath: "/record/",
+      action: { event: { name: "choose", context: { value: { path } } } },
+      dataModel: { record: { "": { name: "Chosen" } }, items: [1, 2] },
+    });
+  assert.throws(() => resolve("/items/length"), TypeError);
+  assert.equal(resolve("name").context.value, "Chosen");
 });

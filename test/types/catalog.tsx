@@ -80,10 +80,62 @@ defineA2UIComponent({
   schema: z.object({ value: A2UIDynamicStringSchema }),
   presenter: ({ props }) => {
     props.value?.toUpperCase();
+    props.setValue?.("updated");
+
+    // @ts-expect-error A literal or function result has no setter.
     props.setValue("updated");
 
     // @ts-expect-error Bound string setters only accept strings.
-    props.setValue(42);
+    props.setValue?.(42);
+
+    // @ts-expect-error A missing binding can resolve to undefined.
+    const requiredValue: string = props.value;
+    void requiredValue;
+
+    return null;
+  },
+});
+
+defineA2UIComponent({
+  schema: z.object({
+    content: z.object({ label: A2UIDynamicStringSchema, count: z.number() }),
+    rows: z.array(z.object({ title: A2UIDynamicStringSchema })),
+  }),
+  presenter: ({ props }) => {
+    props.content.label?.toUpperCase();
+    props.content.setLabel?.("next");
+    props.content.count.toFixed();
+    props.rows[0]?.title?.toUpperCase();
+    props.rows[0]?.setTitle?.("next");
+
+    // @ts-expect-error Nested bindings can be missing.
+    const requiredLabel: string = props.content.label;
+    void requiredLabel;
+
+    // @ts-expect-error Static nested values have no generated setter.
+    props.content.setCount;
+
+    return null;
+  },
+});
+
+defineA2UIComponent({
+  schema: z.object({ value: A2UIDynamicStringSchema.nullable() }),
+  presenter: ({ props }) => {
+    props.setValue?.(null);
+    return null;
+  },
+});
+
+defineA2UIComponent({
+  schema: z.object({
+    value: z.union([z.literal("ready"), z.object({ path: z.string() })]),
+  }),
+  presenter: ({ props }) => {
+    props.setValue?.("ready");
+
+    // @ts-expect-error A custom literal union only accepts its literal value.
+    props.setValue?.("other");
 
     return null;
   },

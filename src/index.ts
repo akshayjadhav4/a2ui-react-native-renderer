@@ -2,6 +2,7 @@ export { defineA2UICatalog } from "./catalog/defineCatalog.js";
 export { defineA2UIComponent } from "./catalog/defineComponent.js";
 export { defineA2UIFunction } from "./catalog/defineFunction.js";
 export { createA2UIEngine } from "./engine/engine.js";
+export { useA2UIEngine } from "./react/useA2UIEngine.js";
 export { A2UIProvider } from "./react/A2UIProvider.js";
 export { A2UIRenderer } from "./react/A2UIRenderer.js";
 export { A2UISurface } from "./react/A2UISurface.js";
@@ -13,6 +14,7 @@ export {
 export {
   A2UIActionSchema,
   A2UIChildListSchema,
+  A2UIComponentIdSchema,
   A2UIDataBindingSchema,
   A2UIDynamicBooleanSchema,
   A2UIDynamicNumberSchema,
@@ -57,6 +59,7 @@ export type {
 export type { A2UIFallbackRenderer } from "./errors/DevelopmentFallback.js";
 export type { A2UIDiagnosticsMode } from "./errors/diagnostics.js";
 export type {
+  A2UIClientDataModel,
   A2UIComponentSnapshot,
   A2UIEngine,
   A2UIEngineOptions,

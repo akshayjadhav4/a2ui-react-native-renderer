@@ -1,33 +1,36 @@
-# a2ui-react-native-renderer
+# React Native A2UI Renderer
 
-A catalog-agnostic A2UI v0.9 renderer and protocol runtime for React Native and
-Expo.
+**`a2ui-react-native-renderer` is an A2UI renderer for React Native and Expo.**
+Build interactive, agent-driven interfaces using your own React Native components
+and design system. Supports A2UI `v0.9` and `v0.9.1`.
 
-The package turns official A2UI messages into consumer-owned native React
-presenters. It does not bundle a component catalog, visual design system, chat
-UI, model SDK, or transport.
+[A2UI](https://a2ui.org/) lets AI agents describe interactive interfaces as
+declarative JSON instead of executable UI code. This library brings that flow to
+React Native: your agent sends component descriptions and data, and the renderer
+validates them against your catalog and renders the components you allow.
+Stream UI updates, bind editable forms to data, and handle user actions with
+TypeScript and Zod schemas.
 
-## Requirements
+**A2UI JSON → your catalog → your React Native UI**
 
-- React 18.2 or newer
-- React Native 0.76 or newer, including Expo projects
-- Zod 3.25
-- Node.js 20 or newer for development and package tooling
-- A2UI messages using protocol version `v0.9`
+New to A2UI? Start with the [quick start](#quick-start).
+Already building? Jump to [features](#features-and-guides),
+[streaming](#connect-a-message-stream), or the [API reference](./docs/api.md).
 
-## Installation
+## Install
 
 ```sh
-pnpm add a2ui-react-native-renderer zod
+npm install a2ui-react-native-renderer 'zod@^3.25'
 ```
 
-React and React Native are peer dependencies and should already be installed by
-the host application.
+Requires React ≥18.2, React Native ≥0.76 (including Expo), and Zod ≥3.25 <4.
+React and React Native come from your app. Repository development requires Node.js ≥20.
 
-## Quick Start
+## Quick start
 
-Define the components your application permits, pair each Zod schema with a
-native presenter, and render official A2UI messages.
+A **catalog** lists the components an agent may request. Each entry has a
+**schema** for its allowed properties and a **presenter** that renders them.
+Start with one text component:
 
 ```tsx
 import { Text } from "react-native";
@@ -38,7 +41,8 @@ import {
   type A2UIMessage,
 } from "a2ui-react-native-renderer";
 
-const catalog = defineA2UICatalog({
+// Define once, outside your React component.
+export const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
   components: {
     Text: {
@@ -48,25 +52,20 @@ const catalog = defineA2UICatalog({
   },
 });
 
+// In a real app, these messages come from your backend.
 const messages: A2UIMessage[] = [
   {
-    version: "v0.9",
+    version: "v0.9.1",
     createSurface: {
       surfaceId: "welcome",
       catalogId: catalog.id,
     },
   },
   {
-    version: "v0.9",
+    version: "v0.9.1",
     updateComponents: {
       surfaceId: "welcome",
-      components: [
-        {
-          id: "root",
-          component: "Text",
-          text: "Hello from A2UI",
-        },
-      ],
+      components: [{ id: "root", component: "Text", text: "Hello from A2UI" }],
     },
   },
 ];
@@ -76,160 +75,188 @@ export function AgentUI() {
 }
 ```
 
-`A2UIRenderer` creates one stable engine, applies appended messages, and renders
-all active surfaces at its location. Keep `catalogs` stable while the renderer
-is mounted.
+This displays **Hello from A2UI**. A **surface** is one independent interface:
+`createSurface` creates it, and `updateComponents` supplies its components.
+The entry component has the ID `root`; `catalogId` must match your catalog.
+Use `version: "v0.9"` for a v0.9 producer.
 
-## Streaming And Custom Placement
+`A2UIRenderer` owns the engine and renders all active surfaces. Append incoming
+messages to the array to apply more updates. Keep the catalog definition stable
+while mounted. See [core concepts](./docs/concepts.md) for the message lifecycle.
 
-Chat applications often need each A2UI surface to remain beside the assistant
-turn that created it. In that case, let the application own the engine and
-render individual surfaces where they belong.
+## Features and guides
+
+| Feature                    | Use                                                    | Guide                                                                                    |
+| -------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Custom components          | Zod schemas + native presenters                        | [Components](./docs/catalogs.md#define-components)                                       |
+| Data binding               | `A2UIDynamic*Schema` helpers                           | [Bindings](./docs/catalogs.md#dynamic-values-and-bindings)                               |
+| Editable inputs            | Direct bindings + generated setters such as `setValue` | [Editable values](./docs/catalogs.md#dynamic-values-and-bindings)                        |
+| Layouts and lists          | `renderChild`, child IDs, and templates                | [Children](./docs/catalogs.md#children-and-templates)                                    |
+| User actions               | Presenter `dispatch` + engine `onAction`               | [Actions](./docs/catalogs.md#actions)                                                    |
+| Client functions           | `defineA2UIFunction`                                   | [Functions](./docs/catalogs.md#functions)                                                |
+| Surface themes             | Catalog `themeSchema` + presenter `theme`              | [Themes](./docs/catalogs.md#surface-themes)                                              |
+| Data model sharing         | `engine.getClientDataModel(surfaceIds)`                | [Model sharing](./docs/streaming-and-actions.md#attach-the-current-data-model)           |
+| Surface placement          | `useA2UIEngine` + `A2UISurface`                        | [Streaming](./docs/streaming-and-actions.md)                                             |
+| Loading states             | `renderPending`                                        | [Progressive rendering](./docs/streaming-and-actions.md#progressive-components-and-data) |
+| Catalog schema export      | `exportA2UICatalogSchema`                              | [Schema export](./docs/catalogs.md#export-a-catalog-for-an-agent)                        |
+| Errors and resource limits | `onError`, `renderFallback`, `limits`                  | [Errors and security](./docs/errors-and-security.md)                                     |
+| Catalog testing            | `createA2UITestHarness` from the `/testing` entry      | [Testing](./docs/testing.md)                                                             |
+
+**Actions are your app's contract.** You define event names and handle them in
+`onAction`; the renderer does not invent business actions. Local functions are
+registered separately and run on the client.
+
+**Model sharing is explicit.** When a surface opts in with `sendDataModel: true`,
+`getClientDataModel` can return its current model, including user edits. Your app
+selects the destination's surface IDs and attaches the result to outgoing
+messages as `metadata.a2uiClientDataModel`. The renderer does not send it itself.
+
+## Connect a message stream
+
+Your backend can send A2UI messages as they become available: create a surface,
+add components, update their data, or delete the surface. Feed each incoming
+message to `engine.applyMessage`; the visible UI updates automatically.
+
+Here is a **WebSocket example**. Your app passes an already-connected
+`backendSocket` whose text frames each contain one A2UI JSON message, plus the
+`surfaceId` it wants to display. It reuses `catalog` from the quick start.
 
 ```tsx
-import {
-  A2UIProvider,
-  A2UISurface,
-  createA2UIEngine,
-  type A2UIMessage,
-  type A2UIUserAction,
-} from "a2ui-react-native-renderer";
+import { useEffect } from "react";
+import { A2UISurface, useA2UIEngine } from "a2ui-react-native-renderer";
 
-const engine = createA2UIEngine({
-  catalogs: [catalog],
-  onAction: (action: A2UIUserAction) => sendActionToAgent(action),
-  onError: (error) => reportRendererError(error),
-});
+export function AgentSurface({
+  backendSocket,
+  surfaceId,
+}: {
+  backendSocket: WebSocket;
+  surfaceId: string;
+}) {
+  const engine = useA2UIEngine({
+    catalogs: [catalog],
+    onError: (error) => console.error("A2UI rendering failed", error),
+  });
 
-export function acceptA2UIMessage(message: A2UIMessage) {
-  engine.applyMessage(message);
-}
+  useEffect(() => {
+    function handleBackendMessage(event: { data?: unknown }) {
+      if (typeof event.data !== "string") return;
 
-export function ChatSurface({ surfaceId }: { surfaceId: string }) {
-  return (
-    <A2UIProvider engine={engine}>
-      <A2UISurface surfaceId={surfaceId} />
-    </A2UIProvider>
-  );
+      let a2uiMessage: unknown;
+      try {
+        a2uiMessage = JSON.parse(event.data);
+      } catch {
+        console.error("Backend sent invalid JSON");
+        return;
+      }
+      engine.applyMessage(a2uiMessage);
+    }
+
+    backendSocket.addEventListener("message", handleBackendMessage);
+    return () => {
+      backendSocket.removeEventListener("message", handleBackendMessage);
+    };
+  }, [backendSocket, engine]);
+
+  return <A2UISurface engine={engine} surfaceId={surfaceId} />;
 }
 ```
 
-The host application decides how messages arrive, where surfaces appear, how
-long they remain, and how `A2UIUserAction` values return to the agent. The
-renderer imports no AG-UI, TanStack AI, HTTP, WebSocket, Expo Router, or chat
-runtime code.
+The listener receives **A2UI JSON from your backend**, not individual LLM text
+tokens. If your backend wraps messages in another envelope, extract the A2UI
+message before passing it to the engine. HTTP streaming and other transports
+use the same `applyMessage` call.
 
-## Catalog Ownership
+React removes this listener on cleanup; `useA2UIEngine` disposes its engine on
+unmount. Your app owns opening, reconnecting, and closing the socket. Mount the
+listener before your backend starts delivering messages. For several surfaces
+in one conversation, keep one engine in the conversation owner and pass it to
+each `A2UISurface`.
 
-The renderer deliberately ships no built-in components. A catalog is an
-application-owned allowlist:
+| Rendering need                              | API                                                                           |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| Render a message array                      | `<A2UIRenderer catalogs={[catalog]} messages={messages} />`                   |
+| Render all surfaces from an existing engine | `<A2UIRenderer engine={engine} />`                                            |
+| Place one surface                           | `<A2UISurface engine={engine} surfaceId="welcome" />`                         |
+| Manage an engine outside React              | `createA2UIEngine`; call `dispose()` when finished                            |
+| Read state in descendants                   | `A2UIProvider` with `useA2UISurface`, `useA2UISurfaceIds`, or `useA2UIErrors` |
 
-- **Schema:** validates the A2UI properties accepted by a component.
-- **Presenter:** renders those validated properties with React Native, Expo UI,
-  or another native component library.
-- **Function:** optionally evaluates a catalog-defined computation.
+Keep catalog objects/order and effective resource limits stable for a hook-owned
+engine; remount to change them. Action/error callbacks may change on rerender.
+See [streaming and actions](./docs/streaming-and-actions.md) for a complete
+subscription, action replies, model sharing, and cleanup.
 
-Use ordinary Zod fields for static values. Use the exported
-`A2UIDynamic*Schema` helpers for values that may be literals, data bindings, or
-function calls. Bound presenter properties receive typed setters such as
-`setValue`, allowing native controls to update the surface data model.
+## Give your agent the catalog
 
-See [Catalogs](./docs/catalogs.md) for components, children, bindings, actions,
-and functions.
+Export your catalog as JSON Schema so your backend can tell an agent which
+components, properties, functions, and theme values the app accepts:
 
-## Errors And Untrusted Input
+```ts
+import { exportA2UICatalogSchema } from "a2ui-react-native-renderer/catalog-schema";
+import { catalog } from "./catalog";
 
-A2UI messages must be treated as untrusted input. Before a surface revision is
-published, the engine validates message shape, catalog IDs, component schemas,
-the reserved `root`, references, cycles, JSON pointers, and configured resource
-limits. An invalid update reports a structured `A2UIRendererError` and keeps the
-last valid surface revision when possible.
-
-```tsx
-<A2UIRenderer
-  catalogs={[catalog]}
-  messages={messages}
-  diagnostics="production"
-  onError={(error) => telemetry.capture(error)}
-  renderFallback={() => <Text>Interface unavailable</Text>}
-/>
+const agentCatalog = exportA2UICatalogSchema(catalog);
+const json = JSON.stringify(agentCatalog);
+// Deliver this JSON through your own agent infrastructure.
 ```
 
-Development diagnostics expose sanitized identifiers only. Production renders
-nothing unless the consumer provides `renderFallback`; `onError` still runs in
-both modes. Raw messages, data models, causes, and component properties are not
-rendered by the default fallback.
+Generate this in a build environment that can load your catalog module. If it
+imports native components, serve the generated JSON artifact from your backend.
+The export contains schemas, not native presenters or function implementations.
+See [schema export](./docs/catalogs.md#export-a-catalog-for-an-agent) for supported
+Zod shapes and catalog versioning.
 
-See [Errors And Security](./docs/errors-and-security.md) for recovery behavior,
-error codes, limits, and trust boundaries.
+## Before shipping
 
-## Public API
+- **Handle errors:** provide `onError` for reporting and `renderFallback` for your
+  error UI. With `diagnostics="production"`, the default error UI renders nothing.
+- **Expect partial delivery:** `v0.9` and `v0.9.1` accept progressive component updates.
+  Missing components can render through `renderPending`; your app owns timeout
+  and retry decisions. Missing bound data reaches presenters as `undefined`.
+- **Understand recovery:** invalid messages report structured errors and preserve
+  the last valid revision when possible. Later messages in a batch still run;
+  a batch exceeding its size limit is rejected in full.
+- **Set appropriate limits:** incoming content is validated against message and
+  catalog schemas, structural references, JSON pointers, cycles, and resource limits.
 
-| Area               | Main exports                                                     |
-| ------------------ | ---------------------------------------------------------------- |
-| Catalogs           | `defineA2UICatalog`, `defineA2UIComponent`, `defineA2UIFunction` |
-| Simple rendering   | `A2UIRenderer`                                                   |
-| Advanced rendering | `createA2UIEngine`, `A2UIProvider`, `A2UISurface`                |
-| React state        | `useA2UISurface`, `useA2UISurfaceIds`, `useA2UIErrors`           |
-| Protocol schemas   | `A2UIActionSchema`, `A2UIChildListSchema`, `A2UIDynamic*Schema`  |
-| Validation         | `DEFAULT_A2UI_RESOURCE_LIMITS`                                   |
+See [errors and security](./docs/errors-and-security.md) for error codes,
+validation boundaries, and configuration.
 
-The complete value and type reference is in [Public API](./docs/api.md).
+## What your app owns
 
-## Documentation
+Your app supplies components, styling, networking, agent integration, and surface
+placement. This lets you use your existing design system.
 
-- [Core Concepts](./docs/concepts.md)
-- [Architecture](./docs/architecture.md)
-- [Catalogs](./docs/catalogs.md)
-- [Streaming And Actions](./docs/streaming-and-actions.md)
-- [Errors And Security](./docs/errors-and-security.md)
-- [Migration Guide](./docs/migration.md)
-- [Contributing](./CONTRIBUTING.md)
-- [Changelog](./CHANGELOG.md)
-- [Release Process](./RELEASING.md)
+- No Basic Catalog or other visual catalog is bundled.
+- No transport, agent, model, chat UI, persistence, or server integration is included.
+- The package provides ESM and TypeScript declarations.
 
-## Expo Example
+## Try the Expo demo
 
-[`example/expo`](./example/expo) is an Expo SDK 57 consumer that owns its entire
-catalog. It demonstrates simple rendering, staged streaming, two-way binding,
-actions, surface deletion, development diagnostics, and recovery.
+The [example app](./example/expo/README.md) includes local fixtures and a network
+demo for both protocol versions: editable forms, actions, themes, model sharing,
+progressive rendering, and error recovery.
+
+From this repository:
 
 ```sh
 pnpm install
-pnpm --dir example/expo start
-```
-
-Press `i` for iOS or `a` for Android. Production bundle verification is also
-available:
-
-```sh
-pnpm example:export
-```
-
-## Limitations
-
-- Only A2UI `v0.9` messages are accepted.
-- No Basic Catalog or other visual catalog is bundled.
-- No transport, agent, model, chat UI, persistence, or server integration is
-  included.
-- Catalogs cannot be changed on an internally owned engine after
-  `A2UIRenderer` mounts; recreate the renderer to replace them.
-- Resource limits protect correctness and memory boundaries, but the package
-  does not promise a frame-time SLA for consumer presenters.
-- The package currently provides ESM and TypeScript declaration output.
-
-## Development
-
-```sh
 pnpm build
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm release:check
+pnpm --filter a2ui-renderer-example start
 ```
 
-`release:check` also packs the real npm tarball and installs it into isolated
-Expo and bare React Native consumers before bundling iOS and Android.
+Press `i` for iOS or `a` for Android. For **Network demo**, also start
+`pnpm --filter a2ui-demo-server start` in another terminal. See the
+[demo instructions](./example/expo/README.md#run-the-network-demo) for emulator
+and physical-device endpoints.
+
+## Reference and contributing
+
+- [API reference](./docs/api.md) — complete exports, options, and types
+- [Architecture](./docs/architecture.md) — runtime internals and ownership
+- [Migration guide](./docs/migration.md) — upgrading from the earlier API
+- [Changelog](./CHANGELOG.md) — changes by version
+- [Contributing](./CONTRIBUTING.md) — setup and development checks
+- [Release process](./RELEASING.md) — package verification and publishing
 
 ## License
 

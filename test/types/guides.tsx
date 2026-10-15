@@ -1,9 +1,11 @@
 import { Pressable, Text, TextInput, View } from "react-native";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import {
   A2UIActionSchema,
   A2UIChildListSchema,
+  A2UIComponentIdSchema,
   A2UIDynamicStringSchema,
   A2UIProvider,
   A2UISurface,
@@ -11,7 +13,10 @@ import {
   defineA2UICatalog,
   defineA2UIComponent,
   defineA2UIFunction,
+  useA2UIEngine,
   type A2UIMessage,
+  type A2UIRendererError,
+  type A2UIUserAction,
 } from "../../src/index.js";
 
 const Label = defineA2UIComponent({
@@ -43,6 +48,13 @@ const Column = defineA2UIComponent({
   ),
 });
 
+const SingleChild = defineA2UIComponent({
+  schema: z.object({ child: A2UIComponentIdSchema }),
+  presenter: ({ props, renderChild }) => (
+    <View>{renderChild(props.child)}</View>
+  ),
+});
+
 const Button = defineA2UIComponent({
   schema: z.object({
     label: A2UIDynamicStringSchema,
@@ -64,7 +76,7 @@ const formatCount = defineA2UIFunction({
 
 const catalog = defineA2UICatalog({
   id: "urn:example:a2ui:catalog:v1",
-  components: { Button, Column, Input, Label },
+  components: { Button, Column, Input, Label, SingleChild },
   functions: [formatCount],
 });
 
@@ -126,3 +138,41 @@ export function Transcript({ items }: { items: readonly DisplayItem[] }) {
 
 engine.applyMessages([]);
 engine.dispose();
+
+type MessageSource = {
+  onA2UIMessage(handler: (message: A2UIMessage) => void): () => void;
+};
+
+export function LiveTranscript({
+  source,
+  items,
+  onAction,
+  onError,
+}: {
+  source: MessageSource;
+  items: readonly DisplayItem[];
+  onAction: (action: A2UIUserAction) => void | Promise<void>;
+  onError: (error: A2UIRendererError) => void;
+}) {
+  const liveEngine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
+  useEffect(
+    () =>
+      source.onA2UIMessage((message) => {
+        liveEngine.applyMessage(message);
+      }),
+    [source, liveEngine],
+  );
+  return items.map((item) =>
+    item.kind === "surface" ? (
+      <A2UISurface
+        key={item.id}
+        engine={liveEngine}
+        surfaceId={item.surfaceId}
+        renderPending={({ kind }) => <Text>Loading {kind}…</Text>}
+        renderFallback={(error) => <Text>Unable to display: {error.code}</Text>}
+      />
+    ) : (
+      <ChatMessage key={item.id} item={item} />
+    ),
+  );
+}

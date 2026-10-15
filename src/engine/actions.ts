@@ -1,4 +1,5 @@
-import { A2uiClientActionSchema, ActionSchema } from "@a2ui/web_core/v0_9";
+import { ActionSchema } from "../protocol/v0_9/commonSchemas.js";
+import { A2UIWireActionPayloadSchema } from "../protocol/v0_9/wireSchemas.js";
 
 import type { A2UIFunctionDefinition } from "../catalog/types.js";
 import {
@@ -101,7 +102,7 @@ function resolveParsedEventAction(
     timestamp,
     context: Object.freeze(context),
   };
-  const validation = A2uiClientActionSchema.safeParse(userAction);
+  const validation = A2UIWireActionPayloadSchema.safeParse(userAction);
   if (!validation.success) {
     throw new TypeError("Resolved A2UI user action is invalid", {
       cause: validation.error,

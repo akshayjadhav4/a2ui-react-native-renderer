@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 
 import { defineA2UIComponent } from "./defineComponent.js";
 import { defineA2UIFunction } from "./defineFunction.js";
@@ -6,7 +6,6 @@ import type {
   A2UICatalog,
   A2UICatalogDefinition,
   A2UIComponentDefinition,
-  A2UIComponentDefinitions,
   A2UIComponentSchemas,
   A2UIFunctionDefinition,
 } from "./types.js";
@@ -14,11 +13,19 @@ import type {
 export function defineA2UICatalog<
   const Schemas extends A2UIComponentSchemas,
   const Functions extends readonly A2UIFunctionDefinition[] = readonly [],
+  const ThemeSchema extends z.AnyZodObject | undefined = undefined,
 >(
-  definition: A2UICatalogDefinition<Schemas, Functions>,
-): A2UICatalog<Schemas, Functions> {
+  definition: A2UICatalogDefinition<Schemas, Functions, ThemeSchema>,
+): A2UICatalog<Schemas, Functions, ThemeSchema> {
   if (definition.id.trim().length === 0) {
     throw new TypeError("A2UI catalog id must not be empty");
+  }
+
+  if (
+    definition.themeSchema !== undefined &&
+    !(definition.themeSchema instanceof z.ZodObject)
+  ) {
+    throw new TypeError("A2UI theme schema must be a Zod object schema");
   }
 
   const names = Object.keys(definition.components) as (keyof Schemas &
@@ -35,20 +42,26 @@ export function defineA2UICatalog<
 
       return [name, normalizeComponent(definition.components[name])] as const;
     }),
-  ) as A2UIComponentDefinitions<Schemas>;
+  ) as A2UICatalog<Schemas, Functions, ThemeSchema>["components"];
 
   const functions = normalizeFunctions(definition.functions ?? []);
 
   return Object.freeze({
     id: definition.id,
+    ...(definition.themeSchema === undefined
+      ? {}
+      : { themeSchema: definition.themeSchema }),
     components: Object.freeze(components),
     functions: Object.freeze(functions) as unknown as Readonly<Functions>,
   });
 }
 
-function normalizeComponent<Schema extends z.AnyZodObject>(
-  definition: A2UIComponentDefinition<Schema>,
-): A2UIComponentDefinition<Schema> {
+function normalizeComponent<
+  Schema extends z.AnyZodObject,
+  Theme extends object,
+>(
+  definition: A2UIComponentDefinition<Schema, Theme>,
+): A2UIComponentDefinition<Schema, Theme> {
   return defineA2UIComponent(definition);
 }
 
