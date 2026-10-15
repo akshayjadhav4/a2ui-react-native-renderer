@@ -99,6 +99,18 @@ objects or arrays follow the same rule. Invalid bound values and local writes
 report structured errors. A setter saved before a component rebind or deletion
 cannot update the old path.
 
+Data paths now preserve trailing and repeated `/` separators. Previously,
+`/record/` was incorrectly treated as `/record`, which could replace the whole
+object during an update. It now addresses the field named `""` inside `record`.
+If you intended the whole object, use `/record` explicitly. A2UI's `/`
+whole-model convention remains unchanged.
+
+Array reads now validate item numbers just like writes: addresses such as
+`/items/length` or `/items/01` report errors rather than exposing JavaScript
+array properties. Valid missing fields/items still return `undefined`.
+Object reads no longer expose inherited JavaScript properties; explicitly
+stored JSON fields with those names remain accessible.
+
 ## 6. Handle Progressive Components
 
 Earlier package behavior rejected an `updateComponents` message without `root`

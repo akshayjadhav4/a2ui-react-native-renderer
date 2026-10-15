@@ -143,6 +143,17 @@ editability. The setter updates only that surface's data model; it does not send
 a network message. JSON Pointer escaping follows RFC 6901 (`~0` for `~`, `~1`
 for `/`).
 
+Addresses preserve empty field names: `/record/` reads the field named `""`
+inside `record`, while `/record` reads the whole object. Repeated separators
+also preserve empty fields. A2UI uses `/` for the whole model; an empty path
+passed to a data update is also a root alias. A relative empty path or `.`
+binding refers to its current scope.
+
+Array addresses must use canonical item numbers such as `/items/0`.
+`/items/length`, `/items/01` and `/items/-` are invalid and report structured
+errors. Valid missing fields or list items still resolve to `undefined`.
+Object fields named `length` or `01` remain valid; reads only use own fields.
+
 Typed dynamic fields reject wrong-type bound reads, function results, and local
 writes through `onError`. A saved setter cannot write after its component is
 replaced or its surface is deleted. Nested object and array fields follow the

@@ -173,3 +173,31 @@ test("freezes object and array results", () => {
   assert.equal(Object.isFrozen(result.items), true);
   assert.equal(Object.isFrozen(result.items[0]), true);
 });
+
+test("function arguments preserve empty-name scopes and reject array properties before execution", () => {
+  const calls = [];
+  const record = defineA2UIFunction({
+    name: "recordCount",
+    args: z.object({ count: z.number() }),
+    returns: "number",
+    execute: ({ count }) => {
+      calls.push(count);
+      return count;
+    },
+  });
+  const evaluate = (path) =>
+    evaluateA2UIFunction({
+      call: {
+        call: "recordCount",
+        args: { count: { path } },
+        returnType: "number",
+      },
+      functions: [record],
+      dataModel: { record: { "": { count: 7 } }, items: [1, 2] },
+      scopePath: "/record/",
+    });
+  assert.throws(() => evaluate("/items/length"), TypeError);
+  assert.deepEqual(calls, []);
+  assert.equal(evaluate("count"), 7);
+  assert.deepEqual(calls, [7]);
+});

@@ -92,3 +92,16 @@ test("rejects malformed and local function actions", () => {
     /registered client function/,
   );
 });
+
+test("action context preserves empty-name scopes and rejects invalid array properties", () => {
+  const resolve = (path) =>
+    resolveA2UIUserAction({
+      surfaceId: "main",
+      sourceComponentId: "root",
+      scopePath: "/record/",
+      action: { event: { name: "choose", context: { value: { path } } } },
+      dataModel: { record: { "": { name: "Chosen" } }, items: [1, 2] },
+    });
+  assert.throws(() => resolve("/items/length"), TypeError);
+  assert.equal(resolve("name").context.value, "Chosen");
+});

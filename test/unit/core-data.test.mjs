@@ -85,3 +85,54 @@ test("invalid paths and oversized data preserve the previous revision", () => {
   assert.equal(oversized.error.code, "RESOURCE_LIMIT_EXCEEDED");
   assert.equal(core.getSurface("s"), before);
 });
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} empty-name updates and deletion preserve siblings and snapshots`, () => {
+    const core = new A2UIProtocolCore([catalog], DEFAULT_A2UI_RESOURCE_LIMITS);
+    core.apply({
+      version,
+      createSurface: { surfaceId: "s", catalogId: "app" },
+    });
+    core.apply({
+      version,
+      createSurface: { surfaceId: "other", catalogId: "app" },
+    });
+    const update = (value) =>
+      core.apply({ version, updateDataModel: { surfaceId: "s", ...value } });
+    update({ value: { record: { "": "old", keep: "yes" } } });
+    const before = core.getSurface("s");
+    const other = core.getSurface("other");
+    assert.equal(update({ path: "/record/", value: "new" }).success, true);
+    assert.deepEqual(core.getSurface("s").dataModel, {
+      record: { "": "new", keep: "yes" },
+    });
+    assert.deepEqual(before.dataModel, { record: { "": "old", keep: "yes" } });
+    assert.equal(update({ path: "/record/" }).success, true);
+    assert.deepEqual(core.getSurface("s").dataModel, {
+      record: { keep: "yes" },
+    });
+    assert.equal(core.getSurface("other"), other);
+  });
+}
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} rejects invalid array updates without changing accepted data`, () => {
+    const core = new A2UIProtocolCore([catalog], DEFAULT_A2UI_RESOURCE_LIMITS);
+    core.apply({
+      version,
+      createSurface: { surfaceId: "s", catalogId: "app" },
+    });
+    const update = (path, value) =>
+      core.apply({ version, updateDataModel: { surfaceId: "s", path, value } });
+    update("/", { items: ["before"] });
+    const before = core.getSurface("s");
+    for (const token of ["length", "", "01", "4294967295"]) {
+      const result = update(`/items/${token}`, "bad");
+      assert.equal(result.success, false);
+      assert.equal(result.error.code, "BINDING_ERROR");
+      assert.equal(core.getSurface("s"), before);
+    }
+    assert.equal(update("/items/0", "after").success, true);
+    assert.deepEqual(core.getSurface("s").dataModel, { items: ["after"] });
+  });
+}

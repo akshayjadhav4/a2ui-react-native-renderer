@@ -61,18 +61,24 @@ function createFunctionCatalog(onLocalFunction = () => undefined) {
   });
 }
 
-function applySurface(engine, catalog, components, dataModel) {
+function applySurface(
+  engine,
+  catalog,
+  components,
+  dataModel,
+  version = "v0.9",
+) {
   engine.applyMessages([
     {
-      version: "v0.9",
+      version,
       createSurface: { surfaceId: "main", catalogId: catalog.id },
     },
     {
-      version: "v0.9",
+      version,
       updateDataModel: { surfaceId: "main", value: dataModel },
     },
     {
-      version: "v0.9",
+      version,
       updateComponents: { surfaceId: "main", components },
     },
   ]);
@@ -263,3 +269,58 @@ test("contains failing local function actions as structured renderer errors", as
   assert.equal(errors.at(-1).surfaceId, "main");
   assert.equal(errors.at(-1).componentId, "root");
 });
+
+for (const version of ["v0.9", "v0.9.1"]) {
+  test(`${version} function actions reject invalid array arguments and recover with empty-name fields`, async () => {
+    const calls = [];
+    const actions = [];
+    const errors = [];
+    const catalog = createFunctionCatalog((value) => calls.push(value));
+    const engine = createA2UIEngine({
+      catalogs: [catalog],
+      onAction: (action) => actions.push(action),
+      onError: (error) => errors.push(error),
+    });
+    const button = (path) => ({
+      id: "root",
+      component: "Button",
+      label: "Record",
+      action: {
+        functionCall: {
+          call: "recordSelection",
+          args: { value: { path } },
+          returnType: "any",
+        },
+      },
+    });
+    applySurface(
+      engine,
+      catalog,
+      [button("/items/length")],
+      { items: ["A"], record: { "": "Chosen" } },
+      version,
+    );
+    const renderer = await renderSurface(engine);
+    try {
+      await act(() => renderer.root.findByType("NativeButton").props.onPress());
+      assert.deepEqual(calls, []);
+      assert.deepEqual(actions, []);
+      // Pointer failures retain the existing dispatch-level error category.
+      assert.equal(errors.at(-1).code, "INVALID_MESSAGE");
+      await act(() =>
+        engine.applyMessage({
+          version,
+          updateComponents: {
+            surfaceId: "main",
+            components: [button("/record/")],
+          },
+        }),
+      );
+      await act(() => renderer.root.findByType("NativeButton").props.onPress());
+      assert.deepEqual(calls, ["Chosen"]);
+      assert.deepEqual(actions, []);
+    } finally {
+      await act(() => renderer.unmount());
+    }
+  });
+}

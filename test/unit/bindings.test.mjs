@@ -33,7 +33,7 @@ function createSurface(engine, surfaceId = "main") {
 test("resolves absolute and relative binding paths", () => {
   assert.equal(resolveBindingPath("/products/1", "/title"), "/title");
   assert.equal(resolveBindingPath("/products/1", "name"), "/products/1/name");
-  assert.equal(resolveBindingPath("/products/1/", "."), "/products/1");
+  assert.equal(resolveBindingPath("/products/1/", "."), "/products/1/");
   assert.equal(resolveBindingPath("/", "title"), "/title");
 });
 
@@ -159,4 +159,98 @@ test("isolates, deletes, and resets surface data models", () => {
   createSurface(engine, "one");
 
   assert.deepEqual(engine.getSurface("one").dataModel, {});
+});
+
+test("preserves empty tokens, root aliases and single-pass escaping", () => {
+  const original = { record: { "": { "": "old" }, keep: "yes" }, "~1": "once" };
+  assert.equal(readDataPointer(original, "/record//"), "old");
+  const updated = updateDataPointer(original, "/record//", "new");
+  assert.deepEqual(updated.record, { "": { "": "new" }, keep: "yes" });
+  assert.deepEqual(updateDataPointer(updated, "/record//", undefined).record, {
+    "": {},
+    keep: "yes",
+  });
+  assert.equal(original.record[""][""], "old");
+  assert.equal(readDataPointer(original, "/~01"), "once");
+  assert.equal(readDataPointer(original, "/"), original);
+  assert.equal(readDataPointer(original, ""), original);
+  assert.equal(resolveBindingPath("/record/", "name"), "/record//name");
+  assert.equal(resolveBindingPath("/record/", ""), "/record/");
+  assert.deepEqual(
+    resolveStructuralChildren(
+      { record: { "": [1, 2] } },
+      "/",
+      "row",
+      "/record/",
+    ),
+    [
+      { id: "row", basePath: "/record//0" },
+      { id: "row", basePath: "/record//1" },
+    ],
+  );
+});
+
+test("rejects invalid array addresses on reads and writes, preserving object keys", () => {
+  for (const token of [
+    "length",
+    "map",
+    "",
+    "01",
+    "-1",
+    "+1",
+    "1.0",
+    "1e0",
+    "1\n",
+    "-",
+    "4294967295",
+    "9007199254740993",
+  ]) {
+    assert.throws(
+      () => readDataPointer({ items: ["a"] }, `/items/${token}`),
+      TypeError,
+      token,
+    );
+    assert.throws(
+      () => updateDataPointer({ items: ["a"] }, `/items/${token}`, "bad"),
+      TypeError,
+      token,
+    );
+    const object = Object.fromEntries([[token, "field"]]);
+    // A single slash is A2UI's root alias, so nest the object for an empty key.
+    assert.equal(readDataPointer({ object }, `/object/${token}`), "field");
+    assert.equal(
+      readDataPointer(
+        updateDataPointer({ object }, `/object/${token}`, "updated"),
+        `/object/${token}`,
+      ),
+      "updated",
+    );
+  }
+  assert.equal(readDataPointer(["a"], "/4294967294"), undefined);
+  assert.equal(readDataPointer({}, "/missing/length"), undefined);
+  assert.equal(readDataPointer(["a"], "/2"), undefined);
+  assert.deepEqual(updateDataPointer({}, "/items/0", "created"), {
+    items: ["created"],
+  });
+});
+
+test("reads only own fields and writes special names without changing prototypes", () => {
+  for (const name of ["__proto__", "constructor", "toString"]) {
+    assert.equal(readDataPointer({}, `/${name}`), undefined);
+    const original = JSON.parse(`{"${name}":{"value":"old"},"keep":"yes"}`);
+    assert.equal(readDataPointer(original, `/${name}/value`), "old");
+    const replaced = updateDataPointer(original, `/${name}`, { value: "new" });
+    assert.equal(Object.getPrototypeOf(replaced), Object.prototype);
+    assert.equal(Object.hasOwn(replaced, name), true);
+    assert.equal(readDataPointer(replaced, `/${name}/value`), "new");
+    assert.equal(original[name].value, "old");
+    assert.deepEqual(updateDataPointer(replaced, `/${name}`, undefined), {
+      keep: "yes",
+    });
+    const created = updateDataPointer({}, `/${name}/value`, "created");
+    assert.equal(Object.getPrototypeOf(created), Object.prototype);
+    assert.equal(Object.hasOwn(created, name), true);
+    assert.equal(readDataPointer(created, `/${name}/value`), "created");
+  }
+  assert.equal(Object.hasOwn(Object.prototype, "value"), false);
 });
