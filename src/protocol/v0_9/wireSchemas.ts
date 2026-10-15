@@ -19,7 +19,14 @@ const CreateSurfaceMessageSchema = z
       .object({
         surfaceId: z.string(),
         catalogId: z.string(),
-        theme: z.unknown().optional(),
+        theme: z
+          .custom<Record<string, unknown>>(
+            (value) =>
+              typeof value === "object" &&
+              value !== null &&
+              !Array.isArray(value),
+          )
+          .optional(),
         sendDataModel: z.boolean().optional(),
       })
       .strict(),

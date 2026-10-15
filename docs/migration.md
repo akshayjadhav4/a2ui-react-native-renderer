@@ -161,6 +161,15 @@ register every capability the application's A2UI producer may emit.
 These changes are unreleased. The next package version and any license change
 require maintainer approval; this migration does not select or publish a release.
 
+- Catalogs can now define an optional `themeSchema`. Presenters receive a
+  deeply readonly optional `theme`, and surface snapshots expose it as a generic
+  readonly record. Existing no-theme definitions need no changes. The schema
+  exporter includes custom theme rules at `$defs.theme`.
+- Supplied themes must be JSON objects and match the catalog's theme schema
+  when configured. Invalid themes now reject creation through `onError` with
+  `INVALID_MESSAGE`. Omitted themes stay `undefined`; field defaults apply only
+  inside a supplied object. The renderer does not apply styles automatically.
+
 - Both v0.9 and v0.9.1 progressive component graphs are accepted. A missing
   root or child is pending; invalid schemas, known cycles, and configured limits
   still reject an update atomically. Apps that previously retried a rejected

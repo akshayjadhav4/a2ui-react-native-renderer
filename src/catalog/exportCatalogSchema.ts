@@ -7,7 +7,6 @@ import {
 import { convertFunctionSchema } from "./convertFunctionSchema.js";
 import type {
   A2UICatalog,
-  A2UIComponentDefinition,
   A2UIComponentSchemas,
   A2UIFunctionDefinition,
 } from "./types.js";
@@ -28,9 +27,15 @@ interface A2UICatalogSchemaDocument {
 export function exportA2UICatalogSchema<
   Schemas extends A2UIComponentSchemas,
   Functions extends readonly A2UIFunctionDefinition[],
->(catalog: A2UICatalog<Schemas, Functions>): A2UICatalogSchemaDocument {
+  ThemeSchema extends z.AnyZodObject | undefined = undefined,
+>(
+  catalog: A2UICatalog<Schemas, Functions, ThemeSchema>,
+): A2UICatalogSchemaDocument {
   const definitions = catalog.components as Readonly<
-    Record<string, Pick<A2UIComponentDefinition, "schema" | "description">>
+    Record<
+      string,
+      { readonly schema: z.AnyZodObject; readonly description?: string }
+    >
   >;
   const components = Object.fromEntries(
     Object.entries(definitions).map(([name, definition]) => {
@@ -104,7 +109,10 @@ export function exportA2UICatalogSchema<
         type: "object",
         properties: { weight: { type: "number" } },
       },
-      theme: { type: "object", additionalProperties: true },
+      theme:
+        catalog.themeSchema === undefined
+          ? { type: "object", additionalProperties: true }
+          : convertCatalogSchema(catalog.themeSchema, "theme"),
       anyComponent: {
         oneOf: Object.keys(components).map((name) => ({
           $ref: `#/components/${escapePointerToken(name)}`,

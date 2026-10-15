@@ -13,7 +13,6 @@ import { A2UIWireMessageSchema } from "./wireSchemas.js";
 
 interface CoreSurface {
   readonly snapshot: A2UISurfaceSnapshot;
-  readonly theme: unknown;
   readonly sendDataModel: boolean;
 }
 
@@ -38,6 +37,17 @@ export class A2UIProtocolCore {
   apply(input: unknown): A2UIProtocolCoreResult {
     const parsed = A2UIWireMessageSchema.safeParse(input);
     if (!parsed.success) {
+      const createIssues = parsed.error.issues.flatMap((issue) =>
+        issue.code === "invalid_union"
+          ? (issue.unionErrors[0]?.issues ?? [])
+          : [issue],
+      );
+      const themeOnly =
+        createIssues.length > 0 &&
+        createIssues.every(
+          (issue) =>
+            issue.path[0] === "createSurface" && issue.path[1] === "theme",
+        );
       const unsupportedVersion =
         isRecord(input) &&
         typeof input.version === "string" &&
@@ -52,7 +62,7 @@ export class A2UIProtocolCore {
             : "Invalid A2UI message",
           severity: "error",
           ...extractIdentifiers(input),
-          path: "/",
+          path: themeOnly ? "/createSurface/theme" : "/",
           cause: parsed.error,
         },
       };
@@ -69,7 +79,8 @@ export class A2UIProtocolCore {
           surfaceId,
         );
       }
-      if (!this.catalogs.has(catalogId)) {
+      const catalog = this.catalogs.get(catalogId);
+      if (catalog === undefined) {
         return {
           success: false,
           error: {
@@ -83,17 +94,54 @@ export class A2UIProtocolCore {
         };
       }
 
+      let acceptedTheme: A2UISurfaceSnapshot["theme"];
+      if (theme !== undefined) {
+        let themePath = "/createSurface/theme";
+        try {
+          assertJsonTheme(theme);
+          const result = catalog.themeSchema?.safeParse(theme);
+          if (result !== undefined && !result.success) {
+            const parts = result.error.issues[0]?.path ?? [];
+            themePath += parts
+              .map(
+                (part) =>
+                  `/${String(part).replaceAll("~", "~0").replaceAll("/", "~1")}`,
+              )
+              .join("");
+            throw result.error;
+          }
+          const value: unknown = result?.data ?? theme;
+          assertJsonTheme(value);
+          acceptedTheme = freezeData(value) as NonNullable<
+            A2UISurfaceSnapshot["theme"]
+          >;
+        } catch (cause) {
+          return {
+            success: false,
+            error: {
+              code: "INVALID_MESSAGE",
+              message: `A2UI surface "${surfaceId}" has an invalid theme`,
+              severity: "error",
+              surfaceId,
+              catalogId,
+              path: themePath,
+              cause,
+            },
+          };
+        }
+      }
+
       this.surfaces.set(surfaceId, {
         snapshot: Object.freeze({
           surfaceId,
           catalogId,
+          ...(acceptedTheme === undefined ? {} : { theme: acceptedTheme }),
           rootId: null,
           pendingComponentIds: Object.freeze(["root"]),
           components: EMPTY_COMPONENTS,
           dataModel: EMPTY_DATA_MODEL,
           revision: 1,
         }),
-        theme,
         sendDataModel: sendDataModel ?? false,
       });
       return { success: true, surfaceId };
@@ -293,4 +341,28 @@ function freezeData(value: unknown): unknown {
     );
   }
   return value;
+}
+
+function assertJsonTheme(value: unknown, ancestors = new WeakSet()): void {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  )
+    return;
+  if (
+    typeof value !== "object" ||
+    (!Array.isArray(value) &&
+      Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null) ||
+    ancestors.has(value)
+  ) {
+    throw new TypeError("A2UI themes must contain only JSON values");
+  }
+  ancestors.add(value);
+  for (const nested of Array.isArray(value) ? value : Object.values(value)) {
+    assertJsonTheme(nested, ancestors);
+  }
+  ancestors.delete(value);
 }

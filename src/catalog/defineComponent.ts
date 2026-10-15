@@ -6,9 +6,12 @@ import {
   type A2UISchemaBehavior,
 } from "../protocol/v0_9/behavior.js";
 
-export function defineA2UIComponent<const Schema extends z.AnyZodObject>(
-  definition: A2UIComponentDefinition<Schema>,
-): A2UIComponentDefinition<Schema> {
+export function defineA2UIComponent<
+  const Schema extends z.AnyZodObject,
+  Theme extends object = Record<string, unknown>,
+>(
+  definition: A2UIComponentDefinition<Schema, Theme>,
+): A2UIComponentDefinition<Schema, Theme> {
   if (!(definition.schema instanceof z.ZodObject)) {
     throw new TypeError("A2UI component schema must be a Zod object schema");
   }

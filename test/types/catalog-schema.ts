@@ -22,3 +22,19 @@ document.$id.toUpperCase();
 
 // @ts-expect-error The exporter requires an A2UI catalog.
 exportA2UICatalogSchema({ id: "not-a-catalog" });
+
+exportA2UICatalogSchema(
+  defineA2UICatalog({
+    id: "urn:theme:public",
+    themeSchema: z.object({ color: z.string() }),
+    components: {
+      Label: {
+        schema: z.object({ text: z.string() }),
+        presenter: ({ theme }) => {
+          theme?.color.toUpperCase();
+          return null;
+        },
+      },
+    },
+  }),
+);

@@ -74,6 +74,7 @@ const PresenterHost = memo(
       previous.sourceComponent === next.sourceComponent &&
       a.surfaceId === b.surfaceId &&
       a.componentId === b.componentId &&
+      Object.is(a.theme, b.theme) &&
       a.scope.path === b.scope.path &&
       Object.is(a.scope.value, b.scope.value) &&
       a.renderChild === b.renderChild &&
@@ -260,6 +261,7 @@ export function A2UIComponentNode({
         props: resolution.value.props,
         surfaceId,
         componentId,
+        ...(surface.theme === undefined ? {} : { theme: surface.theme }),
         scope: {
           path: scopePath,
           value: readDataPointer(surface.dataModel, scopePath),

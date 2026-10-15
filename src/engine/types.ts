@@ -1,6 +1,9 @@
 import type { z } from "zod";
 
-import type { A2UIFunctionDefinition } from "../catalog/types.js";
+import type {
+  A2UIFunctionDefinition,
+  A2UIReadonlyTheme,
+} from "../catalog/types.js";
 import type { A2UIRendererError } from "../errors/types.js";
 import type { A2UIUserAction } from "../types/messages.js";
 import type { A2UIResourceLimits } from "../validation/limits.js";
@@ -12,6 +15,7 @@ export interface A2UIRegisteredComponent {
 }
 
 export interface A2UIRegisteredCatalog {
+  readonly themeSchema?: z.AnyZodObject | undefined;
   readonly id: string;
   readonly components: Readonly<Record<string, A2UIRegisteredComponent>>;
   readonly functions: readonly A2UIFunctionDefinition[];
@@ -31,6 +35,7 @@ export interface A2UIComponentSnapshot {
 }
 
 export interface A2UISurfaceSnapshot {
+  readonly theme?: A2UIReadonlyTheme<Record<string, unknown>>;
   readonly surfaceId: string;
   readonly catalogId: string;
   readonly rootId: string | null;

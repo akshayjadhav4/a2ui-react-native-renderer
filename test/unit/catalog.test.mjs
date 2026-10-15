@@ -138,3 +138,31 @@ test("rejects nested generated setter name collisions", () => {
     }),
   );
 });
+
+test("retains an optional theme schema and rejects non-object roots", () => {
+  const themeSchema = z.object({ color: z.string() });
+  assert.equal(
+    defineA2UICatalog({
+      id: "theme",
+      themeSchema,
+      components: { Text: TextComponent },
+    }).themeSchema,
+    themeSchema,
+  );
+  for (const schema of [
+    z.string(),
+    z.array(z.string()),
+    themeSchema.optional(),
+    themeSchema.default({ color: "red" }),
+  ]) {
+    assert.throws(
+      () =>
+        defineA2UICatalog({
+          id: "invalid-theme",
+          themeSchema: schema,
+          components: { Text: TextComponent },
+        }),
+      /theme schema must be a Zod object/,
+    );
+  }
+});

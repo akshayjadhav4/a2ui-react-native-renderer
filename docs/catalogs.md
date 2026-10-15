@@ -36,6 +36,88 @@ suffix such as `:v1` in the catalog ID versions the app's own component
 contract; it is independent of the wire version.
 
 Descriptions are optional runtime metadata. If provided, they cannot be empty.
+
+## Surface Themes
+
+Optionally describe your app's theme in the catalog. Inline presenters infer
+its fields and receive the validated theme separately from component props:
+
+```tsx
+const themeSchema = z.object({
+  primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  spacing: z.number().min(0).default(12),
+});
+
+const catalog = defineA2UICatalog({
+  id: "urn:example:a2ui:themed:v1",
+  themeSchema,
+  components: {
+    Label: {
+      schema: z.object({ text: z.string() }),
+      presenter: ({ props, theme }) => (
+        <Text style={{ color: theme?.primaryColor ?? "#222222" }}>
+          {props.text}
+        </Text>
+      ),
+    },
+  },
+});
+```
+
+The server supplies theme values when creating a surface:
+
+```json
+{
+  "version": "v0.9.1",
+  "createSurface": {
+    "surfaceId": "main",
+    "catalogId": "urn:example:a2ui:themed:v1",
+    "theme": { "primaryColor": "#3366FF" }
+  }
+}
+```
+
+The example's accepted theme includes `spacing: 12` because the supplied object
+is parsed through the schema. If the entire theme is omitted, it remains
+`undefined`: the schema is not run. Your presenters choose their fallback styles.
+The same behavior applies to `v0.9`.
+
+Themes contain static JSON values and are detached and deeply frozen on
+acceptance. Data/component updates preserve the theme; delete/recreate starts
+with the new theme or `undefined`. Bindings and functions inside theme fields
+are not evaluated. Styling, native controls and device-theme detection remain
+app responsibilities.
+
+Reusable components can explicitly declare their theme type:
+
+```tsx
+const labelSchema = z.object({ text: z.string() });
+const Label = defineA2UIComponent<
+  typeof labelSchema,
+  z.output<typeof themeSchema>
+>({
+  schema: labelSchema,
+  presenter: ({ props, theme }) => (
+    <Text style={{ color: theme?.primaryColor ?? "#222222" }}>
+      {props.text}
+    </Text>
+  ),
+});
+```
+
+Register it in a catalog with a compatible `themeSchema`. Existing components
+without explicit theme typing remain usable. Without a custom schema, a supplied
+theme object is accepted as a generic readonly record with unknown field values.
+`engine.getSurface(id)?.theme` also exposes a generic readonly record because an
+engine can hold surfaces from different catalogs. Narrow fields before using
+them, or validate against your known catalog schema for typed host access.
+
+`exportA2UICatalogSchema(catalog)` includes the theme rules at `$defs.theme`.
+Existing exporter restrictions apply: unsupported transforms/refinements fail
+with the theme field path. Runtime parsing follows Zod defaults and unknown-key
+rules. Invalid supplied themes reject creation through `onError` with
+`INVALID_MESSAGE` and a path under `/createSurface/theme`; later valid messages
+can recover. Scalar, array and null themes are rejected even without a schema.
 The renderer does not automatically send descriptions or schemas to a model.
 
 ## Export A Catalog For An Agent

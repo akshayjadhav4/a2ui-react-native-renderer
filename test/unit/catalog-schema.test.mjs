@@ -17,6 +17,7 @@ import {
   A2UIDynamicStringListSchema,
   A2UIDynamicStringSchema,
   A2UIDynamicValueSchema,
+  createA2UIEngine,
   defineA2UICatalog,
   defineA2UIComponent,
   defineA2UIFunction,
@@ -573,4 +574,72 @@ test("rejects function argument shapes the official wire envelope cannot represe
       name,
     );
   }
+});
+
+test("exports theme rules matching runtime input acceptance and field defaults", () => {
+  for (const policy of ["strict", "strip", "passthrough"]) {
+    const themeSchema = z
+      .object({
+        color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+        gap: z.number().min(0).default(8),
+        colors: z.object({ accents: z.array(z.string()) }).optional(),
+      })
+      [policy]();
+    const themed = defineA2UICatalog({
+      ...catalog,
+      id: `urn:theme:${policy}`,
+      themeSchema,
+    });
+    const doc = exportA2UICatalogSchema(themed);
+    assert.equal(doc.$defs.theme.properties.color.pattern, "^#[0-9a-fA-F]{6}$");
+    assert.equal(doc.$defs.theme.properties.gap.default, 8);
+    const ajv = new Ajv2020({ strict: false });
+    ajv.addSchema(doc);
+    const validate = ajv.compile({ $ref: `${themed.id}#/$defs/theme` });
+    const samples = [
+      { color: "#112233" },
+      { color: "#112233", extra: true },
+      { color: "bad" },
+      {},
+      { color: "#112233", gap: -1 },
+      { color: "#112233", colors: { accents: ["red"] } },
+      { color: "#112233", colors: { accents: [1] } },
+    ];
+    for (const sample of samples) {
+      const accepted = validate(sample);
+      assert.equal(
+        accepted,
+        themeSchema.safeParse(sample).success,
+        `${policy}: ${JSON.stringify(sample)}`,
+      );
+      for (const version of ["v0.9", "v0.9.1"]) {
+        const engine = createA2UIEngine({ catalogs: [themed] });
+        engine.applyMessage({
+          version,
+          createSurface: {
+            surfaceId: "theme",
+            catalogId: themed.id,
+            theme: sample,
+          },
+        });
+        assert.equal(
+          engine.getSurface("theme") !== undefined,
+          accepted,
+          `${version} ${policy}: ${JSON.stringify(sample)}`,
+        );
+        engine.dispose();
+      }
+    }
+    assert.equal(themeSchema.parse({ color: "#112233" }).gap, 8);
+  }
+});
+
+test("rejects unsupported theme export at its field path", () => {
+  const themed = defineA2UICatalog({
+    ...catalog,
+    themeSchema: z.object({
+      color: z.string().transform((value) => value.toUpperCase()),
+    }),
+  });
+  assert.throws(() => exportA2UICatalogSchema(themed), /theme.color/);
 });
