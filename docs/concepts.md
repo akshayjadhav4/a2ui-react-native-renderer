@@ -1,698 +1,103 @@
 # Core Concepts
 
-This document explains the implemented public concepts in
-`a2ui-react-native-renderer`, what each one owns, and when an application needs
-it. For exact signatures, see the [Public API](./api.md).
-
-The package has two levels of API:
-
-1. **Simple:** pass A2UI messages and catalogs to `A2UIRenderer`.
-2. **Custom placement:** use `useA2UIEngine` for a mounted feature and pass its
-   engine directly to `A2UISurface`. Use `createA2UIEngine` for an explicitly
-   managed lifetime, with an optional provider for shared context.
-
-Most applications should begin with the simple API. The advanced API exists for
-streaming chat, multiple surfaces, custom placement, and explicit lifecycle
-control.
-
-## The Short Version
-
-| Term           | Meaning                                                    | Usually created by           |
-| -------------- | ---------------------------------------------------------- | ---------------------------- |
-| A2UI message   | A protocol command that creates or updates UI              | Agent/server                 |
-| Catalog        | The components an application permits                      | Application developer        |
-| Schema         | The allowed properties for one catalog component           | Application developer        |
-| Presenter      | The React Native component that draws it                   | Application developer        |
-| Surface        | One independently updateable A2UI document                 | Agent/server                 |
-| Engine         | Stateful runtime that processes messages and owns surfaces | Package or advanced consumer |
-| `A2UIRenderer` | Simple all-in-one React component                          | Application                  |
-| `A2UIProvider` | Makes an existing engine available to descendants          | Advanced application         |
-| `A2UISurface`  | Renders and subscribes to one surface                      | Advanced application         |
-| User action    | Typed event emitted by native UI                           | Renderer/package             |
-
-## A2UI Message
-
-An A2UI message is a protocol instruction. It is not React code and it is not a
-complete screen specification that must be replaced on every update.
-
-The v0.9/v0.9.1 lifecycle includes messages such as:
-
-- `createSurface`: start an independently updateable UI surface;
-- `updateComponents`: provide or replace component definitions;
-- `updateDataModel`: provide or update bound data;
-- `deleteSurface`: remove the surface.
-
-Example:
-
-```ts
-const messages: A2UIMessage[] = [
-  {
-    version: "v0.9",
-    createSurface: {
-      surfaceId: "welcome",
-      catalogId: "urn:example:a2ui:catalog:v1",
-    },
-  },
-  {
-    version: "v0.9",
-    updateComponents: {
-      surfaceId: "welcome",
-      components: [
-        {
-          id: "root",
-          component: "Text",
-          text: "Hello from A2UI",
-        },
-      ],
-    },
-  },
-];
-```
-
-The package processes these messages. It does not fetch them. They can arrive
-through AG-UI, HTTP, WebSocket, local fixtures, an on-device model, or any other
-transport.
-
-## Surface
-
-A surface is one independently managed A2UI document.
-
-Every surface has a `surfaceId`. Later messages use this ID to update or delete
-the correct UI without replacing unrelated UI.
-
-Examples of separate surfaces in one chat are:
-
-- a product carousel returned during one assistant turn;
-- a reminder form returned during another turn;
-- a leaderboard returned later.
-
-Each surface can continue to exist after newer chat messages arrive. This is why
-the protocol needs a stable `surfaceId` instead of treating generated UI as one
-temporary React component.
-
-## Catalog
-
-A catalog is the application's allowlist of A2UI components and functions.
-
-The package intentionally ships without a catalog. The consuming application
-decides what components are safe, supported, and appropriate for its design
-system.
-
-```tsx
-const catalog = defineA2UICatalog({
-  id: "urn:example:a2ui:catalog:v1",
-  components: {
-    Text: TextComponent,
-    Button: ButtonComponent,
-  },
-});
-```
-
-The catalog ID must match the `catalogId` used when the agent creates a surface.
-This prevents a surface authored for one component contract from being rendered
-through a different contract by accident.
-
-A catalog contains definitions, not mounted React elements. It is immutable and
-can be reused by multiple engine instances.
-
-## Component Schema
-
-A schema describes the properties accepted by an A2UI component.
-
-```tsx
-const TextSchema = z.object({
-  text: z.string(),
-  variant: z.enum(["body", "heading"]).optional(),
-});
-```
-
-The schema provides three protections:
-
-1. Invalid agent output is rejected before reaching the presenter.
-2. The presenter receives inferred TypeScript properties.
-3. The application has one explicit contract for what the component supports.
-
-Schemas describe component-specific properties. Protocol properties such as
-`id` and `component` remain owned by the A2UI engine.
-
-The package uses Zod v3 for consumer-owned component contracts and protocol
-value helpers, giving applications one schema system for both.
-
-## Presenter
-
-A presenter is the React Native implementation of one catalog component.
-
-```tsx
-function TextPresenter({ props }: A2UIPresenterProps<TextProps>) {
-  const fontSize = props.variant === "heading" ? 24 : 16;
-
-  return <Text style={{ fontSize }}>{props.text}</Text>;
-}
-```
-
-The schema answers **what properties are valid**. The presenter answers **how
-those properties look and behave on this platform**.
-
-Presenters may use:
-
-- React Native core components;
-- Expo UI;
-- an application's design system;
-- platform-specific `.ios.tsx` and `.android.tsx` files;
-- native modules owned by the consuming application.
-
-The renderer resolves A2UI data bindings before invoking a presenter. The
-presenter should receive ordinary resolved values rather than parse JSON
-pointers itself.
-
-Catalog schemas describe the wire contract. Static fields use ordinary Zod
-schemas. Fields that allow A2UI data bindings use the package's protocol
-schemas:
-
-```tsx
-const TextFieldComponent = defineA2UIComponent({
-  schema: z.object({
-    label: A2UIDynamicStringSchema,
-    value: A2UIDynamicStringSchema,
-  }),
-  presenter: ({ props }) => (
-    <TextInput
-      accessibilityLabel={props.label}
-      value={props.value ?? ""}
-      editable={props.setValue !== undefined}
-      onChangeText={props.setValue}
-    />
-  ),
-});
-```
-
-An incoming `{ path: "/form/name" }` is validated by the dynamic schema, read
-from that surface's data model, and delivered as a string or `undefined` when
-missing. The generated `setValue` writes through the same binding. It is absent
-for literal and function values. Relative paths are resolved against the
-presenter's `scope.path`, which lets one template component render and edit
-each item in a structural list without losing pointer context.
-
-## `defineA2UIComponent`
-
-`defineA2UIComponent` pairs a schema with its presenter while preserving
-TypeScript inference.
-
-```tsx
-const TextComponent = defineA2UIComponent({
-  schema: z.object({
-    text: A2UIDynamicStringSchema,
-    variant: z.enum(["body", "heading"]).optional(),
-  }),
-  presenter: TextPresenter,
-});
-```
-
-It does not mount the presenter, create global state, or register anything by
-itself. It is a typed definition consumed by `defineA2UICatalog`.
-
-## `defineA2UICatalog`
-
-`defineA2UICatalog` creates an immutable catalog from consumer-owned component
-and function definitions.
-
-```tsx
-const catalog = defineA2UICatalog({
-  id: "urn:example:a2ui:catalog:v1",
-  components: {
-    Text: TextComponent,
-    Button: ButtonComponent,
-  },
-});
-```
-
-It verifies catalog-level invariants such as:
-
-- a non-empty catalog ID;
-- unique component names;
-- valid component definitions;
-- valid optional function definitions.
-
-It does not create an engine. One catalog can be passed to many engines.
-
-## `createA2UIEngine`
-
-The engine is the stateful protocol runtime.
-
-```tsx
-const engine = createA2UIEngine({
-  catalogs: [catalog],
-  onAction: handleAction,
-  onError: handleError,
-});
-```
-
-It owns:
-
-- registered catalogs;
-- active surfaces;
-- component definitions;
-- data models;
-- resolved binding contexts;
-- protocol message application;
-- action dispatch;
-- structured errors;
-- subscriptions used by React.
-
-Messages change engine state:
-
-```ts
-engine.applyMessage(message);
-engine.applyMessages(messageBatch);
-```
-
-The engine does not render React elements and does not know where a surface
-belongs in the application. This separation allows the same engine to drive
-surfaces placed in different chat messages or screens.
-
-### Why Is The Engine Separate?
-
-A2UI is incremental. A surface may be created now, receive data later, update
-its component tree after that, and be deleted during a future turn.
-
-React props alone can represent a static snapshot, but a long-lived engine is
-better suited to:
-
-- streaming updates;
-- multiple independent surfaces;
-- retaining earlier surfaces in chat;
-- action context and current data models;
-- updates that arrive outside a React render;
-- subscribing only to the surface that changed.
-
-Simple consumers do not need to create the engine manually because
-`A2UIRenderer` can own one internally.
-
-## `useA2UIEngine`
-
-Use this hook when a mounted feature owns the engine lifetime but chooses
-where each surface belongs:
-
-```tsx
-const engine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
-return <A2UISurface engine={engine} surfaceId="main" />;
-```
-
-The hook returns a stable engine, uses current callbacks, and disposes it after
-final unmount while preserving it through Strict Mode effect replay. Catalog
-objects/order and effective resource limits are construction settings; remount
-the owner to change them. Feed incoming messages from handlers/effects and
-clean up the app-owned source when leaving the feature. See the complete
-[streaming example](./streaming-and-actions.md).
-
-`createA2UIEngine` remains useful when the app explicitly controls a lifetime
-outside React. The app must dispose that engine itself.
-
-## `A2UIProvider`
-
-`A2UIProvider` makes an existing engine available through React context.
-
-```tsx
-<A2UIProvider engine={engine}>
-  <ChatScreen />
-</A2UIProvider>
-```
-
-The provider does not:
-
-- create an engine;
-- process network events;
-- store chat history;
-- render a surface;
-- duplicate engine state in React state.
-
-It is dependency injection for the React tree. Descendants such as
-`A2UISurface`, `useA2UISurface`, `useA2UISurfaceIds`, and `useA2UIErrors` can
-read the provided engine. `useA2UIEngine` creates an engine; it does not read
-this context.
-
-Use a provider when the application owns a long-lived engine. Do not add a
-provider only because one appears in the advanced example.
-
-## `A2UISurface`
-
-`A2UISurface` renders one surface from an explicit `engine` prop or, when
-omitted, the nearest `A2UIProvider`. An explicit engine takes precedence and
-supplies its context to the presenter subtree. A surface never disposes it.
-
-```tsx
-<A2UISurface surfaceId="products-42" />
-```
-
-It:
-
-- subscribes only to the requested surface;
-- finds the surface's catalog;
-- resolves the root component;
-- optionally calls app-owned `renderPending` for a created surface without
-  `root` or for a missing structural child;
-- renders the component tree through registered presenters;
-- contains presenter failures through an error boundary.
-
-It does not process chat messages or choose where the surface appears. The host
-application controls placement.
-
-This is the advanced primitive used by chat applications:
-
-```tsx
-function SurfaceMessage({ surfaceId }: { surfaceId: string }) {
-  return (
-    <View style={{ width: "100%" }}>
-      <A2UISurface surfaceId={surfaceId} />
-    </View>
-  );
-}
-```
-
-### Subscription And Snapshot Behavior
-
-The engine offers two subscription levels:
-
-- `subscribe` publishes engine-wide changes such as active or failed surface
-  membership;
-- `subscribeSurface(surfaceId, listener)` publishes only changes that affect
-  the requested surface.
-
-`A2UISurface` uses the second form. An update or validation failure for one
-surface therefore does not rerender presenters mounted for another surface.
-
-Engine snapshots are immutable. A publication creates a new snapshot and
-increments its `revision`, but the `surfaceIds` and `failedSurfaceIds` arrays
-reuse their previous references while their membership and order are
-unchanged. Hooks selecting those collections remain referentially stable even
-when an existing surface receives a component or data-model update.
-
-Surface snapshots are replaced only when that surface commits a valid change.
-They expose immutable `pendingComponentIds`: `["root"]` before root arrives,
-then distinct missing structural IDs reachable from root. Missing bound data
-stays `undefined` in presenter props instead of appearing in this list.
-Each mounted node observes the current surface snapshot. Dynamic properties
-and consumer functions resolve against accepted updates; healthy presenters
-with equivalent observable inputs can be preserved. Full scope values, local
-React state/context, setters and late children remain current. Notifications
-and resolution can still visit every node; see [Reactivity](./architecture.md#presenter-reactivity).
-
-The package's default resource limit permits 500 components per surface. An
-integration fixture validates and renders a complete 500-component surface to
-prove the boundary does not overflow the renderer stack. It is not a timing
-service-level agreement: consumer presenter cost and device capabilities still
-determine practical limits.
-
-## `A2UIRenderer`
-
-`A2UIRenderer` is the convenience API for consumers that do not need manual
-surface placement or engine ownership.
-
-```tsx
-<A2UIRenderer
-  catalogs={[catalog]}
-  messages={messages}
-  onAction={handleAction}
-  onError={handleError}
-/>
-```
-
-In owned-engine mode it composes the lower-level primitives:
+A2UI describes UI through incremental messages. This library processes those
+messages and renders them with your React Native components. Your app owns the
+catalog, visual design, transport, backend and placement.
+
+For a runnable introduction, start with the [README quick start](../README.md#quick-start).
+For exact contracts, use the [API reference](./api.md).
+
+## The Pieces
+
+| Term      | Meaning                                                             |
+| --------- | ------------------------------------------------------------------- |
+| Message   | A protocol operation that creates, updates or deletes UI            |
+| Catalog   | Your allowlist of components and functions                          |
+| Schema    | Zod definition of a component's accepted wire properties            |
+| Presenter | Your React component that renders resolved properties               |
+| Surface   | One independently updateable UI document, identified by `surfaceId` |
+| Engine    | Instance-scoped runtime holding catalogs, surfaces, data and errors |
+| Binding   | A reference from a component property to surface data               |
+| Action    | An interaction dispatched by a presenter and handled by your app    |
+
+The flow is:
 
 ```text
-A2UIRenderer
-  -> creates one stable internal engine
-  -> applies each new message batch once
-  -> provides the engine with A2UIProvider
-  -> discovers active surface IDs
-  -> renders each surface with A2UISurface
+your backend → your transport → A2UI messages → engine
+  → resolved properties → your native presenters
+  → user action → your transport → your backend
 ```
 
-The renderer must not recreate its engine on every React render. It must not
-reapply unchanged message arrays repeatedly.
+## Messages And Surfaces
 
-With an external engine, `<A2UIRenderer engine={engine} />` observes surfaces
-without requiring `messages`. Engine creation, callbacks and disposal then
-belong to the engine's owner. Collection replay and fixed construction settings
-are described in the [API reference](./api.md#a2uirenderer).
+Both A2UI `v0.9` and `v0.9.1` are supported:
 
-Use `A2UIRenderer` when:
+- `createSurface` starts a surface using a registered `catalogId`.
+- `updateComponents` supplies or replaces component definitions.
+- `updateDataModel` updates data that components can bind to.
+- `deleteSurface` removes the surface.
 
-- the application has one message collection;
-- all active surfaces can render together at the renderer location;
-- the application does not need to insert surfaces at separate transcript
-  positions;
-- the package may own the engine lifecycle.
+The reserved `root` component is the surface's entry point. Root and child
+definitions may arrive later; valid unresolved references are pending, and
+`renderPending` lets the app show loading UI. A surface's ID lets later messages
+update it independently of other surfaces or chat turns.
 
-Do not use it as the top-level chat runtime when individual surfaces must appear
-beside different assistant messages. Use the advanced API for that case.
+See [Streaming And Actions](./streaming-and-actions.md) for progressive updates,
+batch recovery, source cleanup and action round trips.
 
-## User Actions
+## Your Catalog And Components
 
-A presenter may dispatch an A2UI user action when a native control is used.
+Pair each component schema with a presenter using `defineA2UICatalog` and,
+optionally, `defineA2UIComponent`. Register only capabilities your app permits.
+Presenters are ordinary React components and may use your existing design system.
 
-```tsx
-const ButtonComponent = defineA2UIComponent({
-  schema: z.object({
-    label: A2UIDynamicStringSchema,
-    action: A2UIActionSchema,
-  }),
-  presenter: ButtonPresenter,
-});
+The incoming component name must match a catalog entry, and
+`createSurface.catalogId` must match the catalog's ID. The catalog's own version
+suffix, such as `:v1`, is separate from the message's A2UI protocol version.
 
-function ButtonPresenter({ props, dispatch }: A2UIPresenterProps<ButtonProps>) {
-  return (
-    <Pressable onPress={() => dispatch(props.action)}>
-      <Text>{props.label}</Text>
-    </Pressable>
-  );
-}
-```
+`exportA2UICatalogSchema` derives a JSON Schema document from that same catalog
+for agent guidance or server tooling. Your app handles delivery and configures
+server validation. See [Catalogs](./catalogs.md) for schemas, presenters, dynamic
+values, children, functions and schema export.
 
-The engine resolves the action context against the current data model and sends
-the resulting official A2UI action to the consumer callback. Resolution happens
-when the interaction occurs, so a long-lived native handler cannot send stale
-form or template data:
+## Choose Engine Ownership
 
-```tsx
-const engine = createA2UIEngine({
-  catalogs: [catalog],
-  onAction(action) {
-    transport.send({ a2ui: { action } });
-  },
-});
-```
+| Need                                                     | API                                             | Engine lifetime                           |
+| -------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------- |
+| Render all active surfaces together from a message array | `A2UIRenderer`                                  | Component creates and disposes its engine |
+| Place surfaces individually within a mounted feature     | `useA2UIEngine` + `A2UISurface engine={engine}` | Hook creates and disposes the engine      |
+| Manage an engine outside a mounted feature               | `createA2UIEngine` + surfaces                   | App explicitly calls `dispose()`          |
 
-The package produces the action. The consumer decides how to transport it back
-to an agent.
+`A2UIProvider` shares an existing engine through context. It is optional for
+direct-engine surfaces, which supply context to their presenters. Context
+readers such as `useA2UISurface` need that context; `useA2UIEngine` creates an
+engine instead of reading one.
 
-## Functions
+Feed messages from event handlers or effects. Catalog objects/order and
+effective limits remain fixed while a hook owner is mounted; remount it for
+new construction settings. Keep message arrays immutable when using the
+convenience renderer. See [API](./api.md) for ingestion/replay rules and
+[Architecture](./architecture.md) for lifecycle and reactivity details.
 
-A2UI functions are catalog-owned computations used by bindings, formatting,
-conditions, or actions.
+## Bindings, Actions And Recovery
 
-```tsx
-const formatPrice = defineA2UIFunction({
-  name: "formatPrice",
-  args: z.object({ amount: z.number(), currency: z.string() }),
-  returns: "string",
-  execute({ amount, currency }) {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-    }).format(amount);
-  },
-});
+- Use `A2UIDynamic*Schema` helpers for values that may be literals, bindings or
+  function calls. Presenters receive resolved values; missing data can resolve
+  to `undefined`.
+- Direct bound fields receive optional setters such as `setValue`. Literals
+  and function results have no setter. Setters update local surface data;
+  your app decides when to send an action or persist a change.
+- A presenter uses `renderChild` for declared child references and `dispatch`
+  from interaction handlers. Event context resolves against current surface
+  data; your `onAction` callback chooses how to send the event.
+- Register functions explicitly. Render-time functions should be deterministic
+  and side-effect free. Local function actions run on dispatch and are not
+  forwarded as user-action events.
+- Invalid messages retain accepted state; later valid messages can recover.
+  Use `onError` for diagnostics and an app-owned `renderFallback` when needed.
+  Invalid construction settings throw synchronously.
 
-const catalogWithFunctions = defineA2UICatalog({
-  id: "urn:example:a2ui:catalog:with-functions:v1",
-  components: catalog.components,
-  functions: [formatPrice],
-});
-```
-
-The package ships no application functions. Consumers register only the
-functions their catalog supports.
-
-The engine validates each call, resolves data bindings and nested function
-arguments, validates the consumer function's arguments, and validates its
-declared return kind. Unknown, invalid, or thrown functions become contained
-`FUNCTION_ERROR` diagnostics.
-
-Functions used by presenter properties or event context should be deterministic
-and side-effect free because they may be reevaluated when surface data changes.
-A local function action is different: it runs once after presenter dispatch and
-may perform an intentional client-side effect. Local function actions are not
-forwarded to the engine's `onAction` callback.
-
-## Validation And Resource Limits
-
-The protocol core validates each candidate message before committing it.
-Validation covers component IDs and schemas, structural markers, JSON pointer
-syntax, known cycles, and resource limits. Definitions may arrive before the
-reserved `root`, and a nonempty structural reference may point to a definition
-that has not arrived yet. The engine buffers these valid intermediate states.
-If one message fails, the last valid revision remains; later valid messages in
-the batch still apply, including messages for the same surface.
-
-```tsx
-const engine = createA2UIEngine({
-  catalogs: [catalog],
-  limits: {
-    maxComponentsPerSurface: 250,
-    maxComponentDepth: 48,
-    maxDataModelBytes: 512 * 1024,
-    maxMessagesPerBatch: 500,
-  },
-});
-```
-
-Unspecified limits use `DEFAULT_A2UI_RESOURCE_LIMITS`. Invalid limit values are
-rejected when the engine is created. At runtime, limit failures use
-`RESOURCE_LIMIT_EXCEEDED`; graph, schema, and binding failures use their
-specific structured error codes and preserve the last valid revision.
-
-## Errors And Fallbacks
-
-A2UI input is generated remotely and must be considered untrusted.
-
-Runtime validation, protocol, binding, and presenter failures produce a structured
-error through `onError` and the engine error API.
-Invalid construction settings throw synchronously instead.
-
-```tsx
-<A2UIRenderer
-  catalogs={[catalog]}
-  messages={messages}
-  onError={(error) => logger.capture(error)}
-/>
-```
-
-### Development
-
-With `diagnostics="auto"` under React Native's `__DEV__` global, or with
-`diagnostics="development"`, the package reports an actionable diagnostic
-containing only safe identifiers such as surface ID, catalog ID, component ID,
-JSON path, and error code. It does not include the exception message, cause,
-component properties, data model, or raw A2UI input.
-
-The renderer remains catalog-agnostic, so it does not ship a styled native error
-view. Pass `renderFallback` when an in-surface development diagnostic is useful.
-
-### Production
-
-With `diagnostics="production"`, the package does not display or log internal
-diagnostics. An invalid initial surface renders nothing or a consumer-provided
-fallback. An invalid update preserves the last valid surface revision when
-possible. `onError` still runs.
-
-Production errors must never be swallowed silently, and raw A2UI JSON must not
-be shown to end users.
-
-```tsx
-<A2UIRenderer
-  catalogs={[catalog]}
-  messages={messages}
-  diagnostics="production"
-  onError={(error) => telemetry.capture(error)}
-  renderFallback={() => <SurfaceUnavailable />}
-/>
-```
-
-Presenter boundaries are reset by the next surface revision. The engine tracks
-current failed surfaces separately from historical errors so recovered or
-deleted surfaces do not reappear as stale fallbacks.
-
-## Simple Versus Advanced API
-
-Choose based on ownership, not perceived sophistication.
-
-### Use `A2UIRenderer`
-
-```tsx
-<A2UIRenderer catalogs={[catalog]} messages={messages} />
-```
-
-Choose this when:
-
-- one component can own the renderer lifecycle;
-- surfaces render together;
-- messages are already collected in an array;
-- minimal setup is the priority.
-
-### Use Hook-Owned Engine + Surface
-
-```tsx
-const engine = useA2UIEngine({ catalogs: [catalog], onAction, onError });
-return <A2UISurface engine={engine} surfaceId="main" />;
-```
-
-Choose this for per-turn or per-screen placement within a mounted feature.
-The hook owns disposal; the app owns its source and placement.
-
-### Use An Explicitly Managed Engine
-
-```tsx
-const engine = createA2UIEngine({ catalogs: [catalog] });
-
-engine.applyMessages(messages);
-
-<A2UIProvider engine={engine}>
-  <A2UISurface surfaceId="main" />
-</A2UIProvider>;
-```
-
-Choose this when:
-
-- messages arrive incrementally;
-- surfaces appear in different chat turns;
-- the application controls replay or persistence;
-- actions need current engine data;
-- more than one screen consumes the same engine;
-- precise surface subscriptions matter.
-
-## What The Package Does Not Do
-
-The package does not:
-
-- call an LLM;
-- connect to a server;
-- parse AG-UI streams;
-- choose when an agent should generate UI;
-- provide chat components;
-- persist conversations;
-- ship a visual design system;
-- implement the Basic Catalog;
-- decide how actions are sent back to an agent.
-
-These remain consumer responsibilities so the renderer can work with any
-transport, model, backend, and component library.
-
-## Mental Model
-
-The complete model is:
-
-```text
-Catalog = what the application permits
-Schema = what properties are valid
-Presenter = how one component renders natively
-Message = what the agent wants to create or update
-Surface = one updateable UI document
-Engine = current protocol state
-Provider = engine access for React descendants
-A2UISurface = renderer for one surface
-A2UIRenderer = convenient composition of engine + provider + surfaces
-Action = native interaction returned to the consumer
-```
-
-The separation exists to keep the package simple for static rendering while
-remaining correct for incremental, long-lived A2UI applications.
-
-## Related Guides
-
-- [Testing Your Catalog](./testing.md)
-
-- [Architecture](./architecture.md)
-- [Catalogs](./catalogs.md)
-- [Streaming And Actions](./streaming-and-actions.md)
-- [Errors And Security](./errors-and-security.md)
+See [Errors And Security](./errors-and-security.md) for validation, resource
+limits and recovery. Use [Testing](./testing.md) to verify your catalog through
+the real engine, including mounted binding, function and presenter behavior.
+Existing consumers can follow the [Migration Guide](./migration.md).
